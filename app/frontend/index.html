@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Consulta de Deputados</title>
+  <meta name="description" content="Plataforma de consulta de deputados federais usando dados públicos e tecnologia moderna." />
+</head>
+<body>
+
+<header>
+  <h1>Transparência política com dados oficiais</h1>
+  <p>Consulte deputados federais do Brasil com rapidez, clareza e confiança.</p>
+  <button>Explorar deputados</button>
+  <button>Documentação da API</button>
+</header>
+
+<section>
+  <h2>O que fazemos</h2>
+  <ul>
+    <li>Consulta de deputados federais</li>
+    <li>Dados públicos organizados</li>
+    <li>Alta performance com FastAPI</li>
+    <li>Infraestrutura em nuvem</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Arquitetura & Stack</h2>
+  <p>Python · FastAPI · PostgreSQL · Docker · AWS · GitHub Actions</p>
+</section>
+
+<section>
+  <h2>Fonte dos dados</h2>
+  <p>Dados oficiais da Câmara dos Deputados, conforme a Lei de Acesso à Informação.</p>
+</section>
+
+<section id="search">
+  <h2>Buscar deputado</h2>
+
+  <input
+    type="text"
+    id="searchInput"
+    placeholder="Digite o nome do deputado..."
+    autocomplete="off"
+  />
+
+  <div id="topSearches">
+    <h3>Buscas populares</h3>
+    <ul id="topSearchesList"></ul>
+  </div>
+
+  <div id="results">
+    <h3>Resultados</h3>
+    <ul id="resultsList"></ul>
+  </div>
+</section>
+
+
+<footer>
+  <p>Projeto independente focado em transparência e tecnologia.</p>
+</footer>
+
+</body>
+</html>
+<script>
+const API_BASE = "https://seu-backend.com/api";
+</script>
+<script>
+function debounce(fn, delay = 500) {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delay);
+  };
+}
+</script>
+<script>
+const searchInput = document.getElementById("searchInput");
+const resultsList = document.getElementById("resultsList");
+
+async function searchDeputados(nome) {
+  if (!nome || nome.length < 2) {
+    resultsList.innerHTML = "";
+    return;
+  }
+
+  const response = await fetch(`${API_BASE}/deputados?nome=${encodeURIComponent(nome)}`);
+  const data = await response.json();
+
+  resultsList.innerHTML = "";
+
+  data.forEach(dep => {
+    const li = document.createElement("li");
+    li.textContent = `${dep.nome} — ${dep.partido} / ${dep.uf}`;
+    resultsList.appendChild(li);
+  });
+}
+
+const debouncedSearch = debounce(searchDeputados);
+
+searchInput.addEventListener("input", (e) => {
+  debouncedSearch(e.target.value);
+});
+</script>
+
+
+<script>
+const topSearchesList = document.getElementById("topSearchesList");
+
+async function loadTopSearches() {
+  const response = await fetch(`${API_BASE}/buscas/top10`);
+  const data = await response.json();
+
+  topSearchesList.innerHTML = "";
+
+  data.forEach(item => {
+    const li = document.createElement("li");
+    li.textContent = item.nome;
+    li.style.cursor = "pointer";
+
+    li.addEventListener("click", () => {
+      searchInput.value = item.nome;
+      searchDeputados(item.nome);
+    });
+
+    topSearchesList.appendChild(li);
+  });
+}
+
+loadTopSearches();
+</script>
