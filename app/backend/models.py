@@ -6,6 +6,7 @@ from sqlalchemy import (
     Numeric,
     Text,
     CHAR,
+    DateTime,
     ForeignKey
 )
 from sqlalchemy.orm import relationship
@@ -43,6 +44,11 @@ class Politico(Base):
 
     despesas = relationship(
         "Despesa",
+        backref="politico",
+        cascade="all, delete-orphan"
+    )
+    discursos = relationship(
+        "Discurso",
         backref="politico",
         cascade="all, delete-orphan"
     )
@@ -89,3 +95,31 @@ class Despesa(Base):
 
     created_at = Column(Date)
 
+class Discurso(Base):
+    __tablename__ = "discursos"
+
+    id = Column(Integer, primary_key=True)
+
+    # Relacionamento
+    politico_id = Column(Integer, ForeignKey("politicos.id"), nullable=False, index=True)
+
+    # Tempo
+    data_hora_inicio = Column(DateTime, nullable=False)
+    data_hora_fim = Column(DateTime)
+
+    # Evento / contexto
+    tipo_discurso = Column(String(100))
+    fase_evento_titulo = Column(String(255))
+
+    # Conteúdo
+    sumario = Column(Text)
+    transcricao = Column(Text)
+    keywords = Column(Text)
+
+    # Links
+    url_texto = Column(Text)
+    url_audio = Column(Text)
+    url_video = Column(Text)
+    uri_evento = Column(Text)
+
+    created_at = Column(DateTime)
