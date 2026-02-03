@@ -334,3 +334,60 @@ class Tramitacao(Base):
     apreciacao = Column(String(150))
 
     proposicao = relationship("Proposicao", back_populates="tramitacoes")
+
+class Votacao(Base):
+    __tablename__ = "votacoes"
+
+    id = Column(String, primary_key=True)  # id vem como string da API
+    data = Column(Date)
+    data_hora_registro = Column(DateTime)
+
+    descricao = Column(Text)
+    aprovacao = Column(Integer)  # 1 aprovado, 0 rejeitado, -1 indefinido
+
+    sigla_orgao = Column(String(20))
+
+    id_evento = Column(Integer, nullable=True)
+    id_orgao = Column(Integer, nullable=True)
+
+    uri = Column(Text)
+    uri_evento = Column(Text)
+    uri_orgao = Column(Text)
+
+    # Relacionamentos
+    votos = relationship("Voto", back_populates="votacao")
+    orientacoes = relationship("OrientacaoVotacao", back_populates="votacao")
+
+class OrientacaoVotacao(Base):
+    __tablename__ = "orientacoes_votacao"
+
+    id = Column(Integer, primary_key=True)
+    votacao_id = Column(String, ForeignKey("votacoes.id", ondelete="CASCADE"))
+
+    cod_partido_bloco = Column(Integer)
+    sigla_partido_bloco = Column(String(20))
+    cod_tipo_lideranca = Column(String(50))
+
+    orientacao_voto = Column(String(20))  # Sim, Não, Libera, Obstrução
+
+    uri_partido_bloco = Column(Text)
+
+    votacao = relationship("Votacao", back_populates="orientacoes")
+    
+class Voto(Base):
+    __tablename__ = "votos"
+
+    id = Column(Integer, primary_key=True)
+
+    votacao_id = Column(String, ForeignKey("votacoes.id", ondelete="CASCADE"))
+    politico_id = Column(Integer, ForeignKey("politicos.id_camara", ondelete="CASCADE"))
+
+    tipo_voto = Column(String(20))  
+    # Sim, Não, Abstenção, Obstrução, Art. 17, etc.
+
+    data_registro_voto = Column(DateTime)
+
+    sigla_partido = Column(String(10))
+    sigla_uf = Column(String(2))
+
+    votacao = relationship("Votacao", back_populates="votos")
