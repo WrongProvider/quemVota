@@ -9,9 +9,11 @@ from sqlalchemy import (
     DateTime,
     UniqueConstraint,
     Table,
+    Boolean,
     ForeignKey
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from backend.database import Base
 
 class Politico(Base):
@@ -43,6 +45,7 @@ class Politico(Base):
 
     # Outros
     url_foto = Column(Text)
+    created_at = Column(DateTime, server_default=func.now())
 
     despesas = relationship(
         "Despesa",
@@ -95,7 +98,12 @@ class Despesa(Base):
     num_ressarcimento = Column(String(50))
     parcela = Column(Integer)
 
-    created_at = Column(Date)
+    created_at = Column(DateTime, server_default=func.now())
+
+    politico = relationship(
+    "Politico",
+    back_populates="despesas"
+    )
 
     __table_args__ = (
     UniqueConstraint(
@@ -142,7 +150,7 @@ class Discurso(Base):
     politico = relationship("Politico", back_populates="discursos")
     evento = relationship("Evento", back_populates="discursos")
 
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, server_default=func.now())
 
 class Evento(Base):
     __tablename__ = "eventos"
@@ -164,7 +172,7 @@ class Evento(Base):
     local_camara_andar = Column(String)
 
     url_evento = Column(Text)
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, server_default=func.now())
 
     orgaos = relationship(
         "Orgao",
@@ -181,20 +189,25 @@ class Orgao(Base):
     __tablename__ = "orgaos"
 
     id = Column(Integer, primary_key=True)
-
-    # Identificação oficial
-    id_camara = Column(Integer, nullable=False, unique=True, index=True)
-    uri = Column(Text)
+    id_camara = Column(Integer, unique=True, nullable=False, index=True)
+    uri = Column(Text, unique=True)
 
     sigla = Column(String(20))
-    nome = Column(String(150))
-    apelido = Column(String(150))
+    nome = Column(String(200))
+    apelido = Column(String(200))
+    nome_publicacao = Column(String(200))
+    nome_resumido = Column(String(200))
 
     cod_tipo_orgao = Column(Integer)
     tipo_orgao = Column(String(100))
+    casa = Column(String(50))
 
-    nome_publicacao = Column(String(150))
-    nome_resumido = Column(String(150))
+    data_inicio = Column(Date)
+    data_fim = Column(Date)
+    data_instalacao = Column(Date)
+
+    sala = Column(String(50))
+    url_website = Column(Text)
 
     eventos = relationship(
         "Evento",
@@ -202,12 +215,40 @@ class Orgao(Base):
         back_populates="orgaos"
     )
 
+    membros = relationship("OrgaoMembro", back_populates="orgao")
+
+
 eventos_orgaos = Table(
     "eventos_orgaos",
     Base.metadata,
     Column("evento_id", Integer, ForeignKey("eventos.id"), primary_key=True),
     Column("orgao_id", Integer, ForeignKey("orgaos.id"), primary_key=True),
 )
+
+class OrgaoMembro(Base):
+    __tablename__ = "orgaos_membros"
+
+    id = Column(Integer, primary_key=True)
+
+    orgao_id = Column(Integer, ForeignKey("orgaos.id", ondelete="CASCADE"), nullable=False, index=True)
+    politico_id = Column(Integer, ForeignKey("politicos.id", ondelete="CASCADE"))
+
+    cod_titulo = Column(Integer)
+    titulo = Column(String(100))
+
+    data_inicio = Column(Date)
+    data_fim = Column(Date)
+
+    orgao = relationship("Orgao", back_populates="membros")
+    politico = relationship("Politico")
+    
+    __table_args__ = (
+        UniqueConstraint(
+            "orgao_id",
+            "politico_id",
+            name="uq_orgao_orgao_politico"
+    ),
+    )
 
 
 class Proposicao(Base):
@@ -257,7 +298,7 @@ class Proposicao(Base):
         order_by="Tramitacao.data_hora"
     )
 
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, server_default=func.now())
 
 class ProposicaoAutor(Base):
     __tablename__ = "proposicoes_autores"
@@ -272,6 +313,12 @@ class ProposicaoAutor(Base):
     )
 
     # Autor (pode ser deputado, comissão, etc.)
+    politico_id = Column(
+        Integer,
+        ForeignKey("politicos.id", ondelete="SET NULL"),
+        nullable=True
+    )
+
     nome = Column(String(150), nullable=False)
     uri_autor = Column(Text)
     cod_tipo = Column(Integer)
@@ -338,7 +385,10 @@ class Tramitacao(Base):
 class Votacao(Base):
     __tablename__ = "votacoes"
 
-    id = Column(String, primary_key=True)  # id vem como string da API
+    id = Column(Integer, primary_key=True)
+  # id vem como string da API
+    votacao_id = Column(Integer, ForeignKey("votacoes.id", ondelete="CASCADE"))
+
     data = Column(Date)
     data_hora_registro = Column(DateTime)
 
@@ -358,11 +408,19 @@ class Votacao(Base):
     votos = relationship("Voto", back_populates="votacao")
     orientacoes = relationship("OrientacaoVotacao", back_populates="votacao")
 
+    created_at = Column(DateTime, server_default=func.now())
+
 class OrientacaoVotacao(Base):
     __tablename__ = "orientacoes_votacao"
 
     id = Column(Integer, primary_key=True)
-    votacao_id = Column(String, ForeignKey("votacoes.id", ondelete="CASCADE"))
+    votacao_id = Column(
+        Integer,
+        ForeignKey("votacoes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
 
     cod_partido_bloco = Column(Integer)
     sigla_partido_bloco = Column(String(20))
@@ -373,14 +431,24 @@ class OrientacaoVotacao(Base):
     uri_partido_bloco = Column(Text)
 
     votacao = relationship("Votacao", back_populates="orientacoes")
-    
+
 class Voto(Base):
     __tablename__ = "votos"
 
     id = Column(Integer, primary_key=True)
 
-    votacao_id = Column(String, ForeignKey("votacoes.id", ondelete="CASCADE"))
-    politico_id = Column(Integer, ForeignKey("politicos.id_camara", ondelete="CASCADE"))
+    votacao_id = Column(
+        Integer,
+        ForeignKey("votacoes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    politico_id = Column(
+        Integer, 
+        ForeignKey("politicos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
 
     tipo_voto = Column(String(20))  
     # Sim, Não, Abstenção, Obstrução, Art. 17, etc.
@@ -391,3 +459,80 @@ class Voto(Base):
     sigla_uf = Column(String(2))
 
     votacao = relationship("Votacao", back_populates="votos")
+
+    __table_args__ = (
+    UniqueConstraint(
+        "votacao_id",
+        "politico_id",
+        name="uq_voto_votacao_politico"
+    ),
+)
+
+
+class Partido(Base):
+    __tablename__ = "partidos"
+
+    id = Column(Integer, primary_key=True)
+    id_camara = Column(Integer, nullable=False, unique=True, index=True)
+    uri = Column(Text, unique=True)
+
+    nome = Column(String(200), nullable=False)
+    sigla = Column(String(20), nullable=False)
+    numero_eleitoral = Column(Integer)
+
+    situacao = Column(String(100))
+    total_membros = Column(Integer)
+    total_posse = Column(Integer)
+
+    url_facebook = Column(Text)
+    url_logo = Column(Text)
+    url_website = Column(Text)
+
+    membros = relationship("PartidoMembro", back_populates="partido")
+    lideres = relationship("PartidoLider", back_populates="partido")
+
+
+class PartidoMembro(Base):
+    __tablename__ = "partidos_membros"
+
+    id = Column(Integer, primary_key=True)
+
+    partido_id = Column(
+        Integer,
+        ForeignKey("partidos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    politico_id = Column(Integer, ForeignKey("politicos.id", ondelete="CASCADE"))
+
+    data_inicio = Column(Date)
+    data_fim = Column(Date)
+
+    partido = relationship("Partido", back_populates="membros")
+    politico = relationship("Politico")
+
+    __table_args__ = (
+    UniqueConstraint(
+        "partido_id",
+        "politico_id",
+        name="uq_partido_partido_politico"
+    ),
+)
+
+
+class PartidoLider(Base):
+    __tablename__ = "partidos_lideres"
+
+    id = Column(Integer, primary_key=True)
+
+    partido_id = Column(Integer, ForeignKey("partidos.id", ondelete="CASCADE"), nullable=False, index=True)
+    politico_id = Column(Integer, ForeignKey("politicos.id", ondelete="CASCADE"))
+
+    cod_titulo = Column(Integer)
+    titulo = Column(String(100))
+
+    data_inicio = Column(Date)
+    data_fim = Column(Date)
+
+    partido = relationship("Partido", back_populates="lideres")
+    politico = relationship("Politico")
