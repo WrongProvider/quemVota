@@ -36,3 +36,40 @@ def buscar_orgao_membros(id_orgao: int):
 
 def buscar_orgao_eventos(id_orgao: int):
     return camara_get(f"/orgaos/{id_orgao}/eventos")
+
+def buscar_eventos(pagina: int = 1, itens: int = 100, tentativas=3):
+    for tentativa in range(tentativas):
+        try:
+            resp = requests.get(
+                f"{API_BASE}/eventos",
+                params={
+                    "pagina": pagina,
+                    "itens": itens,
+                    "ordem": "DESC",
+                    "ordenarPor": "dataHoraInicio",
+                },
+                headers=HEADERS,
+                timeout=30,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except requests.RequestException:
+            if tentativa == tentativas - 1:
+                raise
+            time.sleep(2 ** tentativa)
+
+
+def buscar_evento_detalhe(id_evento: int, tentativas=3):
+    for tentativa in range(tentativas):
+        try:
+            resp = requests.get(
+                f"{API_BASE}/eventos/{id_evento}",
+                headers=HEADERS,
+                timeout=30,
+            )
+            resp.raise_for_status()
+            return resp.json()["dados"]
+        except requests.RequestException:
+            if tentativa == tentativas - 1:
+                raise
+            time.sleep(2 ** tentativa)

@@ -1,150 +1,75 @@
-import requests
-import time
 import logging
-import argparse
-from datetime import datetime
-
-from sqlalchemy.orm import Session
-from sqlalchemy.dialects.postgresql import insert
+from datetime import date, timedelta
 
 from backend.database import SessionLocal
-from backend.models import Politico, Evento, Orgao
-
-API_BASE = "https://dadosabertos.camara.leg.br/api/v2"
-HEADERS = {"accept": "application/json"}
+from ingest_banco.api_camara import (
+    buscar_eventos,
+    buscar_evento_detalhe,
+    buscar_evento_deputados,
+    buscar_evento_pauta,
+    buscar_evento_votacoes,
+)
+from ingest_banco.db_upsert import (
+    carregar_eventos_indexados,
+    upsert_evento_index,
+    upsert_evento_detalhado,
+    upsert_evento_deputados,
+    upsert_evento_pauta,
+    upsert_evento_votacoes,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def buscar_eventos_deputado(
-    id_camara: int,
-    data_inicio: str,
-    data_fim: str,
-    pagina: int = 1,
-    itens: int = 100,
-):
-    response = requests.get(
-        f"{API_BASE}/deputados/{id_camara}/eventos",
-        headers=HEADERS,
-        params={
-            "dataInicio": data_inicio,
-            "dataFim": data_fim,
-            "pagina": pagina,
-            "itens": itens,
-            "ordem": "ASC",
-            "ordenarPor": "dataHoraInicio",
-        },
-        timeout=30,
-    )
-    response.raise_for_status()
-    return response.json()
 
-def get_or_create_orgao(db: Session, dados: dict) -> Orgao:
-    orgao = (
-        db.query(Orgao)
-        .filter(Orgao.id_camara == dados["id"])
-        .first()
-    )
-
-    if orgao:
-        return orgao
-
-    orgao = Orgao(
-        id_camara=dados["id"],
-        sigla=dados.get("sigla"),
-        nome=dados.get("nome"),
-        tipo_orgao=dados.get("tipoOrgao"),
-    )
-
-    db.add(orgao)
-    db.flush()  # garante ID sem commit
-    return orgao
-
-def criar_evento(
-    db: Session,
-    politico: Politico,
-    dados: dict,
-):
-    evento = (
-        db.query(Evento)
-        .filter(Evento.id_camara == dados["id"])
-        .first()
-    )
-
-    if evento:
-        return evento  # evita duplicação
-
-    evento = Evento(
-        id_camara=dados["id"],
-        politico_id=politico.id,
-        data_hora_inicio=datetime.fromisoformat(dados["dataHoraInicio"]),
-        data_hora_fim=(
-            datetime.fromisoformat(dados["dataHoraFim"])
-            if dados.get("dataHoraFim")
-            else None
-        ),
-        situacao=dados.get("situacao"),
-        descricao_tipo=dados.get("descricaoTipo"),
-        descricao=dados.get("descricao"),
-        url_registro=dados.get("urlRegistro"),
-    )
-
-    # N:N com órgãos
-    for orgao_dados in dados.get("orgaos", []):
-        orgao = get_or_create_orgao(db, orgao_dados)
-        evento.orgaos.append(orgao)
-
-    db.add(evento)
-    return evento
-
-def ingestao_eventos_politicos(
-    data_inicio="2021-01-01",
-    data_fim="2023-12-31",
-    limite_politicos=50,
-):
+# =========================
+# FASE 1 — ÍNDICE DE EVENTOS
+# =========================
+def ingestar_eventos_index():
     db = SessionLocal()
 
     try:
-        politicos = (
-            db.query(Politico)
-            .filter(Politico.id_camara.isnot(None))
-            .limit(limite_politicos)
-            .all()
-        )
+        cache = carregar_eventos_indexados(db)
+        logger.info("📦 Cache carregado com %s eventos", len(cache))
 
-        for politico in politicos:
-            logger.info(
-                "📅 Ingerindo eventos do deputado %s (%s)",
-                politico.nome,
-                politico.id_camara,
-            )
+        fim = date.today()
+        inicio = fim - timedelta(days=365 * 4)
+
+        janela = timedelta(days=60)
+
+        atual = inicio
+        while atual < fim:
+            data_inicio = atual.isoformat()
+            data_fim = min(atual + janela, fim).isoformat()
+
+            logger.info("🔎 Buscando eventos %s → %s", data_inicio, data_fim)
 
             pagina = 1
-
             while True:
-                payload = buscar_eventos_deputado(
-                    politico.id_camara,
-                    data_inicio,
-                    data_fim,
+                payload = buscar_eventos(
+                    data_inicio=data_inicio,
+                    data_fim=data_fim,
                     pagina=pagina,
+                    itens=1000,
                 )
 
-                eventos = payload.get("dados", [])
-                if not eventos:
+                dados = payload.get("dados", [])
+                if not dados:
                     break
 
-                for evento_dados in eventos:
-                    criar_evento(db, politico, evento_dados)
+                for evento in dados:
+                    upsert_evento_index(db, cache, evento)
 
                 db.commit()
 
-                if len(eventos) < 100:
+                if not any(l["rel"] == "next" for l in payload.get("links", [])):
                     break
 
                 pagina += 1
-                time.sleep(0.3)
 
-        logger.info("✅ Ingestão de eventos finalizada")
+            atual += janela
+
+        logger.info("✅ Índice de eventos concluído")
 
     except Exception:
         db.rollback()
@@ -152,33 +77,124 @@ def ingestao_eventos_politicos(
     finally:
         db.close()
 
+
+# =========================
+# FASE 2 — DETALHE DO EVENTO
+# =========================
+def ingestar_eventos_detalhados():
+    db = SessionLocal()
+
+    try:
+        eventos = db.query(Evento).filter(Evento.detalhado.is_(False)).all()
+        logger.info("📅 %s eventos para detalhar", len(eventos))
+
+        for evento in eventos:
+            logger.info("📅 Detalhando evento %s", evento.id_camara)
+
+            detalhe = buscar_evento_detalhe(evento.id_camara)
+            upsert_evento_detalhado(db, evento, detalhe)
+
+            db.commit()
+
+        logger.info("✅ Detalhamento concluído")
+
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+# =========================
+# FASE 3 — DEPUTADOS
+# =========================
+def ingestar_eventos_deputados():
+    db = SessionLocal()
+
+    try:
+        eventos = db.query(Evento).filter(
+            Evento.detalhado.is_(True),
+            Evento.participantes_importados.is_(False),
+        ).all()
+
+        logger.info("👥 %s eventos sem deputados", len(eventos))
+
+        for evento in eventos:
+            deputados = buscar_evento_deputados(evento.id_camara)
+            upsert_evento_deputados(db, evento, deputados)
+            db.commit()
+
+        logger.info("✅ Deputados importados")
+
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+# =========================
+# FASE 4 — PAUTA
+# =========================
+def ingestar_eventos_pauta():
+    db = SessionLocal()
+
+    try:
+        eventos = db.query(Evento).filter(
+            Evento.detalhado.is_(True),
+            Evento.pauta_importada.is_(False),
+        ).all()
+
+        logger.info("📑 %s eventos sem pauta", len(eventos))
+
+        for evento in eventos:
+            pauta = buscar_evento_pauta(evento.id_camara)
+            upsert_evento_pauta(db, evento, pauta)
+            db.commit()
+
+        logger.info("✅ Pautas importadas")
+
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+# =========================
+# FASE 5 — VOTAÇÕES
+# =========================
+def ingestar_eventos_votacoes():
+    db = SessionLocal()
+
+    try:
+        eventos = db.query(Evento).filter(
+            Evento.detalhado.is_(True),
+            Evento.votacoes_importadas.is_(False),
+        ).all()
+
+        logger.info("🗳️ %s eventos sem votações", len(eventos))
+
+        for evento in eventos:
+            votacoes = buscar_evento_votacoes(evento.id_camara)
+            upsert_evento_votacoes(db, evento, votacoes)
+            db.commit()
+
+        logger.info("✅ Votações importadas")
+
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+# =========================
+# MAIN
+# =========================
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Ingestão de discursos parlamentares"
-    )
-
-    parser.add_argument(
-        "--data-inicio",
-        required=True,
-        help="Data inicial (YYYY-MM-DD)",
-    )
-
-    parser.add_argument(
-        "--data-fim",
-        required=True,
-        help="Data final (YYYY-MM-DD)",
-    )
-
-    parser.add_argument(
-        "--limite",
-        type=int,
-        help="Limite de políticos (debug/teste)",
-    )
-
-    args = parser.parse_args()
-
-    ingestao_eventos_politicos(
-        data_inicio=args.data_inicio,
-        data_fim=args.data_fim,
-        limite_politicos=args.limite,
-    )
+    ingestar_eventos_index()
+    ingestar_eventos_detalhados()
+    ingestar_eventos_deputados()
+    ingestar_eventos_pauta()
+    ingestar_eventos_votacoes()

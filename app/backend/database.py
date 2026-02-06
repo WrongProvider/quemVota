@@ -1,13 +1,13 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+psycopg2://postgres:postgres@localhost/quemvota"
 )
 
-engine = create_engine(DATABASE_URL, future=True)
+engine = create_engine(DATABASE_URL, future=True, pool_pre_ping=True)
 
 SessionLocal = sessionmaker(
     bind=engine,
@@ -15,7 +15,8 @@ SessionLocal = sessionmaker(
     autocommit=False
 )
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 
 def get_db():
