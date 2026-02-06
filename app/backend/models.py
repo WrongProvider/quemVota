@@ -193,10 +193,10 @@ class Orgao(Base):
     uri = Column(Text, unique=True)
 
     sigla = Column(String(20))
-    nome = Column(String(200))
-    apelido = Column(String(200))
-    nome_publicacao = Column(String(200))
-    nome_resumido = Column(String(200))
+    nome = Column(Text)
+    apelido = Column(Text)
+    nome_publicacao = Column(Text)
+    nome_resumido = Column(Text)
 
     cod_tipo_orgao = Column(Integer)
     tipo_orgao = Column(String(100))
