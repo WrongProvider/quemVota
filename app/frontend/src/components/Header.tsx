@@ -1,84 +1,145 @@
-import { useState } from "react"
-import { Link } from "react-router-dom"
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline"
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function Header() {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+}, []);
+  // Fecha o menu automaticamente ao mudar de rota
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // Impede o scroll do body quando o menu estiver aberto
+  useEffect(() => {
+  document.body.style.overflow = open ? "hidden" : "unset";
+  
+  // Função de limpeza (cleanup)
+  return () => {
+    document.body.style.overflow = "unset";
+  };
+}, [open]);
+
+  const navLinks = [
+    { name: "Home", href: "/" },
+    { name: "Parlamentares", href: "/politicos" },
+    { name: "Metodologia", href: "/metodologia" },
+  ];
 
   return (
     <>
-      {/* HEADER */}
-      <nav className="fixed top-0 z-50 w-full border-b border-neutral-300 bg-white/80 backdrop-blur transition-all">
-        <div className="mx-auto max-w-7xl px-4 md:px-16 lg:px-24 py-4 flex items-center justify-between">
-          
-          {/* LOGO */}
-          <Link to="/" className="font-semibold text-lg text-gray-800">
-            QuemVota
-          </Link>
+      {/* NAVBAR PRINCIPAL */}
+      <nav className={`fixed top-0 left-0 z-50 w-full transition-all duration-300 ${
+  scrolled ? "border-b border-neutral-200 bg-white/90 shadow-sm backdrop-blur-md" : "bg-transparent"
+}`}>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-6">
+          <div className="flex h-16 items-center justify-between">
+            
+            {/* LOGO */}
+            <Link to="/" className="flex items-center gap-2 group">
+              <span className="text-xl font-bold tracking-tight text-blue-600 group-hover:text-blue-700 transition">
+                QuemVota
+              </span>
+            </Link>
 
-          {/* MENU DESKTOP */}
-          <div className="hidden md:flex gap-3 text-sm text-gray-700">
-            <Link className="px-3 py-1 hover:text-zinc-500" to="/">
-              Home
-            </Link>
-            <Link className="px-3 py-1 hover:text-zinc-500" to="/politicos">
-              Parlamentares
-            </Link>
-            <Link className="px-3 py-1 hover:text-zinc-500" to="/metodologia">
-              Metodologia
-            </Link>
+            {/* LINKS DESKTOP */}
+            <div className="hidden md:flex items-center gap-1">
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      isActive 
+                        ? "text-blue-600 border-b-2 border-blue-600" // Estilo para página ativa
+                        : "text-gray-600 hover:text-blue-600"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                );
+              })}
+              
+              <Link
+                to="/politicos"
+                className="ml-4 hidden lg:inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all active:scale-95"
+              >
+                Explorar dados
+              </Link>
+            </div>
+
+            {/* BOTÃO MOBILE (HAMBÚRGUER) */}
+            <div className="flex md:hidden">
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                className="inline-flex items-center justify-center rounded-md p-2 text-gray-700 hover:bg-gray-100 focus:outline-none"
+              >
+                <Bars3Icon className="h-7 w-7" aria-hidden="true" />
+              </button>
+            </div>
           </div>
-
-          {/* CTA DESKTOP */}
-          <Link
-            to="/politicos"
-            className="hidden md:inline-block rounded-full bg-blue-600 px-6 py-2.5 text-sm text-white shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)] hover:bg-blue-700 transition"
-          >
-            Explorar dados
-          </Link>
-
-          {/* BOTÃO MOBILE */}
-          <button
-            onClick={() => setOpen(true)}
-            className="md:hidden text-gray-700"
-          >
-            <Bars3Icon className="h-6 w-6" />
-          </button>
         </div>
       </nav>
 
-      {/* MENU MOBILE (DRAWER) */}
+      {/* OVERLAY MOBILE */}
       <div
-        className={`fixed top-0 right-0 z-[60] h-full w-full bg-white transition-all duration-300 ${
-          open ? "translate-y-0" : "-translate-y-full"
+        className={`fixed inset-0 z-[60] bg-gray-900/50 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
+          open ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setOpen(false)}
+      />
+
+      {/* MENU LATERAL (DRAWER) */}
+      <div
+        className={`fixed inset-y-0 right-0 z-[70] w-full max-w-xs overflow-y-auto bg-white px-6 py-6 transition-transform duration-300 ease-in-out sm:ring-1 sm:ring-gray-900/10 md:hidden ${
+          open ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between p-4 border-b">
-          <span className="font-semibold">QuemVota</span>
-          <button onClick={() => setOpen(false)}>
-            <XMarkIcon className="h-6 w-6" />
+        <div className="flex items-center justify-between">
+          <Link to="/" className="-m-1.5 p-1.5 font-bold text-blue-600">
+            QuemVota
+          </Link>
+          <button
+            type="button"
+            className="-m-2.5 rounded-md p-2.5 text-gray-700"
+            onClick={() => setOpen(false)}
+          >
+            <XMarkIcon className="h-7 w-7" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="flex flex-col gap-4 p-4 text-base">
-          <Link onClick={() => setOpen(false)} to="/">
-            Home
-          </Link>
-          <Link onClick={() => setOpen(false)} to="/politicos">
-            Parlamentares
-          </Link>
-          <Link onClick={() => setOpen(false)} to="/metodologia">
-            Metodologia
-          </Link>
-
-          <Link
-            to="/politicos"
-            className="mt-4 w-max rounded-full bg-blue-600 px-6 py-2.5 text-sm text-white"
-          >
-            Explorar dados
-          </Link>
+        <div className="mt-8 flow-root">
+          <div className="flex flex-col gap-y-4">
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                to={link.href}
+                className="text-lg font-semibold leading-7 text-gray-900 hover:bg-gray-50 p-2 rounded-lg"
+              >
+                {link.name}
+              </Link>
+            ))}
+            <hr className="my-2 border-gray-100" />
+            <Link
+              to="/politicos"
+              className="rounded-full bg-blue-600 px-6 py-3 text-center text-base font-semibold text-white shadow-md hover:bg-blue-700"
+            >
+              Explorar dados
+            </Link>
+          </div>
         </div>
       </div>
     </>
-  )
+  );
 }
+

@@ -8,6 +8,8 @@ import {
   UserGroupIcon,
 } from "@heroicons/react/24/outline"
 
+import { motion } from "framer-motion";
+
 export default function Home() {
   return (
     <>
@@ -21,11 +23,14 @@ export default function Home() {
           </div>
 
           <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 md:py-28 text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold text-gray-800 mb-5 leading-tight">
-              Transparência sobre quem
-              <br className="hidden sm:block" />
-              decide o seu futuro
-            </h1>
+            <motion.h1 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              className="text-3xl sm:text-4xl md:text-5xl font-semibold text-gray-800 mb-5"
+            >
+              Transparência sobre quem decide o seu futuro
+            </motion.h1>
 
             <p className="text-gray-600 text-base sm:text-lg max-w-3xl mx-auto mb-8 sm:mb-10">
               Acompanhe votações, presenças, discursos e decisões do Congresso
@@ -41,7 +46,7 @@ export default function Home() {
                   className="flex-1 px-4 sm:px-5 py-3 sm:py-4 outline-none text-sm sm:text-base text-gray-700"
                 />
                 <button className="bg-blue-600 hover:bg-blue-700 transition px-4 sm:px-6 py-3 sm:py-4 text-white">
-                  🔍
+                  <MagnifyingGlassIcon className="h-5 w- text-white" />
                 </button>
               </div>
             </div>
@@ -51,34 +56,64 @@ export default function Home() {
         {/* CARDS */}
         <section className="relative pt-8 sm:pt-0 pb-20 sm:pb-24">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-            {/* Card 1 */}
-            <Card
-              icon={"👥"}
-              title="Parlamentares"
-              description="Veja o perfil de parlamentares, presença em votações e mais."
-              link="/politicos"
-            />
+            
+            {/* Envolva cada Card com o motion.div */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} // Começa invisível e 20px abaixo
+              whileInView={{ opacity: 1, y: 0 }} // Quando aparecer no scroll, sobe e aparece
+              viewport={{ once: true }} // Anima apenas uma vez
+              transition={{ duration: 0.5, delay: 0.1 }} // Pequeno atraso para o primeiro
+            >
+              <Card
+                icon={"👥"}
+                title="Parlamentares"
+                description="Veja o perfil de parlamentares, presença em votações e mais."
+                link="/politicos"
+              />
+            </motion.div>
 
-            <Card
-              icon={"🧩"}
-              title="Projetos, leis e temas"
-              description="Pesquise por votações e proposições legislativas."
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }} // Atraso maior (efeito cascata)
+            >
+              <Card
+                icon={"🧩"}
+                title="Projetos, leis e temas"
+                description="Pesquise por votações e proposições legislativas."
+              />
+            </motion.div>
 
-            <Card
-              icon={"📊"}
-              title="Rankings"
-              description="Compare parlamentares por presença e votações."
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }} // Atraso maior (efeito cascata)
+            >
+              <Card
+                icon={"📊"}
+                title="Rankings"
+                description="Compare parlamentares por presença e votações."
+              />
+            </motion.div>
 
-            <Card
-              icon={"⚖️"}
-              title="Metodologia"
-              description="Saiba como coletamos e organizamos os dados oficiais."
-              link="/metodologia"
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.4 }} // Atraso maior (efeito cascata)
+            >
+              <Card
+                icon={"⚖️"}
+                title="Metodologia"
+                description="Saiba como coletamos e organizamos os dados oficiais."
+                link="/metodologia"
+              />
+            </motion.div>
+            
+            {/* Repita o padrão para os outros cards, aumentando o delay em 0.1 cada */}
           </div>
-
           <p className="text-center text-xs sm:text-sm text-gray-500 mt-8">
             Dados públicos da Câmara dos Deputados e do Senado Federal.
           </p>
