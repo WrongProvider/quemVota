@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import date
+from datetime import datetime
 
 class PoliticoBase(BaseModel):
     nome: str
@@ -15,6 +16,15 @@ class PoliticoResponse(PoliticoBase):
     data_nascimento: date | None
     url_foto: str | None
     uf: str | None
+
+    class Config:
+        from_attributes = True
+
+class VotoPoliticoResponse(BaseModel):
+    votacao_id: int
+    titulo: str | None
+    data: datetime | None
+    voto: str
 
     class Config:
         from_attributes = True

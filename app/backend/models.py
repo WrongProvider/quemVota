@@ -34,7 +34,7 @@ class Politico(Base):
     municipio_nascimento = Column(String(100))
 
     # Dados políticos / institucionais
-    partido_sigla = Column(String(10))
+    partido_sigla = Column(String(30))
     situacao = Column(String(50))
     condicao_eleitoral = Column(String(50))
 
@@ -46,6 +46,16 @@ class Politico(Base):
     # Outros
     url_foto = Column(Text)
     created_at = Column(DateTime, server_default=func.now())
+
+    # Novo vínculo: FK para o partido atual
+    partido_id = Column(Integer, ForeignKey("partidos.id", ondelete="SET NULL"), nullable=True)
+    partido_sigla = Column(String(10)) # Mantemos a sigla para consultas rápidas/cache
+
+    # Relationships
+    partido = relationship("Partido", back_populates="politicos")
+    
+    # Histórico (já existente no seu código)
+    historico_partidos = relationship("PartidoMembro", back_populates="politico")
 
     despesas = relationship(
         "Despesa",
@@ -387,18 +397,23 @@ class Votacao(Base):
 
     id = Column(Integer, primary_key=True)
   # id vem como string da API
-    votacao_id = Column(Integer, ForeignKey("votacoes.id", ondelete="CASCADE"))
+    id_camara = Column(String(50), unique=True, index=True)
 
+    proposicao_id = Column(Integer, ForeignKey("proposicoes.id", ondelete="SET NULL"), nullable=True)
+    
     data = Column(Date)
     data_hora_registro = Column(DateTime)
 
+    tipo_votacao = Column(String(50)) # Ex: "Nominal" ou "Simbólica"
     descricao = Column(Text)
     aprovacao = Column(Integer)  # 1 aprovado, 0 rejeitado, -1 indefinido
-
+    votos_importados = Column(Boolean, default=False)
+    indexada = Column(Boolean, default=False)
     sigla_orgao = Column(String(20))
 
-    id_evento = Column(Integer, nullable=True)
-    id_orgao = Column(Integer, nullable=True)
+    evento_id = Column(Integer, ForeignKey("eventos.id", ondelete="SET NULL"), nullable=True)
+    # Relacionamento com Órgão (Quem realizou a votação)
+    orgao_id = Column(Integer, ForeignKey("orgaos.id"), nullable=True)
 
     uri = Column(Text)
     uri_evento = Column(Text)
@@ -455,7 +470,7 @@ class Voto(Base):
 
     data_registro_voto = Column(DateTime)
 
-    sigla_partido = Column(String(10))
+    sigla_partido = Column(String(30))
     sigla_uf = Column(String(2))
 
     votacao = relationship("Votacao", back_populates="votos")
@@ -490,6 +505,7 @@ class Partido(Base):
 
     membros = relationship("PartidoMembro", back_populates="partido")
     lideres = relationship("PartidoLider", back_populates="partido")
+    politicos = relationship("Politico", back_populates="partido")
 
 
 class PartidoMembro(Base):

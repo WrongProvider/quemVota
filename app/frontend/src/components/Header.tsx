@@ -46,7 +46,7 @@ export default function Header() {
             {/* LOGO */}
             <Link to="/" className="flex items-center gap-2 group">
               <span className="text-xl font-bold tracking-tight text-blue-600 group-hover:text-blue-700 transition">
-                QuemVota
+                <img src="/quemvota_logo.svg" alt="Logo" className="size-70" />
               </span>
             </Link>
 

@@ -1,5 +1,7 @@
 import Header from "../components/Header"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { useState } from "react"; 
+
 import {
   MagnifyingGlassIcon,
   ChartBarIcon,
@@ -9,6 +11,16 @@ import {
 } from "@heroicons/react/24/outline"
 
 import { motion } from "framer-motion";
+
+// redirect para a página de políticos ao submeter a pesquisa
+const [query, setQuery] = useState("")
+const navigate = useNavigate()
+
+function handleSearch(e: React.FormEvent) {
+  e.preventDefault()
+  if (!query.trim()) return
+  navigate(`/politicos?q=${encodeURIComponent(query)}`)
+}
 
 export default function Home() {
   return (
@@ -40,10 +52,15 @@ export default function Home() {
             {/* SEARCH */}
             <div className="max-w-xl sm:max-w-2xl mx-auto mb-10 sm:mb-14">
               <div className="flex items-center bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+                <form
+                  onSubmit={handleSearch}
+                  className="flex items-center bg-white rounded-xl shadow-md overflow-hidden border border-gray-200"
+                ></form>
                 <input
                   type="text"
                   placeholder="Pesquisar por parlamentar, votação ou tema..."
                   className="flex-1 px-4 sm:px-5 py-3 sm:py-4 outline-none text-sm sm:text-base text-gray-700"
+                  onChange={(e) => setQuery(e.target.value)}
                 />
                 <button className="bg-blue-600 hover:bg-blue-700 transition px-4 sm:px-6 py-3 sm:py-4 text-white">
                   <MagnifyingGlassIcon className="h-5 w- text-white" />
