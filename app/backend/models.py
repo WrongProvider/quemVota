@@ -72,32 +72,30 @@ class Despesa(Base):
     __tablename__ = "despesas"
 
     id = Column(Integer, primary_key=True)
-
-    # Relacionamento
     politico_id = Column(Integer, ForeignKey("politicos.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Identificadores oficiais
-    cod_documento = Column(Integer, nullable=False)
+    # Mudamos para String(100) para garantir e adicionamos unique direto aqui
+    cod_documento = Column(String(100), nullable=False, index=True, unique=True)
     cod_lote = Column(Integer)
 
-
     # Tempo
-    ano = Column(Integer, nullable=False)
-    mes = Column(Integer, nullable=False)
+    ano = Column(Integer, nullable=False, index=True)
+    mes = Column(Integer, nullable=False, index=True)
     data_documento = Column(Date)
 
-    # Classificação
-    tipo_despesa = Column(String(200))
-    tipo_documento = Column(String(50))
+    # Classificação - Usando Text para evitar erros de String too long
+    tipo_despesa = Column(Text)
+    tipo_documento = Column(String(150))
     cod_tipo_documento = Column(Integer)
 
     # Documento
-    num_documento = Column(String(50))
+    num_documento = Column(String(150))
     url_documento = Column(Text)
 
     # Fornecedor
-    nome_fornecedor = Column(String(200))
-    cnpj_cpf_fornecedor = Column(String(20))
+    nome_fornecedor = Column(Text) # Fornecedores podem ter nomes gigantes
+    cnpj_cpf_fornecedor = Column(String(20), index=True)
 
     # Valores
     valor_documento = Column(Numeric(12, 2))
@@ -105,24 +103,16 @@ class Despesa(Base):
     valor_glosa = Column(Numeric(12, 2))
 
     # Outros
-    num_ressarcimento = Column(String(50))
+    num_ressarcimento = Column(String(100))
     parcela = Column(Integer)
 
     created_at = Column(DateTime, server_default=func.now())
 
-    politico = relationship(
-    "Politico",
-    back_populates="despesas"
-    )
+    # Se usar back_populates, lembre de adicionar no model Politico!
+    politico = relationship("Politico", back_populates="despesas")
 
-    __table_args__ = (
-    UniqueConstraint(
-        "politico_id",
-        "cod_documento",
-        name="uq_despesa_politico_documento"
-    ),
-    )
-
+    # Removi a __table_args__ porque coloquei unique=True no cod_documento
+    # Se cod_documento for 0 na API, seu código de ingestão deve dar 'continue'
 class Discurso(Base):
     __tablename__ = "discursos"
 
