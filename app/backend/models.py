@@ -103,8 +103,8 @@ class Despesa(Base):
     valor_glosa = Column(Numeric(12, 2))
 
     # Outros
-    num_ressarcimento = Column(String(100))
-    parcela = Column(Integer)
+    parcela = Column(Integer, nullable=True, default=0)
+    num_ressarcimento = Column(String(100), nullable=True)
 
     created_at = Column(DateTime, server_default=func.now())
 

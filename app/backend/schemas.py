@@ -28,3 +28,27 @@ class VotoPoliticoResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+from pydantic import BaseModel
+from datetime import datetime
+
+class DespesaResumo(BaseModel):
+    ano: int
+    mes: int
+    total_gasto: float
+    qtd_despesas: int
+
+    class Config:
+        from_attributes = True
+
+class DespesaDetalheResponse(BaseModel):
+    id: int
+    data_documento: datetime | None
+    tipo_despesa: str
+    nome_fornecedor: str
+    valor_liquido: float
+    url_documento: str | None
+
+    class Config:
+        from_attributes = True
