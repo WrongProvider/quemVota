@@ -1,0 +1,6 @@
+services:
+  cache:
+    image: valkey/valkey:latest
+    container_name: quemvota_cache
+    ports:
+      - "6379:6379"

@@ -5,6 +5,8 @@ from backend.database import get_db
 from backend.models import Politico, Voto, Votacao, Despesa
 from backend.schemas import PoliticoResponse, VotoPoliticoResponse, DespesaResumo, DespesaDetalheResponse
 
+from fastapi_cache.decorator import cache   
+
 router = APIRouter(
     prefix="/politicos",
     tags=["Políticos"]
@@ -85,22 +87,59 @@ def listar_votacoes_do_politico(
     return query.all()
 
 
+from fastapi.concurrency import run_in_threadpool # Importe isso
+from datetime import datetime
+
+def politico_key_builder(func, namespace, request=None, response=None, *args, **kwargs):
+    # 1. Tenta pegar dos argumentos nomeados
+    politico_id = kwargs.get("politico_id")
+    
+    # 2. Se falhar, tenta extrair direto da URL (Request)
+    if politico_id is None and request:
+        # Pega o ID que está na URL, ex: /politicos/59/...
+        politico_id = request.path_params.get("politico_id")
+
+    # 3. Se ainda assim falhar, tenta a posição bruta nos args
+    if politico_id is None and args:
+        for arg in args:
+            if isinstance(arg, int):
+                politico_id = arg
+                break
+
+    return f"{namespace}:resumo:{politico_id or 'unknown'}"
+
 @router.get("/{politico_id}/despesas/resumo", response_model=list[DespesaResumo])
-def resumo_despesas_do_politico(politico_id: int, db: Session = Depends(get_db)):
-    """Retorna o total gasto por mês/ano para alimentar gráficos."""
-    resumo = (
-        db.query(
-            Despesa.ano,
-            Despesa.mes,
-            func.sum(Despesa.valor_liquido).label("total_gasto"),
-            func.count(Despesa.id).label("qtd_despesas")
+@cache(expire=86400, key_builder=politico_key_builder)  # Cache por 24 horas
+async def resumo_despesas_do_politico(politico_id: int, db: Session = Depends(get_db)):
+    # Agora a função é ASYNC
+    print(f"DEBUG: Calculando resumo no banco para o politico {politico_id} {datetime.now().time()}")
+    
+    # Executa a query síncrona do SQLAlchemy de forma que não trave o async
+    def get_data():
+        return (
+            db.query(
+                Despesa.ano,
+                Despesa.mes,
+                func.sum(Despesa.valor_liquido).label("total_gasto"),
+                func.count(Despesa.id).label("qtd_despesas")
+            )
+            .filter(Despesa.politico_id == politico_id)
+            .group_by(Despesa.ano, Despesa.mes)
+            .order_by(Despesa.ano.desc(), Despesa.mes.desc())
+            .all()
         )
-        .filter(Despesa.politico_id == politico_id)
-        .group_by(Despesa.ano, Despesa.mes)
-        .order_by(Despesa.ano.desc(), Despesa.mes.desc())
-        .all()
-    )
-    return resumo
+
+    resumo_raw = await run_in_threadpool(get_data)
+
+    return [
+        {
+            "ano": r.ano, 
+            "mes": r.mes, 
+            "total_gasto": float(r.total_gasto or 0), 
+            "qtd_despesas": r.qtd_despesas
+        } 
+        for r in resumo_raw
+    ]
 
 @router.get("/{politico_id}/despesas", response_model=list[DespesaDetalheResponse])
 def listar_despesas_detalhadas(
