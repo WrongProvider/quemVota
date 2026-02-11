@@ -52,3 +52,11 @@ class DespesaDetalheResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class FornecedorRanking(BaseModel):
+    nome_fornecedor: str
+    total_recebido: float
+    qtd_notas: int
+
+    class Config:
+        from_attributes = True

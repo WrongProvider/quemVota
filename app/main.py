@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
     pool = redis.ConnectionPool.from_url(
         "redis://localhost:6379", 
         encoding="utf8", 
-        decode_responses=True
+        decode_responses=False
     )
     valkey_client = redis.Redis(connection_pool=pool)
     

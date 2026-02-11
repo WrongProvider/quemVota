@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from backend.database import get_db
 from backend.models import Politico, Voto, Votacao, Despesa
-from backend.schemas import PoliticoResponse, VotoPoliticoResponse, DespesaResumo, DespesaDetalheResponse
+from backend.schemas import PoliticoResponse, VotoPoliticoResponse, DespesaResumo, DespesaDetalheResponse, FornecedorRanking
 
 from fastapi_cache.decorator import cache   
 
@@ -11,6 +11,29 @@ router = APIRouter(
     prefix="/politicos",
     tags=["Políticos"]
 )
+
+# Cache Key Builder personalizado para as rotas de político
+from fastapi.concurrency import run_in_threadpool # Importe isso
+from datetime import datetime
+
+def politico_key_builder(func, namespace, request=None, response=None, *args, **kwargs):
+    # 1. Tenta pegar dos argumentos nomeados
+    politico_id = kwargs.get("politico_id")
+    
+    # 2. Se falhar, tenta extrair direto da URL (Request)
+    if politico_id is None and request:
+        # Pega o ID que está na URL, ex: /politicos/59/...
+        politico_id = request.path_params.get("politico_id")
+
+    # 3. Se ainda assim falhar, tenta a posição bruta nos args
+    if politico_id is None and args:
+        for arg in args:
+            if isinstance(arg, int):
+                politico_id = arg
+                break
+
+    return f"{namespace}:{func.__name__}:{politico_id or 'unknown'}"
+
 
 @router.get("/", response_model=list[PoliticoResponse])
 def listar_politicos(
@@ -86,28 +109,6 @@ def listar_votacoes_do_politico(
 
     return query.all()
 
-
-from fastapi.concurrency import run_in_threadpool # Importe isso
-from datetime import datetime
-
-def politico_key_builder(func, namespace, request=None, response=None, *args, **kwargs):
-    # 1. Tenta pegar dos argumentos nomeados
-    politico_id = kwargs.get("politico_id")
-    
-    # 2. Se falhar, tenta extrair direto da URL (Request)
-    if politico_id is None and request:
-        # Pega o ID que está na URL, ex: /politicos/59/...
-        politico_id = request.path_params.get("politico_id")
-
-    # 3. Se ainda assim falhar, tenta a posição bruta nos args
-    if politico_id is None and args:
-        for arg in args:
-            if isinstance(arg, int):
-                politico_id = arg
-                break
-
-    return f"{namespace}:resumo:{politico_id or 'unknown'}"
-
 @router.get("/{politico_id}/despesas/resumo", response_model=list[DespesaResumo])
 @cache(expire=86400, key_builder=politico_key_builder)  # Cache por 24 horas
 async def resumo_despesas_do_politico(politico_id: int, db: Session = Depends(get_db)):
@@ -161,3 +162,38 @@ def listar_despesas_detalhadas(
         .offset(offset)
         .all()
     )
+
+
+@router.get("/{politico_id}/despesas/fornecedores", response_model=list[FornecedorRanking])
+@cache(expire=86400, key_builder=politico_key_builder)
+async def ranking_fornecedores_do_politico(
+    politico_id: int, 
+    limit: int = 10, 
+    db: Session = Depends(get_db)
+):
+    print(f"DEBUG: Gerando ranking de fornecedores para o politico {politico_id}")
+    
+    def get_ranking():
+        return (
+            db.query(
+                Despesa.nome_fornecedor,
+                func.sum(Despesa.valor_liquido).label("total_recebido"),
+                func.count(Despesa.id).label("qtd_notas")
+            )
+            .filter(Despesa.politico_id == politico_id)
+            .group_by(Despesa.nome_fornecedor)
+            .order_by(func.sum(Despesa.valor_liquido).desc())
+            .limit(limit)
+            .all()
+        )
+
+    ranking_raw = await run_in_threadpool(get_ranking)
+
+    return [
+        {
+            "nome_fornecedor": r.nome_fornecedor,
+            "total_recebido": float(r.total_recebido or 0),
+            "qtd_notas": r.qtd_notas
+        }
+        for r in ranking_raw
+    ]
