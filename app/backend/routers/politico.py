@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
+from sqlalchemy import func
 from backend.database import get_db
-from backend.models import Politico, Voto, Votacao
-from backend.schemas import PoliticoResponse, VotoPoliticoResponse
+from backend.models import Politico, Voto, Votacao, Despesa
+from backend.schemas import PoliticoResponse, VotoPoliticoResponse, DespesaResumo, DespesaDetalheResponse
 
 router = APIRouter(
     prefix="/politicos",
@@ -21,7 +21,7 @@ def listar_politicos(
     query = db.query(Politico)
 
     if q:
-        return Politico.query.filter(
+        return query.filter(
             Politico.nome.ilike(f"%{q}%")
         ).all()
     if uf:
@@ -85,3 +85,40 @@ def listar_votacoes_do_politico(
     return query.all()
 
 
+@router.get("/{politico_id}/despesas/resumo", response_model=list[DespesaResumo])
+def resumo_despesas_do_politico(politico_id: int, db: Session = Depends(get_db)):
+    """Retorna o total gasto por mês/ano para alimentar gráficos."""
+    resumo = (
+        db.query(
+            Despesa.ano,
+            Despesa.mes,
+            func.sum(Despesa.valor_liquido).label("total_gasto"),
+            func.count(Despesa.id).label("qtd_despesas")
+        )
+        .filter(Despesa.politico_id == politico_id)
+        .group_by(Despesa.ano, Despesa.mes)
+        .order_by(Despesa.ano.desc(), Despesa.mes.desc())
+        .all()
+    )
+    return resumo
+
+@router.get("/{politico_id}/despesas", response_model=list[DespesaDetalheResponse])
+def listar_despesas_detalhadas(
+    politico_id: int,
+    ano: int | None = None,
+    limit: int = 20,
+    offset: int = 0,
+    db: Session = Depends(get_db)
+):
+    """Lista as despesas individuais com paginação."""
+    query = db.query(Despesa).filter(Despesa.politico_id == politico_id)
+
+    if ano:
+        query = query.filter(Despesa.ano == ano)
+
+    return (
+        query.order_by(Despesa.data_documento.desc())
+        .limit(min(limit, 100))
+        .offset(offset)
+        .all()
+    )
