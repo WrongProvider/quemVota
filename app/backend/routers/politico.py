@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, desc, select
 from backend.database import get_db
-from backend.models import Politico, Voto, Votacao, Despesa
+from backend.models import Politico, Voto, Votacao, Despesa, Proposicao
 from backend.schemas import PoliticoResponse, VotoPolitico, DespesaResumo, DespesaDetalheResponse, FornecedorRanking
 
 from fastapi_cache.decorator import cache   
@@ -83,24 +83,26 @@ async def ultimas_votacoes_do_politico(
     print(f"DEBUG: Buscando votações para o politico {politico_id}")
     
     def get_votos():
-        return (
-            db.query(
-                Votacao.id.label("id_votacao"),
-                Votacao.data,
-                Proposicao.sigla_tipo.label("proposicao_sigla"),
-                Proposicao.numero.label("proposicao_numero"),
-                Proposicao.ano.label("proposicao_ano"),
-                Proposicao.ementa,
-                Voto.tipo_voto.label("voto"),
-                Votacao.ultima_apresentacao_proposicao_descricao.label("resultado_da_votacao")
+        stmt = (
+                select(
+                    Votacao.id.label("id_votacao"),
+                    Votacao.data,
+                    Proposicao.sigla_tipo.label("proposicao_sigla"),
+                    Proposicao.numero.label("proposicao_numero"),
+                    Proposicao.ano.label("proposicao_ano"),
+                    Proposicao.ementa,
+                    Voto.tipo_voto.label("voto"),
+                    Votacao.descricao.label("resultado_da_votacao")
+                )
+                .join(Voto, Voto.votacao_id == Votacao.id)
+                .join(Proposicao, Votacao.proposicao_id == Proposicao.id)
+                .where(Voto.politico_id == politico_id)
+                .order_by(desc(Votacao.data))
+                .limit(limit)
             )
-            .join(Voto, Voto.votacao_id == Votacao.id)
-            .join(Proposicao, Votacao.proposicao_id == Proposicao.id)
-            .filter(Voto.politico_id == politico_id)
-            .order_by(desc(Votacao.data))
-            .limit(limit)
-            .all()
-        )
+
+        result = db.execute(stmt).mappings().all()
+        return result
 
     votos_raw = await run_in_threadpool(get_votos)
     return votos_raw

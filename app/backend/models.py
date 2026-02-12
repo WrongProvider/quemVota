@@ -311,7 +311,6 @@ class ProposicaoAutor(Base):
         nullable=False,
         index=True
     )
-
     # Autor (pode ser deputado, comissão, etc.)
     politico_id = Column(
         Integer,
@@ -328,6 +327,16 @@ class ProposicaoAutor(Base):
     proponente = Column(Boolean)
 
     proposicao = relationship("Proposicao", back_populates="autores")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "proposicao_id", 
+            "politico_id", 
+            "nome", 
+            name="uq_autores_final",
+            postgresql_nulls_not_distinct=True # <--- O segredo está aqui
+        ),
+    )
 
 class Tema(Base):
     __tablename__ = "temas"
@@ -389,7 +398,7 @@ class Votacao(Base):
   # id vem como string da API
     id_camara = Column(String(50), unique=True, index=True)
 
-    proposicao_id = Column(Integer, ForeignKey("proposicoes.id", ondelete="SET NULL"), nullable=True)
+    proposicao_id = Column(Integer, ForeignKey("proposicoes.id", ondelete="CASCADE"), index=True)
     
     data = Column(Date)
     data_hora_registro = Column(DateTime)

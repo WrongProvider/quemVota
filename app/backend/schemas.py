@@ -21,20 +21,17 @@ class PoliticoResponse(PoliticoBase):
         from_attributes = True
 
 class VotoPolitico(BaseModel):
-    id_votacao: str
+    id_votacao: int
     data: date
-    proposicao_sigla: str
-    proposicao_numero: int
-    proposicao_ano: int
-    ementa: str
+    proposicao_sigla: str | None
+    proposicao_numero: int | None
+    proposicao_ano: int | None
+    ementa: str | None
     voto: str  # Sim, Não, Obstrução, etc.
-    resultado_da_votacao: Optional[str]
+    resultado_da_votacao: Optional[str] | None
 
     class Config:
         from_attributes = True
-
-from pydantic import BaseModel
-from datetime import datetime
 
 class DespesaResumo(BaseModel):
     ano: int
