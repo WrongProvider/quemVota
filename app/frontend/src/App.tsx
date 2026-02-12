@@ -1,6 +1,7 @@
 //  layout de rotas
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import Politicos from "./pages/Politicos"
+import Rankings from "./pages/Rankings"
 import Home from "./pages/Home"
 import './App.css'
 
@@ -10,6 +11,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/politicos" element={<Politicos />} />
+        <Route path="/rankings" element={<Rankings />} />
       </Routes>
     </BrowserRouter>
   )

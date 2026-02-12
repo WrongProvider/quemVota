@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, select
 from backend.database import get_db
 from backend.models import Politico, Voto, Votacao, Despesa, Proposicao
-from backend.schemas import PoliticoResponse, VotoPolitico, DespesaResumo, DespesaDetalheResponse, FornecedorRanking
+from backend.schemas import PoliticoEstatisticasResponse, PoliticoResponse, VotoPolitico, DespesaResumo, DespesaDetalheResponse, FornecedorRanking, VotacaoResumoItem, RankingDespesaItem, SerieDespesaItem
 
 from fastapi_cache.decorator import cache   
 
@@ -60,6 +60,44 @@ def listar_politicos(
 
     return db.execute(stmt).scalars().all()
 
+@router.get(
+    "/ranking/despesas",
+    response_model=list[RankingDespesaItem]
+)
+@cache(expire=86400)
+async def ranking_global_despesas(
+    limit: int = 10,
+    db: Session = Depends(get_db)
+):
+    # Segurança contra abuso
+    limit = min(limit, 50)
+
+    def get_data():
+        stmt = (
+            select(
+                Politico.id.label("politico_id"),
+                Politico.nome,
+                func.coalesce(func.sum(Despesa.valor_liquido), 0).label("total_gasto")
+            )
+            .join(Despesa, Despesa.politico_id == Politico.id)
+            .group_by(Politico.id, Politico.nome)
+            .order_by(func.sum(Despesa.valor_liquido).desc())
+            .limit(limit)
+        )
+
+        return db.execute(stmt).mappings().all()
+
+    result = await run_in_threadpool(get_data)
+
+    return [
+        RankingDespesaItem(
+            politico_id=r["politico_id"],
+            nome=r["nome"],
+            total_gasto=float(r["total_gasto"])
+        )
+        for r in result
+    ]
+
 
 @router.get("/{politico_id}", response_model=PoliticoResponse)
 def obter_politico(politico_id: int, db: Session = Depends(get_db)):
@@ -106,6 +144,36 @@ async def ultimas_votacoes_do_politico(
         
     return await run_in_threadpool(get_votos)
      
+@router.get(
+    "/{politico_id}/votacoes/resumo",
+    response_model=list[VotacaoResumoItem]
+)
+@cache(expire=86400, key_builder=politico_key_builder)
+async def resumo_votacoes(
+    politico_id: int,
+    db: Session = Depends(get_db)
+):
+    def get_data():
+        stmt = (
+            select(
+                Voto.tipo_voto,
+                func.count(Voto.id).label("quantidade")
+            )
+            .where(Voto.politico_id == politico_id)
+            .group_by(Voto.tipo_voto)
+        )
+
+        return db.execute(stmt).mappings().all()
+
+    result = await run_in_threadpool(get_data)
+
+    return [
+        VotacaoResumoItem(
+            tipo_voto=r["tipo_voto"],
+            quantidade=r["quantidade"]
+        )
+        for r in result
+    ]
 
 @router.get("/{politico_id}/despesas/resumo", response_model=list[DespesaResumo])
 @cache(expire=86400, key_builder=politico_key_builder)  # Cache por 24 horas
@@ -189,3 +257,97 @@ async def ranking_fornecedores_do_politico(
         return db.execute(stmt).mappings().all()
 
     return await run_in_threadpool(get_ranking)
+
+
+@router.get(
+    "/{politico_id}/estatisticas",
+    response_model=PoliticoEstatisticasResponse
+)
+@cache(expire=86400, key_builder=politico_key_builder)
+async def estatisticas_do_politico(
+    politico_id: int,
+    db: Session = Depends(get_db)
+):
+    def get_data():
+        # Total votações
+        stmt_votos = select(
+            func.count(func.distinct(Voto.votacao_id))
+        ).where(
+            Voto.politico_id == politico_id
+        )
+
+        # Estatísticas despesas
+        stmt_despesas = select(
+            func.count(Despesa.id),
+            func.coalesce(func.sum(Despesa.valor_liquido), 0),
+            func.min(Despesa.ano),
+            func.max(Despesa.ano)
+        ).where(
+            Despesa.politico_id == politico_id
+        )
+
+        total_votacoes = db.execute(stmt_votos).scalar_one()
+        despesas_result = db.execute(stmt_despesas).one()
+
+        return total_votacoes, despesas_result
+
+    total_votacoes, despesas = await run_in_threadpool(get_data)
+
+    total_despesas, total_gasto, primeiro_ano, ultimo_ano = despesas
+
+    media_mensal = 0.0
+    if primeiro_ano and ultimo_ano:
+        total_meses = (ultimo_ano - primeiro_ano + 1) * 12
+        if total_meses > 0:
+            media_mensal = float(total_gasto) / total_meses
+
+    return PoliticoEstatisticasResponse(
+        total_votacoes=total_votacoes or 0,
+        total_despesas=total_despesas or 0,
+        total_gasto=float(total_gasto or 0),
+        media_mensal=round(media_mensal, 2),
+        primeiro_ano=primeiro_ano,
+        ultimo_ano=ultimo_ano
+    )
+
+@router.get(
+    "/{politico_id}/despesas/serie",
+    response_model=list[SerieDespesaItem]
+)
+@cache(expire=86400, key_builder=politico_key_builder)
+async def serie_despesas(
+    politico_id: int,
+    ano_inicio: int | None = None,
+    ano_fim: int | None = None,
+    db: Session = Depends(get_db)
+):
+    def get_data():
+        stmt = (
+            select(
+                Despesa.ano,
+                Despesa.mes,
+                func.coalesce(func.sum(Despesa.valor_liquido), 0).label("total")
+            )
+            .where(Despesa.politico_id == politico_id)
+            .group_by(Despesa.ano, Despesa.mes)
+            .order_by(Despesa.ano, Despesa.mes)
+        )
+
+        if ano_inicio:
+            stmt = stmt.where(Despesa.ano >= ano_inicio)
+
+        if ano_fim:
+            stmt = stmt.where(Despesa.ano <= ano_fim)
+
+        return db.execute(stmt).mappings().all()
+
+    result = await run_in_threadpool(get_data)
+
+    return [
+        SerieDespesaItem(
+            ano=r["ano"],
+            mes=r["mes"],
+            total=float(r["total"])
+        )
+        for r in result
+    ]

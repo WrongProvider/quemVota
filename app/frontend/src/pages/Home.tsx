@@ -12,17 +12,18 @@ import {
 
 import { motion } from "framer-motion";
 
-// redirect para a página de políticos ao submeter a pesquisa
-const [query, setQuery] = useState("")
-const navigate = useNavigate()
 
-function handleSearch(e: React.FormEvent) {
-  e.preventDefault()
-  if (!query.trim()) return
-  navigate(`/politicos?q=${encodeURIComponent(query)}`)
-}
 
 export default function Home() {
+  // redirect para a página de políticos ao submeter a pesquisa
+  const [query, setQuery] = useState("")
+  const navigate = useNavigate()
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault()
+    if (!query.trim()) return
+    navigate(`/politicos?q=${encodeURIComponent(query)}`)
+  }
   return (
     <>
       <Header/>

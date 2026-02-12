@@ -1,43 +1,68 @@
-import { useQuery } from "@tanstack/react-query"
+import { useSearchParams } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { useDebounce } from "../hooks/useDebounce"
 import { listarPoliticos } from "../api/politicos"
 
 export default function Politicos() {
-  const { data, isLoading, error } = useQuery<Politico[]>({
-    queryKey: ["politicos"],
-    queryFn: () => listarPoliticos({ limit: 20 }),
-  })
+  const [searchParams] = useSearchParams()
+  const q = searchParams.get("q") || ""
 
-  if (isLoading) {
-    return <p className="p-6">Carregando...</p>
-  }
+  const [search, setSearch] = useState(q)
+  const debouncedSearch = useDebounce(search, 400)
 
-  if (error) {
-    return (
-      <p className="p-6 text-red-600">
-        Erro ao carregar dados
-      </p>
-    )
-  }
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true)
+      try {
+        const res = await listarPoliticos({
+          q: debouncedSearch,
+          limit: 20,
+        })
+        setData(res)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [debouncedSearch])
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <main className="max-w-6xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-semibold mb-6">
         Parlamentares
       </h1>
 
-      <ul className="space-y-3">
-        {data?.map((p) => (
+      {/* Input sincronizado */}
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Buscar parlamentar..."
+        className="w-full mb-6 rounded-lg border px-4 py-3"
+      />
+
+      {loading && <p className="text-gray-500">Carregando...</p>}
+
+      {!loading && data.length === 0 && (
+        <p className="text-gray-500">Nenhum resultado encontrado.</p>
+      )}
+
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {data.map((p) => (
           <li
             key={p.id}
-            className="border rounded-md p-4"
+            className="rounded-xl border p-4 hover:shadow transition"
           >
-            <strong>{p.nome}</strong>
-            <div className="text-sm text-gray-600">
-              {p.partido_sigla}/{p.uf}
-            </div>
+            <p className="font-semibold">{p.nome}</p>
+            <p className="text-sm text-gray-600">
+              {p.partido_sigla} • {p.uf}
+            </p>
           </li>
         ))}
       </ul>
-    </div>
+    </main>
   )
 }

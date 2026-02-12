@@ -60,3 +60,29 @@ class FornecedorRanking(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PoliticoEstatisticasResponse(BaseModel):
+    total_votacoes: int
+    total_despesas: int
+    total_gasto: float
+    media_mensal: float
+    primeiro_ano: int | None
+    ultimo_ano: int | None
+
+
+class SerieDespesaItem(BaseModel):
+    ano: int
+    mes: int
+    total: float
+
+
+class VotacaoResumoItem(BaseModel):
+    tipo_voto: str
+    quantidade: int
+
+
+class RankingDespesaItem(BaseModel):
+    politico_id: int
+    nome: str
+    total_gasto: float
