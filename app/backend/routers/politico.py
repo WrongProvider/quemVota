@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from backend.database import get_db
 from backend.models import Politico, Voto, Votacao, Despesa
-from backend.schemas import PoliticoResponse, VotoPoliticoResponse, DespesaResumo, DespesaDetalheResponse, FornecedorRanking
+from backend.schemas import PoliticoResponse, VotoPolitico, DespesaResumo, DespesaDetalheResponse, FornecedorRanking
 
 from fastapi_cache.decorator import cache   
 
@@ -60,8 +60,6 @@ def listar_politicos(
         .all()
     )
 
-
-
 @router.get("/{politico_id}", response_model=PoliticoResponse)
 def obter_politico(politico_id: int, db: Session = Depends(get_db)):
     politico = db.get(Politico, politico_id)
@@ -75,39 +73,37 @@ def obter_politico(politico_id: int, db: Session = Depends(get_db)):
     return politico
 
 
-@router.get(
-    "/{politico_id}/votacoes",
-    response_model=list[VotoPoliticoResponse]
-)
-def listar_votacoes_do_politico(
-    politico_id: int,
-    limit: int = 50,
-    offset: int = 0,
+@router.get("/{politico_id}/votacoes", response_model=list[VotoPolitico])
+@cache(expire=86400, key_builder=politico_key_builder)
+async def ultimas_votacoes_do_politico(
+    politico_id: int, 
+    limit: int = 20, 
     db: Session = Depends(get_db)
 ):
-    politico = db.get(Politico, politico_id)
-
-    if not politico:
-        raise HTTPException(
-            status_code=404,
-            detail="Político não encontrado"
+    print(f"DEBUG: Buscando votações para o politico {politico_id}")
+    
+    def get_votos():
+        return (
+            db.query(
+                Votacao.id.label("id_votacao"),
+                Votacao.data,
+                Proposicao.sigla_tipo.label("proposicao_sigla"),
+                Proposicao.numero.label("proposicao_numero"),
+                Proposicao.ano.label("proposicao_ano"),
+                Proposicao.ementa,
+                Voto.tipo_voto.label("voto"),
+                Votacao.ultima_apresentacao_proposicao_descricao.label("resultado_da_votacao")
+            )
+            .join(Voto, Voto.votacao_id == Votacao.id)
+            .join(Proposicao, Votacao.proposicao_id == Proposicao.id)
+            .filter(Voto.politico_id == politico_id)
+            .order_by(desc(Votacao.data))
+            .limit(limit)
+            .all()
         )
 
-    query = (
-        db.query(
-            Votacao.id.label("votacao_id"),
-            Votacao.titulo,
-            Votacao.data,
-            Voto.voto
-        )
-        .join(Voto, Voto.votacao_id == Votacao.id)
-        .filter(Voto.politico_id == politico_id)
-        .order_by(Votacao.data.desc())
-        .limit(min(limit, 100))
-        .offset(offset)
-    )
-
-    return query.all()
+    votos_raw = await run_in_threadpool(get_votos)
+    return votos_raw
 
 @router.get("/{politico_id}/despesas/resumo", response_model=list[DespesaResumo])
 @cache(expire=86400, key_builder=politico_key_builder)  # Cache por 24 horas

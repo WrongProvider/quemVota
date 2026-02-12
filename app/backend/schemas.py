@@ -1,11 +1,11 @@
 from pydantic import BaseModel
 from datetime import date
 from datetime import datetime
+from typing import Optional
 
 class PoliticoBase(BaseModel):
     nome: str
     uf: str | None = None
-
 
 class PoliticoResponse(PoliticoBase):
     id: int
@@ -20,15 +20,18 @@ class PoliticoResponse(PoliticoBase):
     class Config:
         from_attributes = True
 
-class VotoPoliticoResponse(BaseModel):
-    votacao_id: int
-    titulo: str | None
-    data: datetime | None
-    voto: str
+class VotoPolitico(BaseModel):
+    id_votacao: str
+    data: date
+    proposicao_sigla: str
+    proposicao_numero: int
+    proposicao_ano: int
+    ementa: str
+    voto: str  # Sim, Não, Obstrução, etc.
+    resultado_da_votacao: Optional[str]
 
     class Config:
         from_attributes = True
-
 
 from pydantic import BaseModel
 from datetime import datetime
