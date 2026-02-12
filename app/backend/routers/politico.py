@@ -43,22 +43,23 @@ def listar_politicos(
     offset: int = 0,
     db: Session = Depends(get_db)
 ):
-    query = db.query(Politico)
+    stmt = select(Politico)
 
     if q:
-        return query.filter(
-            Politico.nome.ilike(f"%{q}%")
-        ).all()
-    if uf:
-        query = query.filter(Politico.uf == uf)
+        stmt = stmt.where(Politico.nome.ilike(f"%{q}%"))
 
-    return (
-        query
+    if uf:
+        stmt = stmt.where(Politico.uf == uf)
+
+    stmt = (
+        stmt
         .order_by(Politico.nome)
         .limit(min(limit, 100))
         .offset(offset)
-        .all()
     )
+
+    return db.execute(stmt).scalars().all()
+
 
 @router.get("/{politico_id}", response_model=PoliticoResponse)
 def obter_politico(politico_id: int, db: Session = Depends(get_db)):
@@ -101,11 +102,10 @@ async def ultimas_votacoes_do_politico(
                 .limit(limit)
             )
 
-        result = db.execute(stmt).mappings().all()
-        return result
-
-    votos_raw = await run_in_threadpool(get_votos)
-    return votos_raw
+        return db.execute(stmt).mappings().all()
+        
+    return await run_in_threadpool(get_votos)
+     
 
 @router.get("/{politico_id}/despesas/resumo", response_model=list[DespesaResumo])
 @cache(expire=86400, key_builder=politico_key_builder)  # Cache por 24 horas
@@ -115,30 +115,31 @@ async def resumo_despesas_do_politico(politico_id: int, db: Session = Depends(ge
     
     # Executa a query síncrona do SQLAlchemy de forma que não trave o async
     def get_data():
-        return (
-            db.query(
+        stmt = (
+            select(
                 Despesa.ano,
                 Despesa.mes,
                 func.sum(Despesa.valor_liquido).label("total_gasto"),
                 func.count(Despesa.id).label("qtd_despesas")
             )
-            .filter(Despesa.politico_id == politico_id)
+            .where(Despesa.politico_id == politico_id)
             .group_by(Despesa.ano, Despesa.mes)
             .order_by(Despesa.ano.desc(), Despesa.mes.desc())
-            .all()
         )
 
-    resumo_raw = await run_in_threadpool(get_data)
+        return db.execute(stmt).mappings().all()
 
-    return [
-        {
-            "ano": r.ano, 
-            "mes": r.mes, 
-            "total_gasto": float(r.total_gasto or 0), 
-            "qtd_despesas": r.qtd_despesas
-        } 
-        for r in resumo_raw
-    ]
+    return await run_in_threadpool(get_data)
+
+    # return [
+    #     {
+    #         "ano": r.ano, 
+    #         "mes": r.mes, 
+    #         "total_gasto": float(r.total_gasto or 0), 
+    #         "qtd_despesas": r.qtd_despesas
+    #     } 
+    #     for r in resumo_raw
+    # ]
 
 @router.get("/{politico_id}/despesas", response_model=list[DespesaDetalheResponse])
 def listar_despesas_detalhadas(
@@ -149,18 +150,19 @@ def listar_despesas_detalhadas(
     db: Session = Depends(get_db)
 ):
     """Lista as despesas individuais com paginação."""
-    query = db.query(Despesa).filter(Despesa.politico_id == politico_id)
+    stmt = select(Despesa).where(Despesa.politico_id == politico_id)
 
     if ano:
-        query = query.filter(Despesa.ano == ano)
+        stmt = stmt.where(Despesa.ano == ano)
 
-    return (
-        query.order_by(Despesa.data_documento.desc())
+    stmt = (
+        stmt
+        .order_by(Despesa.data_documento.desc())
         .limit(min(limit, 100))
         .offset(offset)
-        .all()
     )
 
+    return db.execute(stmt).scalars().all()
 
 @router.get("/{politico_id}/despesas/fornecedores", response_model=list[FornecedorRanking])
 @cache(expire=86400, key_builder=politico_key_builder)
@@ -172,26 +174,18 @@ async def ranking_fornecedores_do_politico(
     print(f"DEBUG: Gerando ranking de fornecedores para o politico {politico_id}")
     
     def get_ranking():
-        return (
-            db.query(
+        stmt = (
+            select(
                 Despesa.nome_fornecedor,
                 func.sum(Despesa.valor_liquido).label("total_recebido"),
                 func.count(Despesa.id).label("qtd_notas")
             )
-            .filter(Despesa.politico_id == politico_id)
+            .where(Despesa.politico_id == politico_id)
             .group_by(Despesa.nome_fornecedor)
             .order_by(func.sum(Despesa.valor_liquido).desc())
             .limit(limit)
-            .all()
         )
 
-    ranking_raw = await run_in_threadpool(get_ranking)
+        return db.execute(stmt).mappings().all()
 
-    return [
-        {
-            "nome_fornecedor": r.nome_fornecedor,
-            "total_recebido": float(r.total_recebido or 0),
-            "qtd_notas": r.qtd_notas
-        }
-        for r in ranking_raw
-    ]
+    return await run_in_threadpool(get_ranking)
