@@ -1,34 +1,19 @@
-import { useSearchParams } from "react-router-dom"
-import { useEffect, useState } from "react"
+import { useSearchParams, Link } from "react-router-dom"
+import { useState } from "react"
 import { useDebounce } from "../hooks/useDebounce"
-import { listarPoliticos } from "../api/politicos"
+import { usePoliticos } from "../hooks/usePoliticos"
 
 export default function Politicos() {
   const [searchParams] = useSearchParams()
-  const q = searchParams.get("q") || ""
+  const initialQ = searchParams.get("q") || ""
 
-  const [search, setSearch] = useState(q)
+  const [search, setSearch] = useState(initialQ)
   const debouncedSearch = useDebounce(search, 400)
 
-  const [data, setData] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true)
-      try {
-        const res = await listarPoliticos({
-          q: debouncedSearch,
-          limit: 20,
-        })
-        setData(res)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [debouncedSearch])
+  const { data, isLoading, isError } = usePoliticos({
+    q: debouncedSearch,
+    limit: 200,
+  })
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-10">
@@ -36,7 +21,6 @@ export default function Politicos() {
         Parlamentares
       </h1>
 
-      {/* Input sincronizado */}
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -44,23 +28,35 @@ export default function Politicos() {
         className="w-full mb-6 rounded-lg border px-4 py-3"
       />
 
-      {loading && <p className="text-gray-500">Carregando...</p>}
+      {isLoading && (
+        <p className="text-gray-500">Carregando...</p>
+      )}
 
-      {!loading && data.length === 0 && (
-        <p className="text-gray-500">Nenhum resultado encontrado.</p>
+      {isError && (
+        <p className="text-red-500">
+          Erro ao carregar dados.
+        </p>
+      )}
+
+      {!isLoading && data?.length === 0 && (
+        <p className="text-gray-500">
+          Nenhum resultado encontrado.
+        </p>
       )}
 
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {data.map((p) => (
-          <li
+        {data?.map((p) => (
+          <Link
+            to={`/politicos/${p.id}`}
             key={p.id}
-            className="rounded-xl border p-4 hover:shadow transition"
+            className="rounded-xl border p-4 hover:shadow transition block"
           >
             <p className="font-semibold">{p.nome}</p>
             <p className="text-sm text-gray-600">
               {p.partido_sigla} • {p.uf}
             </p>
-          </li>
+          </Link>
+
         ))}
       </ul>
     </main>

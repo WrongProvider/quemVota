@@ -37,9 +37,15 @@ def politico_key_builder(func, namespace, request=None, response=None, *args, **
 from backend.services.politico_service import PoliticoService
 
 @router.get("/", response_model=list[PoliticoResponse])
-async def get_politicos(db: Session = Depends(get_db)):
+async def listar_politicos(
+    q: str | None = None,
+    uf: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+    db: Session = Depends(get_db)
+):
     service = PoliticoService(db)
-    return await service.listar_politicos(limit=100)
+    return await service.listar_politicos(q=q, uf=uf, limit=limit, offset=offset)
 # @router.get("/", response_model=list[PoliticoResponse])
 # def listar_politicos(
 #     uf: str | None = None,
