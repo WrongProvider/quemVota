@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, desc, select
 from backend.database import get_db
 from backend.models import Politico, Voto, Votacao, Despesa, Proposicao
@@ -42,7 +43,7 @@ async def listar_politicos(
     uf: str | None = None,
     limit: int = 100,
     offset: int = 0,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     service = PoliticoService(db)
     return await service.listar_politicos(q=q, uf=uf, limit=limit, offset=offset)

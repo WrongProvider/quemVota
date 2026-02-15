@@ -1,12 +1,13 @@
-from sqlalchemy.orm import Session
+# from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_
 from backend.models import Politico
 
 class PoliticoRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_politicos_repo(self, q: str = None, uf: str = None, limit: int = 100, offset: int = 0):
+    async def get_politicos_repo(self, q: str = None, uf: str = None, limit: int = 100, offset: int = 0):
         stmt = select(Politico)
 
         if q:
@@ -21,5 +22,8 @@ class PoliticoRepository:
             .limit(limit)
             .offset(offset)
         )
-        
-        return self.db.execute(stmt).scalars().all()
+
+        # resolve primeiro a rotina
+        result = await self.db.execute(stmt)
+        # se fizesse junto ele da await numa corrotina.
+        return result.scalars().all()
