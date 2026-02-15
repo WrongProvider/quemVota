@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from backend.routers import politico
+from backend.api.v1 import politico_api
 from fastapi.middleware.cors import CORSMiddleware
 
 from contextlib import asynccontextmanager
@@ -40,7 +40,7 @@ app = FastAPI(
 )
 
 
-app.include_router(politico.router)
+app.include_router(politico_api.router)
 # app.include_router(evento.router)
 # app.include_router(orgao.router)
 

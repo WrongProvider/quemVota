@@ -34,31 +34,36 @@ def politico_key_builder(func, namespace, request=None, response=None, *args, **
 
     return f"{namespace}:{func.__name__}:{politico_id or 'unknown'}"
 
+from backend.services.politico_service import PoliticoService
 
 @router.get("/", response_model=list[PoliticoResponse])
-def listar_politicos(
-    uf: str | None = None,
-    q: str | None = None,
-    limit: int = 100,
-    offset: int = 0,
-    db: Session = Depends(get_db)
-):
-    stmt = select(Politico)
+async def get_politicos(db: Session = Depends(get_db)):
+    service = PoliticoService(db)
+    return await service.listar_politicos(limit=100)
+# @router.get("/", response_model=list[PoliticoResponse])
+# def listar_politicos(
+#     uf: str | None = None,
+#     q: str | None = None,
+#     limit: int = 100,
+#     offset: int = 0,
+#     db: Session = Depends(get_db)
+# ):
+#     stmt = select(Politico)
 
-    if q:
-        stmt = stmt.where(Politico.nome.ilike(f"%{q}%"))
+#     if q:
+#         stmt = stmt.where(Politico.nome.ilike(f"%{q}%"))
 
-    if uf:
-        stmt = stmt.where(Politico.uf == uf)
+#     if uf:
+#         stmt = stmt.where(Politico.uf == uf)
 
-    stmt = (
-        stmt
-        .order_by(Politico.nome)
-        .limit(min(limit, 100))
-        .offset(offset)
-    )
+#     stmt = (
+#         stmt
+#         .order_by(Politico.nome)
+#         .limit(min(limit, 100))
+#         .offset(offset)
+#     )
 
-    return db.execute(stmt).scalars().all()
+#     return db.execute(stmt).scalars().all()
 
 @router.get(
     "/ranking/despesas",
