@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
-import { listarRankings } from "../api/rankings"
-import type { RankingItem } from "../api/rankings"
+import { listarRankings } from "../api/rankings.api"
+import type { RankingItem } from "../api/rankings.api"
 import { TrophyIcon } from "@heroicons/react/24/outline"
 
 export default function RankingDespesas() {
