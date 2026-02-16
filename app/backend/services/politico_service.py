@@ -13,3 +13,4 @@ class PoliticoService:
         # busca os dados brutos no repositorio
         db_politicos = await self.repo.get_politicos_repo(limit=limite_seguro, q=q, uf=uf, offset=offset)
         return [PoliticoResponse.model_validate(p) for p in db_politicos]
+    

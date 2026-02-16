@@ -12,12 +12,12 @@ from fastapi_cache.backends.redis import RedisBackend
 async def lifespan(app: FastAPI):
     # --- STARTUP (O que acontece ao ligar) ---
     # Conecta ao Valkey
-    pool = redis.ConnectionPool.from_url(
+    valkey_client = redis.from_url(
         "redis://localhost:6379", 
         encoding="utf8", 
         decode_responses=False
     )
-    valkey_client = redis.Redis(connection_pool=pool)
+    
     
     # Inicializa o Cache
     FastAPICache.init(RedisBackend(valkey_client), prefix="quem-vota-cache")
@@ -28,7 +28,6 @@ async def lifespan(app: FastAPI):
     
     # --- SHUTDOWN (O que acontece ao desligar) ---
     await valkey_client.close()
-    await pool.disconnect()
     print("🛑 Conexão com Valkey encerrada com sucesso.")
 
 # 2. Passamos o lifespan para a instância do FastAPI
@@ -47,17 +46,16 @@ app.include_router(politico_api.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:6379",
+        "http://localhost:3000", # react
+        "http://localhost:5173", # vite
     ],
     allow_credentials=True,
     allow_methods=["GET,HEAD"],
     allow_headers=["*"],
 )
 
-@app.get("/")
-def root():
+@app.get("/", tags=["Root"])
+async def root():
     return {
         "status": "ok",
         "api": "Quem Vota",
