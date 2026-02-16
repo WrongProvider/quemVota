@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from backend.api.v1 import politico_api
+from backend.api.v1 import ranking_api
 from fastapi.middleware.cors import CORSMiddleware
 
 from contextlib import asynccontextmanager
@@ -40,7 +41,7 @@ app = FastAPI(
 
 
 app.include_router(politico_api.router)
-# app.include_router(evento.router)
+app.include_router(ranking_api.router)
 # app.include_router(orgao.router)
 
 app.add_middleware(

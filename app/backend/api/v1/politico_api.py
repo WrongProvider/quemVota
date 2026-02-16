@@ -10,6 +10,7 @@ from fastapi_cache.decorator import cache
 
 from backend.services.politico_service import PoliticoService
 from backend.services.ranking_service import RankingService
+from backend.api.v1.keybuilder import politico_key_builder
 
 router = APIRouter(
     prefix="/politicos",
@@ -19,50 +20,6 @@ router = APIRouter(
 # Cache Key Builder personalizado para as rotas de político
 from fastapi.concurrency import run_in_threadpool # Importe isso
 from datetime import datetime
-
-# def politico_key_builder(func, namespace, request=None, response=None, *args, **kwargs):
-#     # 1. Tenta pegar dos argumentos nomeados
-#     politico_id = kwargs.get("politico_id")
-    
-#     # 2. Se falhar, tenta extrair direto da URL (Request)
-#     if politico_id is None and request:
-#         # Pega o ID que está na URL, ex: /politicos/59/...
-#         politico_id = request.path_params.get("politico_id")
-
-#     # 3. Se ainda assim falhar, tenta a posição bruta nos args
-#     if politico_id is None and args:
-#         for arg in args:
-#             if isinstance(arg, int):
-#                 politico_id = arg
-#                 break
-
-#     return f"{namespace}:{func.__name__}:{politico_id or 'unknown'}"
-
-import hashlib
-
-def politico_key_builder(func, namespace, request=None, response=None, *args, **kwargs):
-    # 1. Começamos com o namespace e nome da função
-    prefix = f"{namespace}:{func.__name__}"
-    
-    # 2. Extraímos apenas os argumentos que importam (ignoramos o 'db')
-    # Filtramos kwargs para remover objetos de sessão ou dependências complexas
-    cache_args = {k: v for k, v in kwargs.items() if k not in ["db", "request", "response"]}
-    
-    # 3. Transformamos os argumentos em uma string ordenada (importante para consistência)
-    arg_str = ":".join([f"{k}={v}" for k, v in sorted(cache_args.items())])
-    
-    # 4. Se houver um ID na URL (path param), garantimos que ele entre na chave
-    path_params = request.path_params if request else {}
-    path_str = ":".join([f"{k}={v}" for k, v in sorted(path_params.items())])
-
-    # Unimos tudo
-    full_key = f"{prefix}:{path_str}:{arg_str}"
-    
-    # Opcional: Se a chave ficar gigante, usamos MD5 para encurtar
-    return hashlib.md5(full_key.encode()).hexdigest()
-    #return full_key
-
-
 
 @router.get("/", response_model=list[PoliticoResponse])
 @cache(expire=3600, key_builder=politico_key_builder)
@@ -75,80 +32,6 @@ async def listar_politicos(
 ):
     service = PoliticoService(db)
     return await service.listar_politicos(q=q, uf=uf, limit=limit, offset=offset)
-# @router.get("/", response_model=list[PoliticoResponse])
-# def listar_politicos(
-#     uf: str | None = None,
-#     q: str | None = None,
-#     limit: int = 100,
-#     offset: int = 0,
-#     db: Session = Depends(get_db)
-# ):
-#     stmt = select(Politico)
-
-#     if q:
-#         stmt = stmt.where(Politico.nome.ilike(f"%{q}%"))
-
-#     if uf:
-#         stmt = stmt.where(Politico.uf == uf)
-
-#     stmt = (
-#         stmt
-#         .order_by(Politico.nome)
-#         .limit(min(limit, 100))
-#         .offset(offset)
-#     )
-
-#     return db.execute(stmt).scalars().all()
-
-@router.get(
-    "/ranking/despesas",
-    response_model=list[RankingDespesaItem]
-)
-@cache(expire=86400)
-
-async def ranking_despesas(
-    q: str | None = None,
-    uf: str | None = None,
-    limit: int = 100,
-    offset: int = 0,
-    db: AsyncSession = Depends(get_db)
-):
-    service = RankingService(db)
-    return await service.get_ranking_despesas(q=q, uf=uf, limit=limit, offset=offset)
-
-# async def ranking_global_despesas(
-#     limit: int = 10,
-#     db: Session = Depends(get_db)
-# ):
-#     # Segurança contra abuso
-#     limit = min(limit, 50)
-
-#     def get_data():
-#         stmt = (
-#             select(
-#                 Politico.id.label("politico_id"),
-#                 Politico.nome,
-#                 func.coalesce(func.sum(Despesa.valor_liquido), 0).label("total_gasto")
-#             )
-#             .join(Despesa, Despesa.politico_id == Politico.id)
-#             .group_by(Politico.id, Politico.nome)
-#             .order_by(func.sum(Despesa.valor_liquido).desc())
-#             .limit(limit)
-#         )
-
-#         return db.execute(stmt).mappings().all()
-
-#     result = await run_in_threadpool(get_data)
-
-#     return [
-#         RankingDespesaItem(
-#             politico_id=r["politico_id"],
-#             nome=r["nome"],
-#             total_gasto=float(r["total_gasto"])
-#         )
-#         for r in result
-#     ]
-
 
 @router.get("/{politico_id}", response_model=PoliticoResponse)
 def obter_politico(politico_id: int, db: AsyncSession = Depends(get_db)):

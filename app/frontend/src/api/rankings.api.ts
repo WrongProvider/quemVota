@@ -13,7 +13,7 @@ export interface RankingItem {
 }
 
 export async function listarRankings(limit: number = 100): Promise<RankingItem[]> {
-  const response = await api.get("/ranking/despesas", {
+  const response = await api.get("/ranking/despesa_politico", {
     params: { limit },
   })
   return response.data
