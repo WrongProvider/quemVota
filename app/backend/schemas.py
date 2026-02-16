@@ -87,8 +87,14 @@ class RankingDespesaPolitico(BaseModel):
     nome: str
     total_gasto: float
 
-class RankingEmpresa(BaseModel):
+class RankingEmpresaLucro(BaseModel):
     cnpj: str
     nome_fornecedor: str
     total_recebido: float
-    quantidade_despesas: int
+
+class RankingDiscursoPolitico(BaseModel):
+    politico_id: int
+    nome_politico: str
+    sigla_partido: str
+    sigla_uf: str
+    total_discursos: int

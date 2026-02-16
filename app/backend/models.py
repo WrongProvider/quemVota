@@ -49,8 +49,6 @@ class Politico(Base):
 
     # Novo vínculo: FK para o partido atual
     partido_id = Column(Integer, ForeignKey("partidos.id", ondelete="SET NULL"), nullable=True)
-    partido_sigla = Column(String(10)) # Mantemos a sigla para consultas rápidas/cache
-
     # Relationships
     partido = relationship("Partido", back_populates="politicos")
     
