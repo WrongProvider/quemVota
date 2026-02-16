@@ -20,7 +20,7 @@ class PoliticoResponse(PoliticoBase):
     class Config:
         from_attributes = True
 
-class VotoPolitico(BaseModel):
+class PoliticoVoto(BaseModel):
     id_votacao: int
     data: date
     proposicao_sigla: str | None
@@ -33,7 +33,7 @@ class VotoPolitico(BaseModel):
     class Config:
         from_attributes = True
 
-class DespesaResumo(BaseModel):
+class PoliticoDespesaResumo(BaseModel):
     ano: int
     mes: int
     total_gasto: float
@@ -42,7 +42,7 @@ class DespesaResumo(BaseModel):
     class Config:
         from_attributes = True
 
-class DespesaDetalheResponse(BaseModel):
+class PoliticoDespesaDetalhe(BaseModel):
     id: int
     data_documento: datetime | None
     tipo_despesa: str
@@ -53,7 +53,7 @@ class DespesaDetalheResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class FornecedorRanking(BaseModel):
+class PoliticoFornecedor(BaseModel):
     nome_fornecedor: str
     total_recebido: float
     qtd_notas: int
@@ -82,7 +82,13 @@ class VotacaoResumoItem(BaseModel):
     quantidade: int
 
 
-class RankingDespesaItem(BaseModel):
+class RankingDespesaPolitico(BaseModel):
     politico_id: int
     nome: str
     total_gasto: float
+
+class RankingEmpresa(BaseModel):
+    cnpj: str
+    nome_fornecedor: str
+    total_recebido: float
+    quantidade_despesas: int

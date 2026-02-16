@@ -1,14 +1,14 @@
 # from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_
-from backend.schemas import RankingDespesaItem
+from backend.schemas import RankingDespesaPolitico  
 from backend.models import Politico, Despesa
 
 class RankingRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_ranking_despesas(self, q: str = None, uf: str = None, limit: int = 100, offset: int = 0):
+    async def get_ranking_despesas_politicos(self, q: str = None, uf: str = None, limit: int = 100, offset: int = 0):
         stmt = (
             select(
                 Politico.id.label("politico_id"),
@@ -36,12 +36,14 @@ class RankingRepository:
         result = await self.db.execute(stmt)
         # se fizesse junto ele da await numa corrotina.
         return [
-            RankingDespesaItem(
+            RankingDespesaPolitico(
                 politico_id=r["politico_id"],
                 nome=r["nome"],
                 total_gasto=float(r["total_gasto"])
             )
             for r in result.mappings()
         ]
-
+    
+    async def get_ranking_lucro_empresas(self, q: str = None, limit: int = 100, offset: int = 0):
+        pass
         # return result.scalars().all()

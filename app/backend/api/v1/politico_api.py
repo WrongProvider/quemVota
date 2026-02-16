@@ -4,12 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, desc, select
 from backend.database import get_db
 from backend.models import Politico, Voto, Votacao, Despesa, Proposicao
-from backend.schemas import PoliticoEstatisticasResponse, PoliticoResponse, VotoPolitico, DespesaResumo, DespesaDetalheResponse, FornecedorRanking, VotacaoResumoItem, RankingDespesaItem, SerieDespesaItem
+from backend.schemas import PoliticoEstatisticasResponse, PoliticoResponse, PoliticoVoto, PoliticoDespesaResumo, PoliticoDespesaDetalhe, PoliticoFornecedor, VotacaoResumoItem, SerieDespesaItem
 
 from fastapi_cache.decorator import cache   
 
 from backend.services.politico_service import PoliticoService
-from backend.services.ranking_service import RankingService
 from backend.api.v1.keybuilder import politico_key_builder
 
 router = APIRouter(
@@ -46,7 +45,7 @@ def obter_politico(politico_id: int, db: AsyncSession = Depends(get_db)):
     return politico
 
 
-@router.get("/{politico_id}/votacoes", response_model=list[VotoPolitico])
+@router.get("/{politico_id}/votacoes", response_model=list[PoliticoVoto])
 @cache(expire=86400, key_builder=politico_key_builder)
 async def ultimas_votacoes_do_politico(
     politico_id: int, 
@@ -109,7 +108,7 @@ async def resumo_votacoes(
         for r in result
     ]
 
-@router.get("/{politico_id}/despesas/resumo", response_model=list[DespesaResumo])
+@router.get("/{politico_id}/despesas/resumo", response_model=list[PoliticoDespesaResumo])
 @cache(expire=86400, key_builder=politico_key_builder)  # Cache por 24 horas
 async def resumo_despesas_do_politico(politico_id: int, db: Session = Depends(get_db)):
     # Agora a função é ASYNC
@@ -143,7 +142,7 @@ async def resumo_despesas_do_politico(politico_id: int, db: Session = Depends(ge
     #     for r in resumo_raw
     # ]
 
-@router.get("/{politico_id}/despesas", response_model=list[DespesaDetalheResponse])
+@router.get("/{politico_id}/despesas", response_model=list[PoliticoDespesaDetalhe])
 def listar_despesas_detalhadas(
     politico_id: int,
     ano: int | None = None,
@@ -166,7 +165,7 @@ def listar_despesas_detalhadas(
 
     return db.execute(stmt).scalars().all()
 
-@router.get("/{politico_id}/despesas/fornecedores", response_model=list[FornecedorRanking])
+@router.get("/{politico_id}/despesas/fornecedores", response_model=list[PoliticoFornecedor])
 @cache(expire=86400, key_builder=politico_key_builder)
 async def ranking_fornecedores_do_politico(
     politico_id: int, 
@@ -243,45 +242,3 @@ async def estatisticas_do_politico(
         primeiro_ano=primeiro_ano,
         ultimo_ano=ultimo_ano
     )
-
-@router.get(
-    "/{politico_id}/despesas/serie",
-    response_model=list[SerieDespesaItem]
-)
-@cache(expire=86400, key_builder=politico_key_builder)
-async def serie_despesas(
-    politico_id: int,
-    ano_inicio: int | None = None,
-    ano_fim: int | None = None,
-    db: Session = Depends(get_db)
-):
-    def get_data():
-        stmt = (
-            select(
-                Despesa.ano,
-                Despesa.mes,
-                func.coalesce(func.sum(Despesa.valor_liquido), 0).label("total")
-            )
-            .where(Despesa.politico_id == politico_id)
-            .group_by(Despesa.ano, Despesa.mes)
-            .order_by(Despesa.ano, Despesa.mes)
-        )
-
-        if ano_inicio:
-            stmt = stmt.where(Despesa.ano >= ano_inicio)
-
-        if ano_fim:
-            stmt = stmt.where(Despesa.ano <= ano_fim)
-
-        return db.execute(stmt).mappings().all()
-
-    result = await run_in_threadpool(get_data)
-
-    return [
-        SerieDespesaItem(
-            ano=r["ano"],
-            mes=r["mes"],
-            total=float(r["total"])
-        )
-        for r in result
-    ]
