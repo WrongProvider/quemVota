@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from datetime import date
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 class PoliticoBase(BaseModel):
     nome: str
@@ -92,9 +92,15 @@ class RankingEmpresaLucro(BaseModel):
     nome_fornecedor: str
     total_recebido: float
 
+class KeywordInfo(BaseModel):
+    keyword: str
+    frequencia: int
+
 class RankingDiscursoPolitico(BaseModel):
     politico_id: int
     nome_politico: str
     sigla_partido: str
     sigla_uf: str
     total_discursos: int
+    temas_mais_discutidos: List[KeywordInfo]
+

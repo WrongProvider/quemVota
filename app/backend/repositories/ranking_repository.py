@@ -1,8 +1,8 @@
 # from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, text
-from collections import defaultdict
-from backend.schemas import RankingDespesaPolitico, RankingEmpresaLucro, RankingDiscursoPolitico 
+from collections import defaultdict, Counter
+from backend.schemas import KeywordInfo, RankingDespesaPolitico, RankingEmpresaLucro, RankingDiscursoPolitico 
 from backend.models import Politico, Despesa, Discurso
 
 class RankingRepository:
@@ -46,10 +46,44 @@ class RankingRepository:
         ]
     
     async def get_ranking_discursos_politicos(self, limit: int = 100, offset: int = 0):
-        """
-        Retorna os políticos que mais realizaram discursos/pronunciamentos.
-        """
-        # Contamos quantos discursos cada político tem
+        # Defina os termos burocráticos que devem ser ignorados
+        BLACKLIST_KEYWORDS = {
+        # --- PROCESSUAL E RITUALÍSTICO ---
+        "ORIENTAÇÃO DE BANCADA", "REQUERIMENTO DE URGÊNCIA", "ENCAMINHAMENTO DE VOTAÇÃO",
+        "DISCUSSÃO", "QUESTÃO DE ORDEM", "VOTO FAVORÁVEL", "VOTO CONTRÁRIO", 
+        "VOTO FAVORAVEL.", "VOTO CONTRÁRIO.", "FAVORÁVEL", "CONTRÁRIO",
+        "REQUERIMENTO DE DESTAQUE DE VOTAÇÃO EM SEPARADO", "SUBSTITUTIVO",
+        "REQUERIMENTO DE RETIRADA DE PROPOSIÇÃO DA ORDEM DO DIA", "SEGUNDO TURNO",
+        "PAUTA (PROCESSO LEGISLATIVO)", "DISPOSITIVO LEGAL", "EMENDA DE PLENÁRIO",
+        "PARECER (PROPOSIÇÃO LEGISLATIVA)", "PARECER DO RELATOR", "RELATOR",
+        "PROJETO DE LEI DE CONVERSÃO", "REQUERIMENTO", "APROVAÇÃO", "ALTERAÇÃO",
+
+        # --- TIPOS DE PROPOSIÇÃO (O "VEÍCULO") ---
+        "PROPOSTA DE EMENDA À CONSTITUIÇÃO", "PROJETO DE LEI COMPLEMENTAR",
+        "PROJETO DE LEI ORDINARIA", "PROJETO DE LEI ORDINÁRIA", "MEDIDA PROVISORIA", 
+        "MEDIDA PROVISÓRIA", "PROJETO DE LEI DO CONGRESSO NACIONAL", "MPV 1095/2021",
+
+        # --- AGENTES E INSTITUIÇÕES (GENÉRICOS) ---
+        "DEPUTADO FEDERAL", "PRESIDENTE DA REPÚBLICA", "EX-PRESIDENTE DA REPÚBLICA",
+        "GOVERNO FEDERAL", "GOVERNO", "GOVERNO ESTADUAL", "GOVERNADOR",
+        "CONGRESSO NACIONAL", "SENADO FEDERAL", "SUPREMO TRIBUNAL FEDERAL (STF)",
+        "MINISTRO DO SUPREMO TRIBUNAL FEDERAL", "PODER JUDICIÁRIO", "BASE DE APOIO POLÍTICO",
+        "MINORIA PARLAMENTAR", "MAIORIA PARLAMENTAR", "OPOSIÇÃO POLÍTICA", "VEREADOR",
+
+        # --- PARTIDOS E FEDERAÇÕES ---
+        "PARTIDO LIBERAL (PL)", "PARTIDO DOS TRABALHADORES (PT)", "PARTIDO NOVO (NOVO)",
+        "PARTIDO SOCIAL DEMOCRÁTICO (PSD) (2011)", "PARTIDO VERDE (PV)", 
+        "PARTIDO DEMOCRÁTICO TRABALHISTA (PDT)", "PARTIDO DEMOCRATICO TRABALHISTA (PDT)",
+        "PARTIDO SOCIALISTA BRASILEIRO (PSB) (1987)", "PARTIDO SOCIAL LIBERAL (PSL)",
+        "PARTIDO PROGRESSISTA (PP) (2003)", "CIDADANIA (PARTIDO POLÍTICO)", "PODEMOS (PODE) (2016)",
+        "FEDERAÇÃO PSOL REDE", "FEDERAÇÃO BRASIL DA ESPERANÇA (FE BRASIL)", "BLOCO PARLAMENTAR",
+
+        # --- SENTIMENTOS E AÇÕES ABSTRATAS ---
+        "CRÍTICA", "DEFESA", "HOMENAGEM", "MANIFESTAÇÃO", "ATUAÇÃO", 
+        "ATUAÇÃO PARLAMENTAR", "ANIVERSÁRIO DE EMANCIPAÇÃO POLÍTICA", "CRIAÇÃO"
+    }
+        
+        # 1. Busca o Ranking (Query Principal)
         stmt = (
             select(
                 Politico.id.label("politico_id"),
@@ -59,25 +93,57 @@ class RankingRepository:
                 func.count(Discurso.id).label("total_discursos")
             )
             .join(Discurso, Discurso.politico_id == Politico.id)
-            # Filtramos discursos vazios ou nulos se necessário
-            .group_by(Politico.id)
+            .group_by(Politico.id, Politico.nome, Politico.partido_sigla, Politico.uf)
             .order_by(desc("total_discursos"))
             .limit(limit)
             .offset(offset)
         )
-
         result = await self.db.execute(stmt)
+        politicos_ranking = result.mappings().all()
+
+        # 2. Coleta IDs e busca Keywords
+        politico_ids = [r["politico_id"] for r in politicos_ranking]
+        stmt_kw = select(Discurso.politico_id, Discurso.keywords).where(
+            Discurso.politico_id.in_(politico_ids),
+            Discurso.keywords != None
+        )
+        kw_result = await self.db.execute(stmt_kw)
         
-        return [
-            RankingDiscursoPolitico(
-                politico_id=r["politico_id"],
-                nome_politico=r["nome_politico"],
-                sigla_partido=r["sigla_partido"],
-                sigla_uf=r["sigla_uf"],
-                total_discursos=r["total_discursos"]
+        # 3. Processamento com Counter
+        keywords_por_politico = {pid: Counter() for pid in politico_ids}
+        for row in kw_result:
+            # 1. Transforma em lista
+            tags_sujas = [t.strip().upper() for t in row.keywords.replace(";", ",").split(",") if t.strip()]
+            
+            # 2. Filtra: só entra o que NÃO estiver na blacklist e tiver mais de 3 letras
+            tags_limpas = [
+                t for t in tags_sujas 
+                if t not in BLACKLIST_KEYWORDS and len(t) > 3
+            ]
+            
+            keywords_por_politico[row.politico_id].update(tags_limpas)
+        # 4. Montagem do Resultado Final
+        final_ranking = []
+        for r in politicos_ranking:
+            pid = r["politico_id"]
+            # Criamos a lista de KeywordInfo com a palavra e a frequência
+            top_10_data = [
+                KeywordInfo(keyword=kw, frequencia=count) 
+                for kw, count in keywords_por_politico[pid].most_common(20)
+            ]
+            
+            final_ranking.append(
+                RankingDiscursoPolitico(
+                    politico_id=pid,
+                    nome_politico=r["nome_politico"],
+                    sigla_partido=r["sigla_partido"],
+                    sigla_uf=r["sigla_uf"],
+                    total_discursos=r["total_discursos"],
+                    temas_mais_discutidos=top_10_data
+                )
             )
-            for r in result.mappings()
-        ]
+
+        return final_ranking
     
     async def get_ranking_lucro_empresas(self, limit: int = 100, offset: int = 0):
         # 1. Dicionário de "Cura de Dados" (Aumentado)
