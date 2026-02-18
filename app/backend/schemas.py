@@ -11,12 +11,19 @@ class PoliticoResponse(PoliticoBase):
     id: int
     id_camara: int
     nome: str
+    partido_sigla: str | None
     nome_civil: str | None
+    escolaridade: str | None
+    situacao: str | None
+    condicao_eleitoral: str | None
     sexo: str | None
     data_nascimento: date | None
     url_foto: str | None
     uf: str | None
-
+    
+    email_gabinete: str | None
+    telefone_gabinete: str | None
+    
     class Config:
         from_attributes = True
 
@@ -29,16 +36,28 @@ class PoliticoVoto(BaseModel):
     ementa: str | None
     voto: str  # Sim, Não, Obstrução, etc.
     resultado_da_votacao: Optional[str] | None
+    tipo_votacao: Optional[str] | None
+    uri: str | None
 
     class Config:
         from_attributes = True
+
+class ItemRanking(BaseModel):
+    nome: str
+    total: float
 
 class PoliticoDespesaResumo(BaseModel):
     ano: int
     mes: int
     total_gasto: float
     qtd_despesas: int
+    class Config:
+        from_attributes = True
 
+class PoliticoDespesaResumoCompleto(BaseModel):
+    historico_mensal: List[PoliticoDespesaResumo]
+    top_fornecedores: List[ItemRanking]
+    top_categorias: List[ItemRanking]
     class Config:
         from_attributes = True
 

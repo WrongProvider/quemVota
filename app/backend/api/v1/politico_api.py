@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, desc, select
 from backend.database import get_db
 from backend.models import Politico, Voto, Votacao, Despesa, Proposicao
-from backend.schemas import PoliticoEstatisticasResponse, PoliticoResponse, PoliticoVoto, PoliticoDespesaResumo, PoliticoDespesaDetalhe, PoliticoFornecedor, VotacaoResumoItem, SerieDespesaItem
+from backend.schemas import PoliticoEstatisticasResponse, PoliticoDespesaResumoCompleto, PoliticoResponse, PoliticoVoto, PoliticoDespesaResumo, PoliticoDespesaDetalhe, PoliticoFornecedor, VotacaoResumoItem, SerieDespesaItem
 
 from fastapi_cache.decorator import cache   
 
@@ -30,140 +30,62 @@ async def listar_politicos(
     db: AsyncSession = Depends(get_db)
 ):
     service = PoliticoService(db)
-    return await service.listar_politicos(q=q, uf=uf, limit=limit, offset=offset)
-
-@router.get("/{politico_id}", response_model=PoliticoResponse)
-def obter_politico(politico_id: int, db: AsyncSession = Depends(get_db)):
-    politico = db.get(Politico, politico_id)
-
-    if not politico:
-        raise HTTPException(
-            status_code=404,
-            detail="Político não encontrado"
-        )
-
-    return politico
-
+    return await service.get_politicos_service(q=q, uf=uf, limit=limit, offset=offset)
 
 @router.get("/{politico_id}/votacoes", response_model=list[PoliticoVoto])
 @cache(expire=86400, key_builder=politico_key_builder)
 async def ultimas_votacoes_do_politico(
     politico_id: int, 
     limit: int = 20, 
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     print(f"DEBUG: Buscando votações para o politico {politico_id}")
-    
-    def get_votos():
-        stmt = (
-                select(
-                    Votacao.id.label("id_votacao"),
-                    Votacao.data,
-                    Proposicao.sigla_tipo.label("proposicao_sigla"),
-                    Proposicao.numero.label("proposicao_numero"),
-                    Proposicao.ano.label("proposicao_ano"),
-                    Proposicao.ementa,
-                    Voto.tipo_voto.label("voto"),
-                    Votacao.descricao.label("resultado_da_votacao")
-                )
-                .join(Voto, Voto.votacao_id == Votacao.id)
-                .join(Proposicao, Votacao.proposicao_id == Proposicao.id)
-                .where(Voto.politico_id == politico_id)
-                .order_by(desc(Votacao.data))
-                .limit(limit)
-            )
-
-        return db.execute(stmt).mappings().all()
+    service = PoliticoService(db)
         
-    return await run_in_threadpool(get_votos)
-     
-@router.get(
-    "/{politico_id}/votacoes/resumo",
-    response_model=list[VotacaoResumoItem]
-)
-@cache(expire=86400, key_builder=politico_key_builder)
-async def resumo_votacoes(
+    return await service.get_politicos_votacoes_service(politico_id=politico_id, limit=limit)
+
+@router.get("/{politico_id}/despesas", response_model=list[PoliticoDespesaDetalhe])
+@cache(expire=86400, key_builder=politico_key_builder)  # Cache por 24 horas
+async def listar_despesas_detalhadas(
     politico_id: int,
-    db: Session = Depends(get_db)
+    ano: int | None = None,
+    mes: int | None = None,
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db)
 ):
-    def get_data():
-        stmt = (
-            select(
-                Voto.tipo_voto,
-                func.count(Voto.id).label("quantidade")
-            )
-            .where(Voto.politico_id == politico_id)
-            .group_by(Voto.tipo_voto)
-        )
-
-        return db.execute(stmt).mappings().all()
-
-    result = await run_in_threadpool(get_data)
-
-    return [
-        VotacaoResumoItem(
-            tipo_voto=r["tipo_voto"],
-            quantidade=r["quantidade"]
-        )
-        for r in result
-    ]
+    """Lista as despesas individuais com paginação."""
+   
+    service = PoliticoService(db)
+    return await service.get_politicos_despesas_services(politico_id=politico_id, ano=ano, mes=mes, limit=limit)
 
 @router.get("/{politico_id}/despesas/resumo", response_model=list[PoliticoDespesaResumo])
 @cache(expire=86400, key_builder=politico_key_builder)  # Cache por 24 horas
-async def resumo_despesas_do_politico(politico_id: int, db: Session = Depends(get_db)):
+async def resumo_despesas_do_politico(
+    politico_id: int, 
+    ano: int | None = None,
+    limit: int = 60,
+    db: AsyncSession = Depends(get_db)):
     # Agora a função é ASYNC
     print(f"DEBUG: Calculando resumo no banco para o politico {politico_id} {datetime.now().time()}")
     
-    # Executa a query síncrona do SQLAlchemy de forma que não trave o async
-    def get_data():
-        stmt = (
-            select(
-                Despesa.ano,
-                Despesa.mes,
-                func.sum(Despesa.valor_liquido).label("total_gasto"),
-                func.count(Despesa.id).label("qtd_despesas")
-            )
-            .where(Despesa.politico_id == politico_id)
-            .group_by(Despesa.ano, Despesa.mes)
-            .order_by(Despesa.ano.desc(), Despesa.mes.desc())
-        )
+    service = PoliticoService(db)
+    return await service.get_politicos_despesas_resumo_services(politico_id=politico_id, ano=ano, limit=limit)
+  
 
-        return db.execute(stmt).mappings().all()
-
-    return await run_in_threadpool(get_data)
-
-    # return [
-    #     {
-    #         "ano": r.ano, 
-    #         "mes": r.mes, 
-    #         "total_gasto": float(r.total_gasto or 0), 
-    #         "qtd_despesas": r.qtd_despesas
-    #     } 
-    #     for r in resumo_raw
-    # ]
-
-@router.get("/{politico_id}/despesas", response_model=list[PoliticoDespesaDetalhe])
-def listar_despesas_detalhadas(
-    politico_id: int,
+@router.get("/{politico_id}/despesas/resumo_completo", response_model=PoliticoDespesaResumoCompleto)
+@cache(expire=86400, key_builder=politico_key_builder)  # Cache por 24 horas
+async def resumo_despesas_completo_do_politico(
+    politico_id: int, 
     ano: int | None = None,
-    limit: int = 20,
-    offset: int = 0,
-    db: Session = Depends(get_db)
-):
-    """Lista as despesas individuais com paginação."""
-    stmt = select(Despesa).where(Despesa.politico_id == politico_id)
+    limit_meses: int = 60,
+    db: AsyncSession = Depends(get_db)):
+    # Agora a função é ASYNC
+    print(f"DEBUG: Calculando resumo no banco para o politico {politico_id} {datetime.now().time()}")
+    
+    service = PoliticoService(db)
+    return await service.get_politicos_despesas_resumo_completo_services(politico_id=politico_id, ano=ano, limit_meses=limit_meses)
+  
 
-    if ano:
-        stmt = stmt.where(Despesa.ano == ano)
-
-    stmt = (
-        stmt
-        .order_by(Despesa.data_documento.desc())
-        .limit(min(limit, 100))
-        .offset(offset)
-    )
-
-    return db.execute(stmt).scalars().all()
 
 @router.get("/{politico_id}/despesas/fornecedores", response_model=list[PoliticoFornecedor])
 @cache(expire=86400, key_builder=politico_key_builder)
@@ -192,53 +114,13 @@ async def ranking_fornecedores_do_politico(
     return await run_in_threadpool(get_ranking)
 
 
-@router.get(
-    "/{politico_id}/estatisticas",
-    response_model=PoliticoEstatisticasResponse
+@router.get("/{politico_id}/estatisticas",response_model=PoliticoEstatisticasResponse
 )
 @cache(expire=86400, key_builder=politico_key_builder)
 async def estatisticas_do_politico(
     politico_id: int,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
-    def get_data():
-        # Total votações
-        stmt_votos = select(
-            func.count(func.distinct(Voto.votacao_id))
-        ).where(
-            Voto.politico_id == politico_id
-        )
-
-        # Estatísticas despesas
-        stmt_despesas = select(
-            func.count(Despesa.id),
-            func.coalesce(func.sum(Despesa.valor_liquido), 0),
-            func.min(Despesa.ano),
-            func.max(Despesa.ano)
-        ).where(
-            Despesa.politico_id == politico_id
-        )
-
-        total_votacoes = db.execute(stmt_votos).scalar_one()
-        despesas_result = db.execute(stmt_despesas).one()
-
-        return total_votacoes, despesas_result
-
-    total_votacoes, despesas = await run_in_threadpool(get_data)
-
-    total_despesas, total_gasto, primeiro_ano, ultimo_ano = despesas
-
-    media_mensal = 0.0
-    if primeiro_ano and ultimo_ano:
-        total_meses = (ultimo_ano - primeiro_ano + 1) * 12
-        if total_meses > 0:
-            media_mensal = float(total_gasto) / total_meses
-
-    return PoliticoEstatisticasResponse(
-        total_votacoes=total_votacoes or 0,
-        total_despesas=total_despesas or 0,
-        total_gasto=float(total_gasto or 0),
-        media_mensal=round(media_mensal, 2),
-        primeiro_ano=primeiro_ano,
-        ultimo_ano=ultimo_ano
-    )
+    service = PoliticoService(db)
+    return await service.get_politico_estatisticas_service(politico_id=politico_id)
+ 
