@@ -16,49 +16,64 @@ export default function Politicos() {
   })
 
   return (
-    <main className="max-w-6xl mx-auto px-4 py-10">
-      <h1 className="text-2xl font-semibold mb-6">
-        Parlamentares
-      </h1>
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <div className="max-w-6xl mx-auto px-4 py-12">
 
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Buscar parlamentar..."
-        className="w-full mb-6 rounded-lg border px-4 py-3"
-      />
+        <h1 className="text-3xl font-semibold mb-8">
+          Parlamentares
+        </h1>
 
-      {isLoading && (
-        <p className="text-gray-500">Carregando...</p>
-      )}
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar parlamentar..."
+          className="w-full mb-10 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
+        />
 
-      {isError && (
-        <p className="text-red-500">
-          Erro ao carregar dados.
-        </p>
-      )}
+        {isLoading && (
+          <p className="text-slate-500">Carregando...</p>
+        )}
 
-      {!isLoading && data?.length === 0 && (
-        <p className="text-gray-500">
-          Nenhum resultado encontrado.
-        </p>
-      )}
+        {isError && (
+          <p className="text-red-500">
+            Erro ao carregar dados.
+          </p>
+        )}
 
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {data?.map((p) => (
-          <Link
-            to={`/politicos/${p.id}`}
-            key={p.id}
-            className="rounded-xl border p-4 hover:shadow transition block"
-          >
-            <p className="font-semibold">{p.nome}</p>
-            <p className="text-sm text-gray-600">
-              {p.partido_sigla} • {p.uf}
-            </p>
-          </Link>
+        {!isLoading && data?.length === 0 && (
+          <p className="text-slate-500">
+            Nenhum resultado encontrado.
+          </p>
+        )}
 
-        ))}
-      </ul>
+        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {data?.map((p) => (
+            <Link
+              to={`/politicos_detalhe/${p.id}`}
+              key={p.id}
+              className="group bg-white border border-slate-200 rounded-2xl p-6 flex items-center gap-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition"
+            >
+              {/* FOTO */}
+              <img
+                src={p.url_foto}
+                alt={p.nome}
+                className="w-25 h-25 rounded-xl object-contain bg-slate-50 p-2 shadow-sm"
+              />
+
+              {/* INFO */}
+              <div>
+                <p className="font-semibold text-lg group-hover:text-black transition">
+                  {p.nome}
+                </p>
+                <p className="text-sm text-slate-500 mt-1">
+                  {p.partido_sigla} • {p.uf}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </ul>
+
+      </div>
     </main>
   )
 }

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { listarPoliticosService } from "../services/politicos.service"
+import { listarPoliticosService, obterPoliticoDetalheService } from "../services/politicos.service"
 
 interface UsePoliticosParams {
   q?: string
@@ -18,5 +18,15 @@ export function usePoliticos(params?: UsePoliticosParams) {
     gcTime: 0, // cache por 10 minutos
     refetchOnMount: "always",
   refetchOnWindowFocus: false
+  })
+}
+
+export function usePoliticoDetalhe(id: number) {
+  return useQuery({
+    queryKey: ["politico", id],
+    queryFn: () => obterPoliticoDetalheService(id),
+    enabled: !!id, // só executa se existir id
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   })
 }

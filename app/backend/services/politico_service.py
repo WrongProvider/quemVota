@@ -14,6 +14,10 @@ class PoliticoService:
         db_politicos = await self.repo.get_politicos_repo(limit=limite_seguro, q=q, uf=uf, offset=offset)
         return [PoliticoResponse.model_validate(p) for p in db_politicos]
     
+    async def get_politicos_detalhe_service(self, politico_id: int):
+        db_politico = await self.repo.get_politico_repo(politico_id=politico_id)
+        return PoliticoResponse.model_validate(db_politico)
+    
     async def get_politicos_votacoes_service(self, politico_id: int, limit: int = 20):
         # rate limit
         limite_seguro = min(limit, 20)

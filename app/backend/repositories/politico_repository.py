@@ -29,6 +29,26 @@ class PoliticoRepository:
         # se fizesse junto ele da await numa corrotina.
         return result.scalars().all()
     
+    async def get_politico_repo(self, politico_id: int):
+        stmt = select(Politico).where(Politico.id == politico_id)
+        result = await self.db.execute(stmt)
+        return result.scalars().first()
+
+        # if uf:
+        #     stmt = stmt.where(Politico.uf == uf)
+
+        # stmt = (
+        #     stmt.order_by(Politico.nome)
+        #     .limit(limit)
+        #     .offset(offset)
+        # )
+
+        # # resolve primeiro a rotina
+        # result = await self.db.execute(stmt)
+        # # se fizesse junto ele da await numa corrotina.
+        # return result.scalars().all()
+    
+    
     async def get_politicos_votacoes_repo(self, politico_id: int, limit: int = 20):
         # Implementação para buscar as votações de um político específico
         stmt = (

@@ -32,6 +32,15 @@ async def listar_politicos(
     service = PoliticoService(db)
     return await service.get_politicos_service(q=q, uf=uf, limit=limit, offset=offset)
 
+@router.get("/{politico_id}", response_model=PoliticoResponse)
+@cache(expire=3600, key_builder=politico_key_builder)
+async def get_politico(
+    politico_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    service = PoliticoService(db)
+    return await service.get_politicos_detalhe_service(politico_id=politico_id)
+    
 @router.get("/{politico_id}/votacoes", response_model=list[PoliticoVoto])
 @cache(expire=86400, key_builder=politico_key_builder)
 async def ultimas_votacoes_do_politico(
