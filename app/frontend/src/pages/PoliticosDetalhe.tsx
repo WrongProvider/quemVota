@@ -1,133 +1,89 @@
 import { useParams } from "react-router-dom"
-import { usePoliticoDetalhe, usePoliticos } from "../hooks/usePoliticos"
-
+import { usePoliticoEstatisticas, usePoliticoDetalhe } from "../hooks/usePoliticos"
+import PoliticoGraficos from "../components/PoliticoGraficos"
+import { IndicadorEficiencia } from "../components/PoliticoIndicadores"
 export default function PoliticoDetalhe() {
   const { id } = useParams()
-  const { data: politico, isLoading, isError } = usePoliticoDetalhe(Number(id))
+  const politicoId = Number(id)
+  const { data, isLoading, error } = usePoliticoDetalhe(politicoId)
+  const { data: stats } = usePoliticoEstatisticas(politicoId)
 
-  if (isLoading) {
-    return (
-      <main className="max-w-5xl mx-auto px-4 py-12">
-        <p className="text-slate-500">Carregando parlamentar...</p>
-      </main>
-    )
-  }
-
-  if (isError || !politico) {
-    return (
-      <main className="max-w-5xl mx-auto px-4 py-12">
-        <p className="text-red-500">Erro ao carregar parlamentar.</p>
-      </main>
-    )
-  }
+  if (isLoading) return <p>Carregando...</p>
+  if (error) return <p>Erro ao carregar político.</p>
+  if (!data) return null
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div style={{ padding: "2rem" }}>
+      {/* ===== DADOS PRINCIPAIS ===== */}
+      <div style={{ display: "flex", gap: "2rem", alignItems: "center" }}>
+        <img
+          src={data.url_foto}
+          alt={data.nome}
+          width={150}
+        />
 
-      {/* HERO */}
-      <section className="border-b bg-white">
-        <div className="max-w-5xl mx-auto px-4 py-12 flex flex-col md:flex-row gap-10 items-center">
+        <div>
+          <h1>{data.nome}</h1>
+          <p><strong>UF:</strong> {data.uf}</p>
+          <p><strong>Partido:</strong> {data.partido_sigla}</p>
+          <p><strong>Escolaridade:</strong> {data.escolaridade}</p>
+          <p><strong>Situação:</strong> {data.situacao}</p>
+          <p><strong>Condição Eleitoral:</strong> {data.condicao_eleitoral}</p>
+          <p><strong>Email:</strong> {data.email_gabinete}</p>
+          <p><strong>Telefone:</strong> {data.telefone_gabinete}</p>
+        </div>
+      </div>
 
-          {/* FOTO */}
-          <div className="bg-slate-50 p-4 rounded-2xl shadow-sm">
-            <img
-              src={politico.url_foto}
-              alt={politico.nome}
-              className="w-40 h-40 object-contain rounded-xl"
+      {/* ===== ESTATÍSTICAS ===== */}
+      {stats && (
+        <div style={{ marginTop: "3rem" }}>
+          <h2>Estatísticas</h2>
+
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "1rem",
+            marginTop: "1rem"
+          }}>
+            <StatCard titulo="Total de Votações" valor={stats.total_votacoes} />
+            <StatCard titulo="Total de Despesas" valor={stats.total_despesas} />
+            <StatCard
+              titulo="Total Gasto"
+              valor={`R$ ${stats.total_gasto.toLocaleString("pt-BR")}`}
+            />
+            <StatCard
+              titulo="Média Mensal"
+              valor={`R$ ${stats.media_mensal.toLocaleString("pt-BR")}`}
+            />
+            <StatCard
+              titulo="Primeiro Ano"
+              valor={stats.primeiro_ano ?? "-"}
+            />
+            <StatCard
+              titulo="Último Ano"
+              valor={stats.ultimo_ano ?? "-"}
             />
           </div>
-
-          {/* IDENTIDADE */}
-          <div className="flex-1 text-center md:text-left">
-            <h1 className="text-4xl font-semibold">
-              {politico.nome}
-            </h1>
-
-            <p className="text-lg text-slate-600 mt-2">
-              {politico.partido_sigla} • {politico.uf}
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-3 justify-center md:justify-start text-sm">
-              {politico.situacao && (
-                <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600">
-                  {politico.situacao}
-                </span>
-              )}
-              {politico.condicao_eleitoral && (
-                <span className="bg-slate-100 px-3 py-1 rounded-full text-slate-600">
-                  {politico.condicao_eleitoral}
-                </span>
-              )}
-            </div>
-          </div>
-
         </div>
-      </section>
+      )}
+      {stats && <PoliticoGraficos stats={stats} />}
+      {stats && <IndicadorEficiencia stats={stats} />}
 
-      {/* INFORMAÇÕES INSTITUCIONAIS */}
-      <section className="max-w-5xl mx-auto px-4 py-10">
+    </div>
+  )
+}
 
-        <div className="bg-white border rounded-2xl shadow-sm p-8 space-y-6">
-
-          <h2 className="text-xl font-semibold">
-            Informações Institucionais
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-6 text-sm">
-
-            <div>
-              <p className="text-slate-500">Escolaridade</p>
-              <p className="font-medium mt-1">
-                {politico.escolaridade || "Não informado"}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-slate-500">Situação</p>
-              <p className="font-medium mt-1">
-                {politico.situacao || "Não informado"}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-slate-500">Condição Eleitoral</p>
-              <p className="font-medium mt-1">
-                {politico.condicao_eleitoral || "Não informado"}
-              </p>
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* CONTATO */}
-        <div className="mt-8 bg-white border rounded-2xl shadow-sm p-8 space-y-6">
-
-          <h2 className="text-xl font-semibold">
-            Contato do Gabinete
-          </h2>
-
-          <div className="space-y-4 text-sm">
-
-            <div>
-              <p className="text-slate-500">Email</p>
-              <p className="font-medium mt-1">
-                {politico.email_gabinete || "Não informado"}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-slate-500">Telefone</p>
-              <p className="font-medium mt-1">
-                {politico.telefone_gabinete || "Não informado"}
-              </p>
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-    </main>
+function StatCard({ titulo, valor }: { titulo: string; valor: any }) {
+  return (
+    <div
+      style={{
+        padding: "1rem",
+        borderRadius: "8px",
+        background: "#f5f5f5",
+      }}
+    >
+      <p style={{ fontSize: "0.9rem", opacity: 0.7 }}>{titulo}</p>
+      <h3>{valor}</h3>
+    </div>
   )
 }

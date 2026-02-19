@@ -1,5 +1,6 @@
 import { api } from "./client"
 
+// interfaces e tipos
 export interface Politico {
   id: number
   nome: string
@@ -23,6 +24,16 @@ export interface PoliticoDetalhe extends Politico {
   telefone_gabinete: string
 }
 
+export interface PoliticoEstatisticas {
+  total_votacoes: number
+  total_despesas: number
+  total_gasto: number
+  media_mensal: number
+  primeiro_ano: number | null
+  ultimo_ano: number | null
+}
+// fim interfaces e tipos
+
 // listagem de politicos
 export async function fetchPoliticos(
   params?: ListarPoliticosParams
@@ -43,6 +54,20 @@ export async function fetchPoliticoDetalhe(
   }
 
   const { data } = await api.get<PoliticoDetalhe>(`/politicos/${id}`)
+
+  return data
+}
+
+export async function fetchPoliticoEstatisticas(
+  id: number
+): Promise<PoliticoEstatisticas> {
+  if (!id) {
+    throw new Error("ID do político é obrigatório")
+  }
+
+  const { data } = await api.get<PoliticoEstatisticas>(
+    `/politicos/${id}/estatisticas`
+  )
 
   return data
 }
