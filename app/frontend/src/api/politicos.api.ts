@@ -35,7 +35,7 @@ export interface PoliticoEstatisticas {
 
 export interface PoliticoPerformance {
   score_final: number
-  media_global_score: number
+  media_global: number
   detalhes: {
     nota_assiduidade: number
     nota_economia: number
@@ -43,7 +43,7 @@ export interface PoliticoPerformance {
   }[]
   info: {
     total_gasto: number
-    cota_utilizada_percentual: number
+    cota_utilizada_pct: number
   }
 }
 // fim interfaces e tipos

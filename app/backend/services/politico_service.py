@@ -86,7 +86,7 @@ class PoliticoService:
         nota_producao = min((data["total_proposicoes"] / meta_producao) * 100, 100) if meta_producao > 0 else 0
 
         # SCORE FINAL
-        indice_final = (nota_assiduidade * 0.20) + (nota_economia * 0.40) + (nota_producao * 0.40)
+        indice_final = (nota_assiduidade * 0.15) + (nota_economia * 0.40) + (nota_producao * 0.45)
 
         # Media global
         media_global = await RankingService(self.repo.db).get_media_global_cached()
@@ -100,6 +100,7 @@ class PoliticoService:
                 "nota_producao": round(nota_producao, 2)
             },
             "info": {
+                "valor_cota_mensal": cota_mensal,
                 "total_gasto": data["total_gasto"],
                 "cota_utilizada_pct": round((data["total_gasto"] / cota_total_periodo) * 100, 2)
             }

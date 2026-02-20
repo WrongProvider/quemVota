@@ -1,12 +1,13 @@
 import { useParams } from "react-router-dom"
-import { usePoliticoEstatisticas, usePoliticoDetalhe } from "../hooks/usePoliticos"
+import { usePoliticoEstatisticas, usePoliticoDetalhe, usePoliticoPerformance } from "../hooks/usePoliticos"
 import PoliticoGraficos from "../components/PoliticoGraficos"
-import { IndicadorEficiencia } from "../components/PoliticoIndicadores"
+// import { IndicadorEficiencia } from "../components/PoliticoIndicadores"
 export default function PoliticoDetalhe() {
   const { id } = useParams()
   const politicoId = Number(id)
   const { data, isLoading, error } = usePoliticoDetalhe(politicoId)
   const { data: stats } = usePoliticoEstatisticas(politicoId)
+  const { data: performance } = usePoliticoPerformance(politicoId)
 
   if (isLoading) return <p>Carregando...</p>
   if (error) return <p>Erro ao carregar político.</p>
@@ -67,7 +68,8 @@ export default function PoliticoDetalhe() {
         </div>
       )}
       {stats && <PoliticoGraficos stats={stats} />}
-      {stats && <IndicadorEficiencia stats={stats} />}
+      {performance && <PoliticoGraficos performance={performance} />}
+
 
     </div>
   )

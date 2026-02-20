@@ -1,6 +1,6 @@
 # from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import case, cast, select, func, desc, text, Float, Numeric
+from sqlalchemy import case, cast, select, func, desc, text, Float, Numeric, String
 from collections import defaultdict, Counter
 from backend.schemas import KeywordInfo, RankingDespesaPolitico, RankingEmpresaLucro, RankingDiscursoPolitico 
 from backend.models import Politico, Despesa, Discurso, Presenca, Proposicao, ProposicaoAutor
@@ -147,43 +147,60 @@ class RankingRepository:
     
 
     async def get_ranking_performance_politicos(self):
-        # Dicionário de cotas para o SQL (simplificado para o exemplo)
-        # Em produção, você pode passar isso via parâmetros ou JOIN com uma tabela de cotas
-        
-        stmt = (
+        # Subquery para Presenças
+        sub_presenca = (
             select(
-                Politico.id,
-                Politico.nome,
-                Politico.uf,
-                Politico.partido_sigla,
-                Politico.url_foto,
-                # 1. Cálculo de Assiduidade com Cast para Numeric
+                Presenca.politico_id,
                 func.coalesce(
                     func.round(
                         cast(
                             (func.count(Presenca.id).filter(Presenca.frequencia_sessao == "Presença").cast(Float) / 
-                            func.nullif(func.count(Presenca.id), 0)) * 100,
-                            Numeric
-                        ), 
-                        2
-                    ),
-                    0 # Valor padrão se for nulo
-                ).label("nota_assiduidade"),
-                # 2. Cálculo de Produção Ponderada (Simplificado para o ranking)
-                func.coalesce(func.sum(
+                            func.nullif(func.count(Presenca.id), 0)) * 100, Numeric
+                        ), 2
+                    ), 0
+                ).label("nota_assiduidade")
+            ).group_by(Presenca.politico_id)
+        ).subquery()
+
+        # Subquery para Produção (Lógica Ponderada Identica)
+        sub_producao = (
+            select(
+                ProposicaoAutor.politico_id,
+                func.sum(
                     case(
-                        (Proposicao.sigla_tipo.in_(['PEC', 'PL', 'PLC', 'PLP']), 1.0),
-                        (Proposicao.sigla_tipo.in_(['PDC', 'PRC', 'MPV']), 0.5),
-                        else_=0.05
+                        (Proposicao.sigla_tipo.in_(['PEC', 'PL', 'PLC', 'PLP']),
+                            case((ProposicaoAutor.proponente == True, 1.0), else_=0.2)),
+                        (Proposicao.sigla_tipo.in_(['PDC', 'PRC', 'MPV']),
+                            case((ProposicaoAutor.proponente == True, 0.5), else_=0.1)),
+                        else_=case((ProposicaoAutor.proponente == True, 0.05), else_=0.01)
                     )
-                ), 0).label("pontos_producao")
+                ).label("pontos_producao")
             )
-            .select_from(Politico)
-            .outerjoin(Presenca, Presenca.politico_id == Politico.id)
-            .outerjoin(ProposicaoAutor, ProposicaoAutor.politico_id == Politico.id)
-            .outerjoin(Proposicao, Proposicao.id == ProposicaoAutor.proposicao_id)
-            .group_by(Politico.id)
-            .order_by(desc("nota_assiduidade")) # Ordenação inicial
+            .join(Proposicao, Proposicao.id == ProposicaoAutor.proposicao_id)
+            .group_by(ProposicaoAutor.politico_id)
+        ).subquery()
+
+        # Subquery para Gastos
+        sub_gastos = (
+            select(
+                Despesa.politico_id,
+                func.sum(Despesa.valor_liquido).label("total_gasto"),
+                func.count(func.distinct(Despesa.ano.cast(String) + Despesa.mes.cast(String))).label("meses_mandato")
+            ).group_by(Despesa.politico_id)
+        ).subquery()
+
+        # Query Principal unindo as subqueries
+        stmt = (
+            select(
+                Politico.id, Politico.nome, Politico.uf, Politico.partido_sigla, Politico.url_foto,
+                func.coalesce(sub_presenca.c.nota_assiduidade, 0).label("nota_assiduidade"),
+                func.coalesce(sub_producao.c.pontos_producao, 0).label("pontos_producao"),
+                func.coalesce(sub_gastos.c.total_gasto, 0).label("total_gasto"),
+                func.coalesce(sub_gastos.c.meses_mandato, 0).label("meses_mandato")
+            )
+            .outerjoin(sub_presenca, Politico.id == sub_presenca.c.politico_id)
+            .outerjoin(sub_producao, Politico.id == sub_producao.c.politico_id)
+            .outerjoin(sub_gastos, Politico.id == sub_gastos.c.politico_id)
         )
         
         result = await self.db.execute(stmt)

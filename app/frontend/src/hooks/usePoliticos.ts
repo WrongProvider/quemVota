@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { listarPoliticosService, obterPoliticoDetalheService, obterPoliticoEstatisticasService } from "../services/politicos.service"
+import { listarPoliticosService, obterPoliticoDetalheService, obterPoliticoEstatisticasService, obterPoliticoPerformanceService } from "../services/politicos.service"
 
 interface UsePoliticosParams {
   q?: string
@@ -34,5 +34,15 @@ export function usePoliticoEstatisticas(id: number) {
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
+  })
+}
+
+
+export function usePoliticoPerformance(id: number) {
+  return useQuery({
+    queryKey: ["politico-performance", id],
+    queryFn: () => obterPoliticoPerformanceService(id),
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
   })
 }

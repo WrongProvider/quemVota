@@ -67,5 +67,5 @@ async def get_stats_geral(db: AsyncSession = Depends(get_db)):
     return {
         "media_global": round(media, 2),
         "total_parlamentares": total,
-        "top_3": ranking_completo[:20] # Já manda os medalhistas para a Home
+        "top_3": ranking_completo[:50] # Já manda os medalhistas para a Home
     }
