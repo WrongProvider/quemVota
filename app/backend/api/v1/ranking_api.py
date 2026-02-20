@@ -44,3 +44,28 @@ async def ranking_discursos(
 ):
     service = RankingService(db)
     return await service.get_ranking_discursos_politicos(limit=limit, offset=offset)
+
+@router.get("/performance_politicos")
+@cache(expire=86400, namespace="quem-vota-cache", key_builder=politico_key_builder)
+async def ranking_performance_politicos(
+    db: AsyncSession = Depends(get_db),
+):
+    service = RankingService(db)
+    return await service.get_ranking_performance_politicos()
+
+
+@router.get("/stats/geral")
+@cache(expire=86400) # Cache de 24h
+async def get_stats_geral(db: AsyncSession = Depends(get_db)):
+    service = RankingService(db)
+    ranking_completo = await service.get_ranking_performance_politicos()
+    
+    scores = [p["score"] for p in ranking_completo]
+    total = len(scores)
+    media = sum(scores) / total if total > 0 else 0
+    
+    return {
+        "media_global": round(media, 2),
+        "total_parlamentares": total,
+        "top_3": ranking_completo[:20] # Já manda os medalhistas para a Home
+    }

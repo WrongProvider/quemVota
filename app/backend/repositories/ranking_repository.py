@@ -1,9 +1,9 @@
 # from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, text
+from sqlalchemy import case, cast, select, func, desc, text, Float, Numeric
 from collections import defaultdict, Counter
 from backend.schemas import KeywordInfo, RankingDespesaPolitico, RankingEmpresaLucro, RankingDiscursoPolitico 
-from backend.models import Politico, Despesa, Discurso
+from backend.models import Politico, Despesa, Discurso, Presenca, Proposicao, ProposicaoAutor
 
 class RankingRepository:
     def __init__(self, db: AsyncSession):
@@ -145,6 +145,51 @@ class RankingRepository:
 
         return final_ranking
     
+
+    async def get_ranking_performance_politicos(self):
+        # Dicionário de cotas para o SQL (simplificado para o exemplo)
+        # Em produção, você pode passar isso via parâmetros ou JOIN com uma tabela de cotas
+        
+        stmt = (
+            select(
+                Politico.id,
+                Politico.nome,
+                Politico.uf,
+                Politico.partido_sigla,
+                Politico.url_foto,
+                # 1. Cálculo de Assiduidade com Cast para Numeric
+                func.coalesce(
+                    func.round(
+                        cast(
+                            (func.count(Presenca.id).filter(Presenca.frequencia_sessao == "Presença").cast(Float) / 
+                            func.nullif(func.count(Presenca.id), 0)) * 100,
+                            Numeric
+                        ), 
+                        2
+                    ),
+                    0 # Valor padrão se for nulo
+                ).label("nota_assiduidade"),
+                # 2. Cálculo de Produção Ponderada (Simplificado para o ranking)
+                func.coalesce(func.sum(
+                    case(
+                        (Proposicao.sigla_tipo.in_(['PEC', 'PL', 'PLC', 'PLP']), 1.0),
+                        (Proposicao.sigla_tipo.in_(['PDC', 'PRC', 'MPV']), 0.5),
+                        else_=0.05
+                    )
+                ), 0).label("pontos_producao")
+            )
+            .select_from(Politico)
+            .outerjoin(Presenca, Presenca.politico_id == Politico.id)
+            .outerjoin(ProposicaoAutor, ProposicaoAutor.politico_id == Politico.id)
+            .outerjoin(Proposicao, Proposicao.id == ProposicaoAutor.proposicao_id)
+            .group_by(Politico.id)
+            .order_by(desc("nota_assiduidade")) # Ordenação inicial
+        )
+        
+        result = await self.db.execute(stmt)
+        return result.mappings().all()
+    
+
     async def get_ranking_lucro_empresas(self, limit: int = 100, offset: int = 0):
         # 1. Dicionário de "Cura de Dados" (Aumentado)
         # Aqui você mapeia qualquer variação de nome para o CNPJ e Nome Padrão

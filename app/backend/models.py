@@ -549,3 +549,26 @@ class PartidoLider(Base):
 
     partido = relationship("Partido", back_populates="lideres")
     politico = relationship("Politico")
+
+class Presenca(Base):
+    __tablename__ = "presencas"
+
+    id = Column(Integer, primary_key=True)
+    politico_id = Column(Integer, ForeignKey("politicos.id", ondelete="CASCADE"), index=True)
+    
+    data = Column(Date, nullable=False, index=True)
+    qtde_sessoes_dia = Column(Integer)
+    
+    # Frequência Geral do Dia
+    frequencia_dia = Column(String(50)) # Presença, Ausência, Ausência Justificada
+    justificativa = Column(Text)
+    
+    # Detalhes da Sessão Específica
+    sessao_descricao = Column(String(255))
+    sessao_inicio = Column(DateTime)
+    frequencia_sessao = Column(String(50))
+
+    # Evita duplicar a mesma sessão para o mesmo político no mesmo dia
+    __table_args__ = (
+        UniqueConstraint('politico_id', 'data', 'sessao_descricao', name='uq_presenca_sessao'),
+    )

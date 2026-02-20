@@ -32,6 +32,20 @@ export interface PoliticoEstatisticas {
   primeiro_ano: number | null
   ultimo_ano: number | null
 }
+
+export interface PoliticoPerformance {
+  score_final: number
+  media_global_score: number
+  detalhes: {
+    nota_assiduidade: number
+    nota_economia: number
+    nota_producao: number
+  }[]
+  info: {
+    total_gasto: number
+    cota_utilizada_percentual: number
+  }
+}
 // fim interfaces e tipos
 
 // listagem de politicos
@@ -67,6 +81,20 @@ export async function fetchPoliticoEstatisticas(
 
   const { data } = await api.get<PoliticoEstatisticas>(
     `/politicos/${id}/estatisticas`
+  )
+
+  return data
+}
+
+export async function fetchPoliticoPerformance(
+  id: number
+): Promise<PoliticoPerformance> {
+  if (!id) {
+    throw new Error("ID do político é obrigatório")
+  }
+
+  const { data } = await api.get<PoliticoPerformance>(
+    `/politicos/${id}/performance`
   )
 
   return data

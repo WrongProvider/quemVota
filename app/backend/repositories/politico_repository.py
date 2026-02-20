@@ -1,8 +1,8 @@
 # from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, or_
+from sqlalchemy import case, select, func, desc, or_, String
 from backend.schemas import ItemRanking, PoliticoDespesaDetalhe, PoliticoDespesaResumoCompleto, PoliticoEstatisticasResponse, PoliticoEstatisticasResponse, PoliticoVoto, PoliticoDespesaResumo
-from backend.models import Politico, Votacao, Voto, Proposicao, Despesa
+from backend.models import Politico, Presenca, Votacao, Voto, Proposicao, Despesa, ProposicaoAutor
 
 class PoliticoRepository:
     def __init__(self, db: AsyncSession):
@@ -278,3 +278,74 @@ class PoliticoRepository:
             primeiro_ano=primeiro_ano,
             ultimo_ano=ultimo_ano
         )
+
+    async def get_politico_performance_data(self, politico_id: int):
+        politico = await self.db.get(Politico, politico_id)
+        if not politico:
+            return None
+
+        # 1. Presenças (mesma lógica)
+        stmt_presenca = select(
+            func.count(Presenca.id).label("total_sessoes"),
+            func.sum(case((Presenca.frequencia_sessao == "Presença", 1), else_=0)).label("presencas_reais")
+        ).where(Presenca.politico_id == politico_id)
+
+        # 2. Produção Legislativa Ponderada
+        # Projetos onde é proponente (autor principal) valem mais
+        # Produção Legislativa com Pesos Diferenciados
+        stmt_producao = (
+            select(
+                # Pontuação Total
+                func.sum(
+                    case(
+                        (Proposicao.sigla_tipo.in_(['PEC', 'PL', 'PLC', 'PLP']),
+                            case((ProposicaoAutor.proponente == True, 1.0), else_=0.2)),
+                        (Proposicao.sigla_tipo.in_(['PDC', 'PRC', 'MPV']),
+                            case((ProposicaoAutor.proponente == True, 0.5), else_=0.1)),
+                        else_=case((ProposicaoAutor.proponente == True, 0.05), else_=0.01)
+                    )
+                ).label("pontuacao_total"),
+                
+                # Contagens para o detalhamento
+                func.count(case((Proposicao.sigla_tipo.in_(['PEC', 'PL', 'PLC', 'PLP']), 1))).label("qtd_alta"),
+                func.count(case((Proposicao.sigla_tipo.in_(['PDC', 'PRC', 'MPV']), 1))).label("qtd_media"),
+                func.count(case((~Proposicao.sigla_tipo.in_(['PEC', 'PL', 'PLC', 'PLP', 'PDC', 'PRC', 'MPV']), 1))).label("qtd_baixa")
+            )
+            .select_from(ProposicaoAutor)  # <--- Define explicitamente a tabela base
+            .join(Proposicao, Proposicao.id == ProposicaoAutor.proposicao_id) # <--- Garante a cláusula ON
+            .where(ProposicaoAutor.politico_id == politico_id)
+        )
+
+        # 3. Gastos e Meses (mesma lógica)
+        stmt_gastos = select(
+            func.sum(Despesa.valor_liquido),
+            func.count(func.distinct(Despesa.ano.cast(String) + Despesa.mes.cast(String)))
+        ).where(Despesa.politico_id == politico_id)
+
+        res_p = await self.db.execute(stmt_presenca)
+        res_prod = await self.db.execute(stmt_producao)
+        res_g = await self.db.execute(stmt_gastos)
+
+        p_data = res_p.one()
+        prod_data = res_prod.mappings().one()
+        g_data = res_g.one()
+
+        # Agora você extrai cada valor individualmente sem fechar o objeto antes da hora
+        pontuacao_total = prod_data["pontuacao_total"] or 0
+        qtd_alta = prod_data["qtd_alta"] or 0
+        qtd_media = prod_data["qtd_media"] or 0
+        qtd_baixa = prod_data["qtd_baixa"] or 0
+
+        # Dentro de get_politico_performance_data no Repository:
+        return {
+            "uf": politico.uf,
+            "presencas": p_data.presencas_reais or 0,
+            "total_sessoes": p_data.total_sessoes or 1,
+            "pontuacao_producao": float(pontuacao_total or 0),
+            "total_proposicoes": (qtd_alta + qtd_media + qtd_baixa), # <--- Adicione esta linha
+            "qtd_alta": qtd_alta,
+            "qtd_media": qtd_media,
+            "qtd_baixa": qtd_baixa,
+            "total_gasto": float(g_data[0] or 0),
+            "meses_mandato": g_data[1] or 1
+        }

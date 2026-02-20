@@ -133,3 +133,12 @@ async def estatisticas_do_politico(
     service = PoliticoService(db)
     return await service.get_politico_estatisticas_service(politico_id=politico_id)
  
+
+@router.get("/{politico_id}/performance", response_model=dict)
+@cache(expire=86400, key_builder=politico_key_builder)
+async def performance_do_politico(
+    politico_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    service = PoliticoService(db)
+    return await service.get_politico_performance_service(politico_id=politico_id)
