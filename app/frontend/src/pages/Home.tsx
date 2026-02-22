@@ -113,6 +113,7 @@ export default function Home() {
                 icon={"📊"}
                 title="Rankings"
                 description="Compare parlamentares por presença e votações."
+                link="/rankings"
               />
             </motion.div>
 
