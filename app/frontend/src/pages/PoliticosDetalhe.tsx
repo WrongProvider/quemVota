@@ -4,7 +4,8 @@ import PoliticoGraficos from "../components/PoliticoGraficos"
 // import { IndicadorEficiencia } from "../components/PoliticoIndicadores"
 import InfoBotao from "../components/InfoDicaBotao"
 import ToolDica from "../components/InfoDica"
-import HeaderSimples from "../components/HeaderSimples"
+// import HeaderSimples from "../components/HeaderSimples"
+import Header from "../components/Header"
 
 export default function PoliticoDetalhe() {
   const { id } = useParams()
@@ -19,7 +20,7 @@ export default function PoliticoDetalhe() {
 
   return (
     <>
-      <HeaderSimples/>
+      <Header/>
         <div style={{ padding: "2rem" }}>
           {/* ===== DADOS PRINCIPAIS ===== */}
           <div style={{ display: "flex", gap: "2rem", alignItems: "center" }}>

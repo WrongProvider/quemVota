@@ -1,10 +1,10 @@
 import { AlertCircle, Database, TrendingUp, DollarSign, FileText, Users } from "lucide-react"
-import HeaderSimples from "../components/HeaderSimples"
+import Header from "../components/Header"
 
 export default function Metodologia() {
   return (
     <>
-      <HeaderSimples /> 
+      <Header /> 
       <div style={{ 
         maxWidth: "900px", 
         margin: "0 auto", 
