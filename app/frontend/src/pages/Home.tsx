@@ -136,7 +136,7 @@ export default function Home() {
             Dados públicos da Câmara dos Deputados e do Senado Federal.
           </p>
         </section>
-    </main>
+      </main>
 
     </>
   )
