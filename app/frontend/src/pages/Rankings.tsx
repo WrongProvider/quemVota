@@ -327,7 +327,7 @@ function PodiumCard({ politico, position }: { politico: any; position: number })
   const bgColors = ["bg-yellow-400", "bg-gray-400", "bg-amber-600"]
   
   return (
-    <Link to={`/politico/${politico.id}`} className="no-underline">
+    <Link to={`/politicos_detalhe/${politico.id}`} className="no-underline">
       <div className={`bg-white border-4 ${borderColors[position - 1]} rounded-xl p-6 transition-all duration-200 cursor-pointer relative overflow-hidden hover:-translate-y-1 hover:shadow-2xl`}>
         {/* MEDAL BADGE */}
         <div className="absolute -top-2 -right-2 text-5xl">
