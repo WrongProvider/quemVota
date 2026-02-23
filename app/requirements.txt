@@ -7,3 +7,4 @@ httpx
 fastapi-cache2[redis]
 sqlalchemy[asyncio]
 asyncpg
+bs4

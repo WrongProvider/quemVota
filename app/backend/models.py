@@ -109,8 +109,17 @@ class Despesa(Base):
     # Se usar back_populates, lembre de adicionar no model Politico!
     politico = relationship("Politico", back_populates="despesas")
 
-    # Removi a __table_args__ porque coloquei unique=True no cod_documento
-    # Se cod_documento for 0 na API, seu código de ingestão deve dar 'continue'
+class VerbaGabinete(Base):
+    __tablename__ = "verbas_gabinete"
+
+    id = Column(Integer, primary_key=True, index=True)
+    politico_id = Column(Integer, ForeignKey("politicos.id"), index=True) # ID interno do seu banco
+    id_camara = Column(Integer, index=True) # 204536
+    ano = Column(Integer, index=True)
+    mes = Column(Integer, index=True)
+    valor_disponivel = Column(Numeric(12, 2))
+    valor_gasto = Column(Numeric(12, 2))
+
 class Discurso(Base):
     __tablename__ = "discursos"
 
