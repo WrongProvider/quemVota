@@ -398,7 +398,7 @@ function RankingCard({ position, politico, type }: {
   const isTop3 = position <= 3
   
   return (
-    <Link to={`/politico/${politico.id}`} className="no-underline">
+    <Link to={`/politicos_detalhe/${politico.id}`} className="no-underline">
       <div className="bg-white border-2 border-slate-200 rounded-lg p-4 px-6 flex items-center gap-6 transition-all duration-200 cursor-pointer hover:border-blue-500 hover:shadow-lg">
         {/* POSIÇÃO */}
         <div className={`w-12 h-12 ${isTop3 ? 'bg-amber-100 text-amber-500' : 'bg-slate-100 text-slate-500'} rounded-full flex items-center justify-center font-bold text-xl flex-shrink-0`}>

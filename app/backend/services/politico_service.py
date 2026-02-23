@@ -20,7 +20,7 @@ class PoliticoService:
 
     async def get_politicos_service(self, limit: int = 100, q: str = None, uf: str = None, offset: int = 0):
         # rate limit
-        limite_seguro = min(limit, 100)
+        limite_seguro = min(limit, 600)
 
         # busca os dados brutos no repositorio
         db_politicos = await self.repo.get_politicos_repo(limit=limite_seguro, q=q, uf=uf, offset=offset)
