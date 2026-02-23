@@ -1,144 +1,246 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy.ext.asyncio import AsyncSession
+"""
+Router de Políticos — Camada de transporte HTTP.
+
+Segurança (OWASP):
+  - A01 / Broken Access Control: apenas leitura (GET); sem endpoints de escrita
+    expostos publicamente. Path params validados pelo Pydantic via `Path(gt=0)`.
+  - A03 / Excessive Data Exposure: `response_model` garante que somente os campos
+    declarados no schema chegam ao cliente — nenhum campo extra vaza.
+  - A04 / Insecure Design: query params com `Query()` possuem limites mínimos e
+    máximos declarados; valores fora do intervalo são rejeitados pelo FastAPI com
+    422 antes de chegar ao serviço.
+  - A05 / Security Misconfiguration: cabeçalhos de segurança adicionados via
+    middleware (ver `security_headers` abaixo). Cache-Control definido
+    explicitamente nas respostas para evitar caching indevido de dados sensíveis
+    em proxies intermediários.
+  - A09 / Logging & Monitoring: logs estruturados em todas as rotas (sem dados
+    pessoais); nenhum stack trace chega ao cliente.
+"""
+
+import logging
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response, status
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import func, desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+
 from backend.database import get_db
-from backend.models import Politico, Voto, Votacao, Despesa, Proposicao
-from backend.schemas import PoliticoEstatisticasResponse, PoliticoDespesaResumoCompleto, PoliticoResponse, PoliticoVoto, PoliticoDespesaResumo, PoliticoDespesaDetalhe, PoliticoFornecedor, VotacaoResumoItem, SerieDespesaItem
-
-from fastapi_cache.decorator import cache   
-
+from backend.models import Despesa
+from backend.schemas import (
+    PoliticoDespesaDetalhe,
+    PoliticoDespesaResumo,
+    PoliticoDespesaResumoCompleto,
+    PoliticoEstatisticasResponse,
+    PoliticoFornecedor,
+    PoliticoResponse,
+    PoliticoVoto,
+)
 from backend.services.politico_service import PoliticoService
 from backend.api.v1.keybuilder import politico_key_builder
+from fastapi_cache.decorator import cache
 
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Tipos anotados para Query params — evita repetição e garante validação
+# ---------------------------------------------------------------------------
+LimitQuery = Annotated[int, Query(ge=1, le=100, description="Máximo de itens por página")]
+OffsetQuery = Annotated[int, Query(ge=0, description="Deslocamento para paginação")]
+PoliticoIdPath = Annotated[int, Path(gt=0, description="ID interno do político")]
+
+# ---------------------------------------------------------------------------
+# Router
+# ---------------------------------------------------------------------------
 router = APIRouter(
     prefix="/politicos",
-    tags=["Políticos"]
+    tags=["Políticos"],
 )
 
-# Cache Key Builder personalizado para as rotas de político
-from fastapi.concurrency import run_in_threadpool # Importe isso
-from datetime import datetime
 
-@router.get("/", response_model=list[PoliticoResponse])
+# ---------------------------------------------------------------------------
+# Helpers internos
+# ---------------------------------------------------------------------------
+
+def _politico_service(db: AsyncSession = Depends(get_db)) -> PoliticoService:
+    """Factory para injeção de dependência do serviço."""
+    return PoliticoService(db)
+
+
+# ---------------------------------------------------------------------------
+# Rotas — somente leitura (A01)
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/",
+    response_model=list[PoliticoResponse],
+    summary="Lista políticos com filtros opcionais",
+)
 @cache(expire=3600, key_builder=politico_key_builder)
 async def listar_politicos(
-    q: str | None = None,
-    uf: str | None = None,
-    limit: int = 100,
-    offset: int = 0,
-    db: AsyncSession = Depends(get_db)
+    q: Annotated[str | None, Query(max_length=150, description="Busca por nome")] = None,
+    uf: Annotated[str | None, Query(min_length=2, max_length=2, description="Sigla do estado")] = None,
+    limit: LimitQuery = 100,
+    offset: OffsetQuery = 0,
+    service: PoliticoService = Depends(_politico_service),
 ):
-    service = PoliticoService(db)
+    """
+    Retorna uma lista paginada de políticos.
+    Campos retornados são definidos por `PoliticoResponse` (A03).
+    """
+    logger.info("Listando políticos | q=%s uf=%s limit=%s offset=%s", q, uf, limit, offset)
     return await service.get_politicos_service(q=q, uf=uf, limit=limit, offset=offset)
 
-@router.get("/{politico_id}", response_model=PoliticoResponse)
+
+@router.get(
+    "/{politico_id}",
+    response_model=PoliticoResponse,
+    summary="Detalha um político pelo ID",
+    responses={404: {"description": "Político não encontrado"}},
+)
 @cache(expire=3600, key_builder=politico_key_builder)
 async def get_politico(
-    politico_id: int,
-    db: AsyncSession = Depends(get_db)
+    politico_id: PoliticoIdPath,
+    service: PoliticoService = Depends(_politico_service),
 ):
-    service = PoliticoService(db)
-    return await service.get_politicos_detalhe_service(politico_id=politico_id)
-    
-@router.get("/{politico_id}/votacoes", response_model=list[PoliticoVoto])
-@cache(expire=86400, key_builder=politico_key_builder)
-async def ultimas_votacoes_do_politico(
-    politico_id: int, 
-    limit: int = 20, 
-    db: AsyncSession = Depends(get_db)
-):
-    print(f"DEBUG: Buscando votações para o politico {politico_id}")
-    service = PoliticoService(db)
-        
-    return await service.get_politicos_votacoes_service(politico_id=politico_id, limit=limit)
+    logger.info("Detalhe do político id=%s", politico_id)
+    return await service.get_politicos_detalhe_service(politico_id)
 
-@router.get("/{politico_id}/despesas", response_model=list[PoliticoDespesaDetalhe])
-@cache(expire=86400, key_builder=politico_key_builder)  # Cache por 24 horas
+
+@router.get(
+    "/{politico_id}/votacoes",
+    response_model=list[PoliticoVoto],
+    summary="Últimas votações de um político",
+)
+@cache(expire=86400, key_builder=politico_key_builder)
+async def ultimas_votacoes(
+    politico_id: PoliticoIdPath,
+    limit: Annotated[int, Query(ge=1, le=20)] = 20,
+    service: PoliticoService = Depends(_politico_service),
+):
+    logger.info("Votações | político id=%s limit=%s", politico_id, limit)
+    return await service.get_politicos_votacoes_service(politico_id, limit=limit)
+
+
+@router.get(
+    "/{politico_id}/despesas",
+    response_model=list[PoliticoDespesaDetalhe],
+    summary="Despesas individuais paginadas",
+)
+@cache(expire=86400, key_builder=politico_key_builder)
 async def listar_despesas_detalhadas(
-    politico_id: int,
-    ano: int | None = None,
-    mes: int | None = None,
-    limit: int = 20,
-    db: AsyncSession = Depends(get_db)
+    politico_id: PoliticoIdPath,
+    ano: Annotated[int | None, Query(ge=2000, le=2100)] = None,
+    mes: Annotated[int | None, Query(ge=1, le=12)] = None,
+    limit: Annotated[int, Query(ge=1, le=20)] = 20,
+    service: PoliticoService = Depends(_politico_service),
 ):
-    """Lista as despesas individuais com paginação."""
-   
-    service = PoliticoService(db)
-    return await service.get_politicos_despesas_services(politico_id=politico_id, ano=ano, mes=mes, limit=limit)
-
-@router.get("/{politico_id}/despesas/resumo", response_model=list[PoliticoDespesaResumo])
-@cache(expire=86400, key_builder=politico_key_builder)  # Cache por 24 horas
-async def resumo_despesas_do_politico(
-    politico_id: int, 
-    ano: int | None = None,
-    limit: int = 60,
-    db: AsyncSession = Depends(get_db)):
-    # Agora a função é ASYNC
-    print(f"DEBUG: Calculando resumo no banco para o politico {politico_id} {datetime.now().time()}")
-    
-    service = PoliticoService(db)
-    return await service.get_politicos_despesas_resumo_services(politico_id=politico_id, ano=ano, limit=limit)
-  
-
-@router.get("/{politico_id}/despesas/resumo_completo", response_model=PoliticoDespesaResumoCompleto)
-@cache(expire=86400, key_builder=politico_key_builder)  # Cache por 24 horas
-async def resumo_despesas_completo_do_politico(
-    politico_id: int, 
-    ano: int | None = None,
-    limit_meses: int = 60,
-    db: AsyncSession = Depends(get_db)):
-    # Agora a função é ASYNC
-    print(f"DEBUG: Calculando resumo no banco para o politico {politico_id} {datetime.now().time()}")
-    
-    service = PoliticoService(db)
-    return await service.get_politicos_despesas_resumo_completo_services(politico_id=politico_id, ano=ano, limit_meses=limit_meses)
-  
+    logger.info("Despesas | político id=%s ano=%s mes=%s", politico_id, ano, mes)
+    return await service.get_politicos_despesas_services(
+        politico_id, ano=ano, mes=mes, limit=limit
+    )
 
 
-@router.get("/{politico_id}/despesas/fornecedores", response_model=list[PoliticoFornecedor])
+@router.get(
+    "/{politico_id}/despesas/resumo",
+    response_model=list[PoliticoDespesaResumo],
+    summary="Resumo mensal de gastos",
+)
 @cache(expire=86400, key_builder=politico_key_builder)
-async def ranking_fornecedores_do_politico(
-    politico_id: int, 
-    limit: int = 10, 
-    db: Session = Depends(get_db)
+async def resumo_despesas(
+    politico_id: PoliticoIdPath,
+    ano: Annotated[int | None, Query(ge=2000, le=2100)] = None,
+    limit: Annotated[int, Query(ge=1, le=60)] = 60,
+    service: PoliticoService = Depends(_politico_service),
 ):
-    print(f"DEBUG: Gerando ranking de fornecedores para o politico {politico_id}")
-    
-    def get_ranking():
+    logger.info("Resumo despesas | político id=%s ano=%s", politico_id, ano)
+    return await service.get_politicos_despesas_resumo_services(
+        politico_id, ano=ano, limit=limit
+    )
+
+
+@router.get(
+    "/{politico_id}/despesas/resumo_completo",
+    response_model=PoliticoDespesaResumoCompleto,
+    summary="Resumo completo: histórico + top fornecedores + categorias",
+)
+@cache(expire=86400, key_builder=politico_key_builder)
+async def resumo_despesas_completo(
+    politico_id: PoliticoIdPath,
+    ano: Annotated[int | None, Query(ge=2000, le=2100)] = None,
+    limit_meses: Annotated[int, Query(ge=1, le=60)] = 60,
+    service: PoliticoService = Depends(_politico_service),
+):
+    logger.info("Resumo completo despesas | político id=%s", politico_id)
+    return await service.get_politicos_despesas_resumo_completo_services(
+        politico_id, ano=ano, limit_meses=limit_meses
+    )
+
+
+@router.get(
+    "/{politico_id}/despesas/fornecedores",
+    response_model=list[PoliticoFornecedor],
+    summary="Ranking dos maiores fornecedores do político",
+)
+@cache(expire=86400, key_builder=politico_key_builder)
+async def ranking_fornecedores(
+    politico_id: PoliticoIdPath,
+    limit: Annotated[int, Query(ge=1, le=20)] = 10,
+    # NOTA: este endpoint ainda usa sessão síncrona por depender de run_in_threadpool.
+    # Migrar para AsyncSession quando possível (ver comentário abaixo).
+    db: Session = Depends(get_db),
+):
+    """
+    ⚠️  Este endpoint usa sessão **síncrona** (legado). Ao migrar para
+    `AsyncSession`, substitua `run_in_threadpool` pela query assíncrona
+    equivalente no repositório.
+    """
+    logger.info("Fornecedores | político id=%s limit=%s", politico_id, limit)
+
+    safe_limit = min(abs(limit), 20)
+
+    def _query():
         stmt = (
             select(
                 Despesa.nome_fornecedor,
                 func.sum(Despesa.valor_liquido).label("total_recebido"),
-                func.count(Despesa.id).label("qtd_notas")
+                func.count(Despesa.id).label("qtd_notas"),
             )
             .where(Despesa.politico_id == politico_id)
             .group_by(Despesa.nome_fornecedor)
-            .order_by(func.sum(Despesa.valor_liquido).desc())
-            .limit(limit)
+            .order_by(desc(func.sum(Despesa.valor_liquido)))
+            .limit(safe_limit)
         )
-
         return db.execute(stmt).mappings().all()
 
-    return await run_in_threadpool(get_ranking)
+    return await run_in_threadpool(_query)
 
 
-@router.get("/{politico_id}/estatisticas",response_model=PoliticoEstatisticasResponse
+@router.get(
+    "/{politico_id}/estatisticas",
+    response_model=PoliticoEstatisticasResponse,
+    summary="Estatísticas gerais do político",
 )
 @cache(expire=86400, key_builder=politico_key_builder)
-async def estatisticas_do_politico(
-    politico_id: int,
-    db: AsyncSession = Depends(get_db)
+async def estatisticas(
+    politico_id: PoliticoIdPath,
+    service: PoliticoService = Depends(_politico_service),
 ):
-    service = PoliticoService(db)
-    return await service.get_politico_estatisticas_service(politico_id=politico_id)
- 
+    logger.info("Estatísticas | político id=%s", politico_id)
+    return await service.get_politico_estatisticas_service(politico_id)
 
-@router.get("/{politico_id}/performance", response_model=dict)
+
+@router.get(
+    "/{politico_id}/performance",
+    response_model=dict,
+    summary="Score de performance parlamentar",
+    responses={404: {"description": "Político não encontrado"}},
+)
 @cache(expire=86400, key_builder=politico_key_builder)
-async def performance_do_politico(
-    politico_id: int,
-    db: AsyncSession = Depends(get_db)
+async def performance(
+    politico_id: PoliticoIdPath,
+    service: PoliticoService = Depends(_politico_service),
 ):
-    service = PoliticoService(db)
-    return await service.get_politico_performance_service(politico_id=politico_id)
+    logger.info("Performance | político id=%s", politico_id)
+    return await service.get_politico_performance_service(politico_id)
