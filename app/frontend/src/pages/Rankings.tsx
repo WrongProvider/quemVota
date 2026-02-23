@@ -19,6 +19,7 @@ import {
   useRankingLucroEmpresas,
 } from "../hooks/useRankings"
 
+import Header from "../components/Header"
 // Serviços
 import {
   DespesaRankingService,
@@ -33,109 +34,112 @@ export default function Rankings() {
   const [selectedUF, setSelectedUF] = useState("")
 
   return (
-    <div className="max-w-7xl mx-auto p-8 font-sans">
-      {/* HEADER */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2 text-slate-800 flex items-center gap-3">
-          <Award size={40} className="text-amber-500" />
-          Rankings Parlamentares
-        </h1>
-        <p className="text-lg text-slate-500">
-          Confira os parlamentares em destaque nas principais métricas de desempenho
-        </p>
-      </div>
+    <>
+      <Header />
+        <div className="max-w-7xl mx-auto p-8 font-sans">
+          {/* HEADER */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold mb-2 text-slate-800 flex items-center gap-3">
+              <Award size={40} className="text-amber-500" />
+              Rankings Parlamentares
+            </h1>
+            <p className="text-lg text-slate-500">
+              Confira os parlamentares em destaque nas principais métricas de desempenho
+            </p>
+          </div>
 
-      {/* TABS DE NAVEGAÇÃO */}
-      <div className="flex gap-2 mb-8 border-b-2 border-slate-200 overflow-x-auto pb-2">
-        <TabButton
-          active={activeTab === "performance"}
-          onClick={() => setActiveTab("performance")}
-          icon={<TrendingUp size={20} />}
-          label="Melhor Performance"
-        />
-        <TabButton
-          active={activeTab === "gastos"}
-          onClick={() => setActiveTab("gastos")}
-          icon={<TrendingDown size={20} />}
-          label="Maiores Gastos"
-        />
-        <TabButton
-          active={activeTab === "economia"}
-          onClick={() => setActiveTab("economia")}
-          icon={<DollarSign size={20} />}
-          label="Mais Econômicos"
-        />
-        <TabButton
-          active={activeTab === "discursos"}
-          onClick={() => setActiveTab("discursos")}
-          icon={<FileText size={20} />}
-          label="Mais Discursos"
-        />
-        <TabButton
-          active={activeTab === "empresas"}
-          onClick={() => setActiveTab("empresas")}
-          icon={<Building2 size={20} />}
-          label="Empresas Beneficiadas"
-        />
-      </div>
+          {/* TABS DE NAVEGAÇÃO */}
+          <div className="flex gap-2 mb-8 border-b-2 border-slate-200 overflow-x-auto pb-2">
+            <TabButton
+              active={activeTab === "performance"}
+              onClick={() => setActiveTab("performance")}
+              icon={<TrendingUp size={20} />}
+              label="Melhor Performance"
+            />
+            <TabButton
+              active={activeTab === "gastos"}
+              onClick={() => setActiveTab("gastos")}
+              icon={<TrendingDown size={20} />}
+              label="Maiores Gastos"
+            />
+            <TabButton
+              active={activeTab === "economia"}
+              onClick={() => setActiveTab("economia")}
+              icon={<DollarSign size={20} />}
+              label="Mais Econômicos"
+            />
+            <TabButton
+              active={activeTab === "discursos"}
+              onClick={() => setActiveTab("discursos")}
+              icon={<FileText size={20} />}
+              label="Mais Discursos"
+            />
+            <TabButton
+              active={activeTab === "empresas"}
+              onClick={() => setActiveTab("empresas")}
+              icon={<Building2 size={20} />}
+              label="Empresas Beneficiadas"
+            />
+          </div>
 
-      {/* FILTROS (apenas para rankings de políticos) */}
-      {activeTab !== "empresas" && (
-        <div className="flex gap-4 mb-8 flex-wrap items-center">
-          <div className="flex-1 min-w-[250px]">
-            <div className="relative">
-              <Search 
-                size={20} 
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" 
-              />
-              <input
-                type="text"
-                placeholder="Buscar parlamentar..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full py-3 px-4 pl-11 border-2 border-slate-200 rounded-lg text-base focus:outline-none focus:border-blue-500 transition-colors"
-              />
+          {/* FILTROS (apenas para rankings de políticos) */}
+          {activeTab !== "empresas" && (
+            <div className="flex gap-4 mb-8 flex-wrap items-center">
+              <div className="flex-1 min-w-[250px]">
+                <div className="relative">
+                  <Search 
+                    size={20} 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" 
+                  />
+                  <input
+                    type="text"
+                    placeholder="Buscar parlamentar..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full py-3 px-4 pl-11 border-2 border-slate-200 rounded-lg text-base focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Filter size={20} className="text-slate-500" />
+                <select
+                  value={selectedUF}
+                  onChange={(e) => setSelectedUF(e.target.value)}
+                  className="py-3 px-4 border-2 border-slate-200 rounded-lg text-base bg-white cursor-pointer focus:outline-none focus:border-blue-500 transition-colors"
+                >
+                  <option value="">Todos os Estados</option>
+                  {FilterService.UFs.map(uf => (
+                    <option key={uf} value={uf}>{uf}</option>
+                  ))}
+                </select>
+              </div>
+
+              {(searchTerm || selectedUF) && (
+                <button
+                  onClick={() => {
+                    setSearchTerm("")
+                    setSelectedUF("")
+                  }}
+                  className="py-3 px-6 bg-slate-100 rounded-lg cursor-pointer text-sm font-medium hover:bg-slate-200 transition-colors"
+                >
+                  Limpar Filtros
+                </button>
+              )}
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Filter size={20} className="text-slate-500" />
-            <select
-              value={selectedUF}
-              onChange={(e) => setSelectedUF(e.target.value)}
-              className="py-3 px-4 border-2 border-slate-200 rounded-lg text-base bg-white cursor-pointer focus:outline-none focus:border-blue-500 transition-colors"
-            >
-              <option value="">Todos os Estados</option>
-              {FilterService.UFs.map(uf => (
-                <option key={uf} value={uf}>{uf}</option>
-              ))}
-            </select>
-          </div>
-
-          {(searchTerm || selectedUF) && (
-            <button
-              onClick={() => {
-                setSearchTerm("")
-                setSelectedUF("")
-              }}
-              className="py-3 px-6 bg-slate-100 rounded-lg cursor-pointer text-sm font-medium hover:bg-slate-200 transition-colors"
-            >
-              Limpar Filtros
-            </button>
           )}
-        </div>
-      )}
 
-      {/* CONTEÚDO DOS RANKINGS */}
-      <div>
-        {activeTab === "performance" && <RankingPerformance />}
-        {activeTab === "gastos" && <RankingGastos searchTerm={searchTerm} selectedUF={selectedUF} />}
-        {activeTab === "economia" && <RankingEconomia searchTerm={searchTerm} selectedUF={selectedUF} />}
-        {activeTab === "discursos" && <RankingDiscursos />}
-        {activeTab === "empresas" && <RankingEmpresas />}
-      </div>
-    </div>
-  )
+          {/* CONTEÚDO DOS RANKINGS */}
+          <div>
+            {activeTab === "performance" && <RankingPerformance />}
+            {activeTab === "gastos" && <RankingGastos searchTerm={searchTerm} selectedUF={selectedUF} />}
+            {activeTab === "economia" && <RankingEconomia searchTerm={searchTerm} selectedUF={selectedUF} />}
+            {activeTab === "discursos" && <RankingDiscursos />}
+            {activeTab === "empresas" && <RankingEmpresas />}
+          </div>
+        </div>
+    </>
+  ) 
 }
 
 // ========== COMPONENTES DOS RANKINGS ==========

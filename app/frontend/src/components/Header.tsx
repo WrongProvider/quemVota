@@ -351,11 +351,28 @@ export default function Header() {
             {/* LOGO */}
             <Link to="/" className="logo-link">
               <div className="logo-mark">
-                <svg viewBox="0 0 14 14" fill="none">
-                  <rect x="1" y="1" width="5" height="5" rx="1" fill="white" opacity="0.9"/>
-                  <rect x="8" y="1" width="5" height="5" rx="1" fill="white" opacity="0.5"/>
-                  <rect x="1" y="8" width="5" height="5" rx="1" fill="white" opacity="0.5"/>
-                  <rect x="8" y="8" width="5" height="5" rx="1" fill="#60a5fa" opacity="0.9"/>
+                <svg viewBox="0 0 100 100" fill="none">
+                  
+                  {/* Círculo externo */}
+                  <circle cx="45" cy="45" r="35" stroke="#1E3A8A" strokeWidth="10" fill="white" />
+                  
+                  {/* Círculo interno */}
+                  <circle cx="45" cy="45" r="20" fill="#1E3A8A" />
+                  
+                  {/* Linha horizontal estilizada (referência bandeira) */}
+                  <rect x="30" y="43" width="30" height="4" fill="white" rx="2" />
+                  
+                  {/* Cabo da lupa */}
+                  <line 
+                    x1="68" 
+                    y1="68" 
+                    x2="90" 
+                    y2="90" 
+                    stroke="#1E3A8A" 
+                    strokeWidth="10" 
+                    strokeLinecap="round"
+                  />
+                  
                 </svg>
               </div>
               <span className="logo-text">quem<span>vota</span></span>
