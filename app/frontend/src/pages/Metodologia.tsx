@@ -4,85 +4,44 @@ import Header from "../components/Header"
 export default function Metodologia() {
   return (
     <>
-      <Header /> 
-      <div style={{ 
-        maxWidth: "900px", 
-        margin: "0 auto", 
-        padding: "3rem 2rem",
-        fontFamily: "system-ui, -apple-system, sans-serif"
-      }}>
-        {/* AVISO IMPORTANTE */}
-        <div style={{
-          backgroundColor: "#FEF3C7",
-          border: "2px solid #F59E0B",
-          borderRadius: "12px",
-          padding: "1.5rem",
-          marginBottom: "3rem",
-          display: "flex",
-          gap: "1rem",
-          alignItems: "flex-start"
-        }}>
-          <AlertCircle size={24} color="#F59E0B" style={{ flexShrink: 0, marginTop: "2px" }} />
-          <div>
-            <h3 style={{ margin: 0, marginBottom: "0.5rem", color: "#92400E", fontSize: "1.1rem" }}>
-              ⚠️ Projeto em Desenvolvimento
-            </h3>
-            <p style={{ margin: 0, color: "#78350F", lineHeight: "1.6" }}>
-              Este projeto está em fase de desenvolvimento e o banco de dados ainda não foi totalmente ajustado 
-              para replicar fielmente os dados da Câmara dos Deputados. <strong>Os dados e scores apresentados 
-              podem não estar corretos</strong> e não devem ser interpretados como informação oficial ou definitiva. 
-              Use apenas para fins educacionais e de demonstração.
-            </p>
-          </div>
-        </div>
+      <Header />
+      <div className="max-w-4xl mx-auto px-8 py-12 font-sans">
 
         {/* HEADER */}
-        <div style={{ marginBottom: "3rem" }}>
-          <h1 style={{ 
-            fontSize: "2.5rem", 
-            fontWeight: "bold", 
-            marginBottom: "1rem",
-            color: "#1E293B" 
-          }}>
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold mb-4 text-slate-800">
             📊 Metodologia de Cálculo
           </h1>
-          <p style={{ 
-            fontSize: "1.1rem", 
-            color: "#64748B", 
-            lineHeight: "1.8" 
-          }}>
-            Entenda como calculamos o score de performance parlamentar com base em três pilares principais: 
+          <p className="text-lg text-slate-500 leading-relaxed">
+            Entenda como calculamos o score de performance parlamentar com base em três pilares principais:
             assiduidade, economia e produção legislativa.
           </p>
         </div>
 
         {/* FONTES DE DADOS */}
-        <Section 
-          icon={<Database size={24} color="#1E88E5" />}
-          title="Fontes de Dados"
-        >
-          <p style={{ marginBottom: "1rem" }}>
+        <Section icon={<Database size={24} className="text-blue-500" />} title="Fontes de Dados">
+          <p className="mb-4">
             Todos os dados utilizados são provenientes de fontes públicas e oficiais:
           </p>
-          <ul style={{ lineHeight: "1.8", color: "#475569" }}>
+          <ul className="leading-loose text-slate-600 list-disc list-inside space-y-1">
             <li>
               <strong>API Pública da Câmara dos Deputados:</strong>{" "}
-              <a 
-                href="https://dadosabertos.camara.leg.br/swagger/api.html" 
-                target="_blank" 
+              <a
+                href="https://dadosabertos.camara.leg.br/swagger/api.html"
+                target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: "#1E88E5", textDecoration: "none" }}
+                className="text-blue-500 hover:underline"
               >
                 dadosabertos.camara.leg.br
               </a>
             </li>
             <li>
               <strong>Webservice de Dados Abertos Legislativos:</strong>{" "}
-              <a 
-                href="https://www2.camara.leg.br/transparencia/dados-abertos/dados-abertos-legislativo/webservices/proposicoes-1" 
-                target="_blank" 
+              <a
+                href="https://www2.camara.leg.br/transparencia/dados-abertos/dados-abertos-legislativo/webservices/proposicoes-1"
+                target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: "#1E88E5", textDecoration: "none" }}
+                className="text-blue-500 hover:underline"
               >
                 Proposições e Autoria
               </a>
@@ -91,40 +50,29 @@ export default function Metodologia() {
         </Section>
 
         {/* SCORE FINAL */}
-        <Section 
-          icon={<TrendingUp size={24} color="#10B981" />}
-          title="Score Final de Performance"
-        >
-          <p style={{ marginBottom: "1.5rem" }}>
-            O score final é calculado através de uma <strong>média ponderada</strong> de três critérios, 
+        <Section icon={<TrendingUp size={24} className="text-emerald-500" />} title="Score Final de Performance">
+          <p className="mb-6">
+            O score final é calculado através de uma <strong>média ponderada</strong> de três critérios,
             variando de 0 a 100 pontos:
           </p>
 
           <FormulaBox>
-            <code style={{ fontSize: "1.1rem" }}>
+            <code className="text-lg">
               Score Final = (Assiduidade × 0.15) + (Economia × 0.40) + (Produção × 0.45)
             </code>
           </FormulaBox>
 
-          <div style={{ 
-            display: "grid", 
-            gridTemplateColumns: "repeat(3, 1fr)", 
-            gap: "1rem",
-            marginTop: "1.5rem" 
-          }}>
-            <WeightCard label="Assiduidade" weight="15%" color="#3B82F6" />
-            <WeightCard label="Economia" weight="40%" color="#10B981" />
-            <WeightCard label="Produção" weight="45%" color="#8B5CF6" />
+          <div className="grid grid-cols-3 gap-4 mt-6">
+            <WeightCard label="Assiduidade" weight="15%" colorClass="border-blue-500 text-blue-500" />
+            <WeightCard label="Economia" weight="40%" colorClass="border-emerald-500 text-emerald-500" />
+            <WeightCard label="Produção" weight="45%" colorClass="border-purple-500 text-purple-500" />
           </div>
         </Section>
 
         {/* CRITÉRIO 1: ASSIDUIDADE */}
-        <Section 
-          icon={<Users size={24} color="#3B82F6" />}
-          title="1. Assiduidade (Peso: 15%)"
-        >
-          <p style={{ marginBottom: "1rem" }}>
-            Mede a presença do parlamentar nas sessões de votação da Câmara. 
+        <Section icon={<Users size={24} className="text-blue-500" />} title="1. Assiduidade (Peso: 15%)">
+          <p className="mb-4">
+            Mede a presença do parlamentar nas sessões de votação da Câmara.
             Uma alta taxa de presença indica comprometimento com as atividades legislativas.
           </p>
 
@@ -140,20 +88,17 @@ export default function Metodologia() {
         </Section>
 
         {/* CRITÉRIO 2: ECONOMIA */}
-        <Section 
-          icon={<DollarSign size={24} color="#10B981" />}
-          title="2. Economia (Peso: 40%)"
-        >
-          <p style={{ marginBottom: "1rem" }}>
-            Avalia o uso responsável da cota parlamentar (CEAP - Cota para Exercício da Atividade Parlamentar). 
+        <Section icon={<DollarSign size={24} className="text-emerald-500" />} title="2. Economia (Peso: 40%)">
+          <p className="mb-4">
+            Avalia o uso responsável da cota parlamentar (CEAP - Cota para Exercício da Atividade Parlamentar).
             Cada estado possui um limite mensal diferente.
           </p>
 
           <FormulaBox>
-            <div style={{ marginBottom: "0.5rem" }}>
+            <div className="mb-2">
               <code>Cota Total do Período = Cota Mensal × Meses de Mandato</code>
             </div>
-            <div style={{ marginBottom: "0.5rem" }}>
+            <div className="mb-2">
               <code>Economia = (Cota Total - Gasto Total) ÷ Cota Total</code>
             </div>
             <div>
@@ -166,39 +111,30 @@ export default function Metodologia() {
             Mandato de 12 meses, gastou R$ 489.064,11<br />
             Cota total: <code>R$ 40.000 × 12 = R$ 480.000</code><br />
             Neste caso: gastou mais que a cota → <code>Nota = 0 pontos</code><br /><br />
-            <em style={{ color: "#64748B" }}>
+            <em className="text-slate-500">
               * Se o gasto for menor que a cota, a nota aumenta proporcionalmente
             </em>
           </ExampleBox>
 
-          <div style={{
-            marginTop: "1.5rem",
-            padding: "1rem",
-            backgroundColor: "#F1F5F9",
-            borderRadius: "8px"
-          }}>
-            <p style={{ margin: 0, fontSize: "0.95rem", color: "#475569" }}>
-              💡 <strong>Nota:</strong> As cotas variam por UF devido a diferenças de distância de Brasília 
+          <div className="mt-6 p-4 bg-slate-100 rounded-lg">
+            <p className="m-0 text-sm text-slate-600">
+              💡 <strong>Nota:</strong> As cotas variam por UF devido a diferenças de distância de Brasília
               e custo de vida. Estados mais distantes possuem cotas maiores para cobrir deslocamentos.
             </p>
           </div>
         </Section>
 
         {/* CRITÉRIO 3: PRODUÇÃO */}
-        <Section 
-          icon={<FileText size={24} color="#8B5CF6" />}
-          title="3. Produção Legislativa (Peso: 45%)"
-        >
-          <p style={{ marginBottom: "1rem" }}>
-            Avalia a quantidade e relevância das proposições legislativas apresentadas pelo parlamentar. 
+        <Section icon={<FileText size={24} className="text-purple-500" />} title="3. Produção Legislativa (Peso: 45%)">
+          <p className="mb-4">
+            Avalia a quantidade e relevância das proposições legislativas apresentadas pelo parlamentar.
             Diferentes tipos de proposição recebem pontuações diferentes, e ser <strong>autor principal</strong> vale mais.
           </p>
 
-          <div style={{ marginBottom: "1.5rem" }}>
-            <h4 style={{ marginBottom: "0.75rem", color: "#1E293B" }}>
+          <div className="mb-6">
+            <h4 className="mb-3 text-slate-800 font-semibold">
               Sistema de Pontuação por Tipo de Proposição:
             </h4>
-            
             <ScoreTable>
               <thead>
                 <tr>
@@ -212,27 +148,27 @@ export default function Metodologia() {
                 <tr>
                   <td><strong>Alta Relevância</strong></td>
                   <td>PEC, PL, PLC, PLP</td>
-                  <td style={{ color: "#10B981", fontWeight: "bold" }}>1.0 ponto</td>
-                  <td style={{ color: "#64748B" }}>0.2 pontos</td>
+                  <td className="text-emerald-500 font-bold">1.0 ponto</td>
+                  <td className="text-slate-500">0.2 pontos</td>
                 </tr>
                 <tr>
                   <td><strong>Média Relevância</strong></td>
                   <td>PDC, PRC, MPV</td>
-                  <td style={{ color: "#F59E0B", fontWeight: "bold" }}>0.5 pontos</td>
-                  <td style={{ color: "#64748B" }}>0.1 pontos</td>
+                  <td className="text-amber-500 font-bold">0.5 pontos</td>
+                  <td className="text-slate-500">0.1 pontos</td>
                 </tr>
                 <tr>
                   <td><strong>Baixa Relevância</strong></td>
                   <td>Outros tipos</td>
-                  <td style={{ color: "#6B7280", fontWeight: "bold" }}>0.05 pontos</td>
-                  <td style={{ color: "#9CA3AF" }}>0.01 pontos</td>
+                  <td className="text-gray-500 font-bold">0.05 pontos</td>
+                  <td className="text-gray-400">0.01 pontos</td>
                 </tr>
               </tbody>
             </ScoreTable>
           </div>
 
           <FormulaBox>
-            <div style={{ marginBottom: "0.5rem" }}>
+            <div className="mb-2">
               <code>Meta de Produção = Meses de Mandato × 2 proposições/mês</code>
             </div>
             <div>
@@ -251,96 +187,59 @@ export default function Metodologia() {
             Nota: <code>(6 ÷ 24) × 100 = 25 pontos</code>
           </ExampleBox>
 
-          <div style={{
-            marginTop: "1.5rem",
-            padding: "1rem",
-            backgroundColor: "#F1F5F9",
-            borderRadius: "8px"
-          }}>
-            <p style={{ margin: 0, fontSize: "0.95rem", color: "#475569" }}>
+          <div className="mt-6 p-4 bg-slate-100 rounded-lg">
+            <p className="m-0 text-sm text-slate-600">
               📌 <strong>Legenda dos tipos:</strong><br />
-              <strong>PEC</strong> = Proposta de Emenda Constitucional | 
-              <strong> PL</strong> = Projeto de Lei | 
-              <strong> PLC</strong> = Projeto de Lei Complementar | 
-              <strong> PLP</strong> = Projeto de Lei do Plano Plurianual |
-              <strong> PDC</strong> = Projeto de Decreto Legislativo | 
-              <strong> PRC</strong> = Projeto de Resolução | 
-              <strong> MPV</strong> = Medida Provisória
+              <strong>PEC</strong> = Proposta de Emenda Constitucional |{" "}
+              <strong>PL</strong> = Projeto de Lei |{" "}
+              <strong>PLC</strong> = Projeto de Lei Complementar |{" "}
+              <strong>PLP</strong> = Projeto de Lei do Plano Plurianual |{" "}
+              <strong>PDC</strong> = Projeto de Decreto Legislativo |{" "}
+              <strong>PRC</strong> = Projeto de Resolução |{" "}
+              <strong>MPV</strong> = Medida Provisória
             </p>
           </div>
         </Section>
 
         {/* CLASSIFICAÇÃO */}
-        <Section 
-          icon={<TrendingUp size={24} color="#F59E0B" />}
-          title="Classificação do Score"
-        >
-          <p style={{ marginBottom: "1.5rem" }}>
+        <Section icon={<TrendingUp size={24} className="text-amber-500" />} title="Classificação do Score">
+          <p className="mb-6">
             Com base no score final, os parlamentares são classificados em:
           </p>
 
-          <div style={{ display: "grid", gap: "1rem" }}>
-            <ClassificationCard 
-              label="Excelente" 
-              range="80 - 100" 
-              color="#10B981" 
-              bgColor="#D1FAE5"
-            />
-            <ClassificationCard 
-              label="Bom" 
-              range="60 - 79" 
-              color="#3B82F6" 
-              bgColor="#DBEAFE"
-            />
-            <ClassificationCard 
-              label="Regular" 
-              range="40 - 59" 
-              color="#F59E0B" 
-              bgColor="#FEF3C7"
-            />
-            <ClassificationCard 
-              label="Crítico" 
-              range="0 - 39" 
-              color="#EF4444" 
-              bgColor="#FEE2E2"
-            />
+          <div className="grid gap-4">
+            <ClassificationCard label="Excelente" range="80 - 100" colorClass="border-emerald-500 bg-emerald-50 text-emerald-600" />
+            <ClassificationCard label="Bom"       range="60 - 79"  colorClass="border-blue-500 bg-blue-50 text-blue-600" />
+            <ClassificationCard label="Regular"   range="40 - 59"  colorClass="border-amber-500 bg-amber-50 text-amber-600" />
+            <ClassificationCard label="Crítico"   range="0 - 39"   colorClass="border-red-500 bg-red-50 text-red-600" />
           </div>
         </Section>
 
         {/* LIMITAÇÕES */}
-        <Section 
-          icon={<AlertCircle size={24} color="#64748B" />}
-          title="Limitações e Considerações"
-        >
-          <ul style={{ lineHeight: "1.8", color: "#475569" }}>
+        <Section icon={<AlertCircle size={24} className="text-slate-500" />} title="Limitações e Considerações">
+          <ul className="leading-loose text-slate-600 list-disc list-inside space-y-2">
             <li>
-              <strong>Dados em desenvolvimento:</strong> O banco de dados ainda está sendo ajustado 
+              <strong>Dados em desenvolvimento:</strong> O banco de dados ainda está sendo ajustado
               e pode apresentar inconsistências.
             </li>
             <li>
-              <strong>Contexto político:</strong> O score não captura nuances como qualidade das proposições, 
+              <strong>Contexto político:</strong> O score não captura nuances como qualidade das proposições,
               impacto social ou contexto político de ausências justificadas.
             </li>
             <li>
-              <strong>Atualização:</strong> Os dados são atualizados periodicamente conforme disponibilidade 
+              <strong>Atualização:</strong> Os dados são atualizados periodicamente conforme disponibilidade
               da API da Câmara.
             </li>
             <li>
-              <strong>Uso educacional:</strong> Esta ferramenta tem fins educacionais e de transparência, 
+              <strong>Uso educacional:</strong> Esta ferramenta tem fins educacionais e de transparência,
               não substituindo análises políticas profundas.
             </li>
           </ul>
         </Section>
 
         {/* RODAPÉ */}
-        <div style={{
-          marginTop: "4rem",
-          paddingTop: "2rem",
-          borderTop: "2px solid #E2E8F0",
-          textAlign: "center",
-          color: "#64748B"
-        }}>
-          <p style={{ margin: 0, fontSize: "0.9rem" }}>
+        <div className="mt-16 pt-8 border-t-2 border-slate-200 text-center text-slate-500">
+          <p className="m-0 text-sm">
             Dúvidas ou sugestões? Entre em contato através do nosso repositório no GitHub.
           </p>
         </div>
@@ -351,16 +250,14 @@ export default function Metodologia() {
 
 // ========== COMPONENTES AUXILIARES ==========
 
-function Section({ icon, title, children }: { icon: React.ReactNode, title: string, children: React.ReactNode }) {
+function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <section style={{ marginBottom: "3rem" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
+    <section className="mb-12">
+      <div className="flex items-center gap-3 mb-6">
         {icon}
-        <h2 style={{ fontSize: "1.75rem", fontWeight: "bold", margin: 0, color: "#1E293B" }}>
-          {title}
-        </h2>
+        <h2 className="text-3xl font-bold m-0 text-slate-800">{title}</h2>
       </div>
-      <div style={{ fontSize: "1rem", lineHeight: "1.8", color: "#475569" }}>
+      <div className="text-base leading-relaxed text-slate-600">
         {children}
       </div>
     </section>
@@ -369,16 +266,7 @@ function Section({ icon, title, children }: { icon: React.ReactNode, title: stri
 
 function FormulaBox({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
-      backgroundColor: "#F8FAFC",
-      border: "2px solid #E2E8F0",
-      borderRadius: "8px",
-      padding: "1.25rem",
-      fontFamily: "monospace",
-      fontSize: "0.95rem",
-      overflowX: "auto",
-      marginBottom: "1rem"
-    }}>
+    <div className="bg-slate-50 border-2 border-slate-200 rounded-lg p-5 font-mono text-sm overflow-x-auto mb-4">
       {children}
     </div>
   )
@@ -386,92 +274,42 @@ function FormulaBox({ children }: { children: React.ReactNode }) {
 
 function ExampleBox({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
-      backgroundColor: "#EFF6FF",
-      border: "2px solid #BFDBFE",
-      borderRadius: "8px",
-      padding: "1rem",
-      marginTop: "1rem",
-      fontSize: "0.95rem",
-      lineHeight: "1.6"
-    }}>
+    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mt-4 text-sm leading-relaxed">
       {children}
     </div>
   )
 }
 
-function WeightCard({ label, weight, color }: { label: string, weight: string, color: string }) {
+function WeightCard({ label, weight, colorClass }: { label: string; weight: string; colorClass: string }) {
   return (
-    <div style={{
-      backgroundColor: "#F8FAFC",
-      border: `3px solid ${color}`,
-      borderRadius: "8px",
-      padding: "1rem",
-      textAlign: "center"
-    }}>
-      <div style={{ fontSize: "2rem", fontWeight: "bold", color, marginBottom: "0.25rem" }}>
+    <div className={`bg-slate-50 border-4 ${colorClass} rounded-lg p-4 text-center`}>
+      <div className={`text-3xl font-bold mb-1 ${colorClass.split(" ").find(c => c.startsWith("text-"))}`}>
         {weight}
       </div>
-      <div style={{ fontSize: "0.9rem", color: "#64748B", fontWeight: 500 }}>
-        {label}
-      </div>
+      <div className="text-sm text-slate-500 font-medium">{label}</div>
     </div>
   )
 }
 
 function ScoreTable({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ overflowX: "auto" }}>
-      <table style={{
-        width: "100%",
-        borderCollapse: "collapse",
-        fontSize: "0.95rem"
-      }}>
-        <style>{`
-          table th {
-            backgroundColor: #F1F5F9;
-            padding: 0.75rem;
-            textAlign: left;
-            fontWeight: 600;
-            color: #1E293B;
-            borderBottom: 2px solid #E2E8F0;
-          }
-          table td {
-            padding: 0.75rem;
-            borderBottom: 1px solid #E2E8F0;
-          }
-          table tr:last-child td {
-            borderBottom: none;
-          }
-        `}</style>
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-sm [&_th]:bg-slate-100 [&_th]:p-3 [&_th]:text-left [&_th]:font-semibold [&_th]:text-slate-800 [&_th]:border-b-2 [&_th]:border-slate-200 [&_td]:p-3 [&_td]:border-b [&_td]:border-slate-200 [&_tr:last-child_td]:border-b-0">
         {children}
       </table>
     </div>
   )
 }
 
-function ClassificationCard({ label, range, color, bgColor }: { 
-  label: string, 
-  range: string, 
-  color: string, 
-  bgColor: string 
+function ClassificationCard({ label, range, colorClass }: {
+  label: string
+  range: string
+  colorClass: string
 }) {
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      backgroundColor: bgColor,
-      border: `2px solid ${color}`,
-      borderRadius: "8px",
-      padding: "1rem 1.5rem"
-    }}>
-      <span style={{ fontSize: "1.1rem", fontWeight: "600", color }}>
-        {label}
-      </span>
-      <span style={{ fontSize: "1rem", fontWeight: "500", color }}>
-        {range} pontos
-      </span>
+    <div className={`flex items-center justify-between border-2 rounded-lg px-6 py-4 ${colorClass}`}>
+      <span className="text-lg font-semibold">{label}</span>
+      <span className="text-base font-medium">{range} pontos</span>
     </div>
   )
 }

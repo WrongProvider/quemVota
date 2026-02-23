@@ -6,10 +6,11 @@ import PoliticoDetalhe from "./pages/PoliticosDetalhe"
 import Home from "./pages/Home"
 import './App.css'
 import Metodologia from "./pages/Metodologia"
-
+import DisclaimerBanner from "./components/DisclaimerBanner"
 export default function App() {
   return (
     <BrowserRouter>
+      <DisclaimerBanner />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/politicos" element={<Politicos />} />
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/sobre" element={<p>Sobre o projeto</p>} />
         <Route path="/metodologia" element={<Metodologia />} />
       </Routes>
+      
     </BrowserRouter>
   )
 }
