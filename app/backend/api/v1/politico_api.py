@@ -177,46 +177,6 @@ async def resumo_despesas_completo(
         politico_id, ano=ano, limit_meses=limit_meses
     )
 
-
-@router.get(
-    "/{politico_id}/despesas/fornecedores",
-    response_model=list[PoliticoFornecedor],
-    summary="Ranking dos maiores fornecedores do político",
-)
-@cache(expire=86400, key_builder=politico_key_builder)
-async def ranking_fornecedores(
-    politico_id: PoliticoIdPath,
-    limit: Annotated[int, Query(ge=1, le=20)] = 10,
-    # NOTA: este endpoint ainda usa sessão síncrona por depender de run_in_threadpool.
-    # Migrar para AsyncSession quando possível (ver comentário abaixo).
-    db: Session = Depends(get_db),
-):
-    """
-    ⚠️  Este endpoint usa sessão **síncrona** (legado). Ao migrar para
-    `AsyncSession`, substitua `run_in_threadpool` pela query assíncrona
-    equivalente no repositório.
-    """
-    logger.info("Fornecedores | político id=%s limit=%s", politico_id, limit)
-
-    safe_limit = min(abs(limit), 20)
-
-    def _query():
-        stmt = (
-            select(
-                Despesa.nome_fornecedor,
-                func.sum(Despesa.valor_liquido).label("total_recebido"),
-                func.count(Despesa.id).label("qtd_notas"),
-            )
-            .where(Despesa.politico_id == politico_id)
-            .group_by(Despesa.nome_fornecedor)
-            .order_by(desc(func.sum(Despesa.valor_liquido)))
-            .limit(safe_limit)
-        )
-        return db.execute(stmt).mappings().all()
-
-    return await run_in_threadpool(_query)
-
-
 @router.get(
     "/{politico_id}/estatisticas",
     response_model=PoliticoEstatisticasResponse,
