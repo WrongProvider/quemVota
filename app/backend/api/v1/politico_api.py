@@ -21,19 +21,14 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response, status
-from fastapi.concurrency import run_in_threadpool
-from sqlalchemy import func, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend.models import Despesa
 from backend.schemas import (
     PoliticoDespesaDetalhe,
     PoliticoDespesaResumo,
     PoliticoDespesaResumoCompleto,
     PoliticoEstatisticasResponse,
-    PoliticoFornecedor,
     PoliticoResponse,
     PoliticoVoto,
 )
@@ -117,10 +112,11 @@ async def get_politico(
 async def ultimas_votacoes(
     politico_id: PoliticoIdPath,
     limit: Annotated[int, Query(ge=1, le=20)] = 20,
+    ano: Annotated[int | None, Query(ge=2000, le=2100)] = None,
     service: PoliticoService = Depends(_politico_service),
 ):
-    logger.info("Votações | político id=%s limit=%s", politico_id, limit)
-    return await service.get_politicos_votacoes_service(politico_id, limit=limit)
+    logger.info("Votações | político id=%s limit=%s ano=%s", politico_id, limit, ano)
+    return await service.get_politicos_votacoes_service(politico_id, limit=limit, ano=ano)
 
 
 @router.get(

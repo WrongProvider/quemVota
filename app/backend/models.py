@@ -325,7 +325,7 @@ class ProposicaoAutor(Base):
         nullable=True
     )
 
-    nome = Column(String(150), nullable=False)
+    nome = Column(String(500), nullable=False)
     uri_autor = Column(Text)
     cod_tipo = Column(Integer)
     tipo = Column(String(50))

@@ -102,7 +102,11 @@ class PoliticoRepository:
     # ------------------------------------------------------------------
 
     async def get_politicos_votacoes_repo(
-        self, politico_id: int, limit: int = 20
+        self, 
+        politico_id: int, 
+        *,
+        limit: int = 20,
+        ano: int | None = None
     ) -> list[PoliticoVoto]:
         """Últimas votações de um político."""
         safe_limit = min(abs(limit), _MAX_LIMIT_VOTACOES)
@@ -126,7 +130,8 @@ class PoliticoRepository:
             .order_by(desc(Votacao.data))
             .limit(safe_limit)
         )
-
+        if ano is not None:
+            stmt = stmt.where(Proposicao.ano == ano)
         try:
             result = await self.db.execute(stmt)
             return [

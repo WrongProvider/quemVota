@@ -22,7 +22,7 @@ export default function Politicos() {
 
   const { data, isLoading, isError } = usePoliticos({
     q: debouncedSearch,
-    limit: 200,
+    limit: 100,
   })
 
   const filtered = selectedUF ? data?.filter((p) => p.uf === selectedUF) : data

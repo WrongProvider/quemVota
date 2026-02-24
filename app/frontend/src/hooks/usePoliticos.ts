@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { listarPoliticosService, obterPoliticoDetalheService, obterPoliticoEstatisticasService, obterPoliticoPerformanceService } from "../services/politicos.service"
+import { useInfiniteQuery } from "@tanstack/react-query"
 
 interface UsePoliticosParams {
   q?: string

@@ -106,11 +106,14 @@ class PoliticoService:
     # ------------------------------------------------------------------
 
     async def get_politicos_votacoes_service(
-        self, politico_id: int, limit: int = 20
+        self, politico_id: int,
+        *,
+        limit: int = 20,
+        ano: int | None = None
     ):
         safe_limit = min(abs(limit), _MAX_LIMIT_VOTACOES)
         return await self._repo.get_politicos_votacoes_repo(
-            politico_id=politico_id, limit=safe_limit
+            politico_id=politico_id, limit=safe_limit, ano=ano
         )
 
     # ------------------------------------------------------------------
