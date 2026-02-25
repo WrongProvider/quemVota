@@ -182,9 +182,48 @@ export async function fetchPoliticos(
   signal?: AbortSignal,
 ): Promise<Politico[]> {
   const sanitized = sanitizeListarParams(params)
-  const data = await get<Politico[]>("/politicos", { params: sanitized, signal })
+  // Barra final obrigatória: o FastAPI define a rota como "/politicos/" e redireciona
+  // "/politicos" com 307. O axios não segue redirects com query params no browser.
+  const data = await get<Politico[]>("/politicos/", { params: sanitized, signal })
   assertArray<Politico>(data, "fetchPoliticos")
   return data
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// fetchPoliticosPage — para infinite scroll via useInfiniteQuery
+// O backend retorna array puro; o envelope é construído aqui no cliente
+// a partir do tamanho da página para detectar o fim dos dados.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface PoliticosPage {
+  readonly items: Politico[]
+  /** `true` quando o array retornado foi menor que o `limit` solicitado */
+  readonly hasMore: boolean
+  readonly offset: number
+}
+
+/**
+ * Busca uma página de políticos — usada exclusivamente pelo useInfiniteQuery.
+ *
+ * @param params   - Filtros + paginação (offset, limit)
+ * @param signal   - AbortSignal para cancelamento automático pelo React Query
+ */
+export async function fetchPoliticosPage(
+  params?: ListarPoliticosParams,
+  signal?: AbortSignal,
+): Promise<PoliticosPage> {
+  const sanitized = sanitizeListarParams(params)
+  const limit = (sanitized.limit as number | undefined) ?? 30
+  const offset = (sanitized.offset as number | undefined) ?? 0
+
+  const data = await get<Politico[]>("/politicos/", { params: sanitized, signal })
+  assertArray<Politico>(data, "fetchPoliticosPage")
+
+  return {
+    items: data,
+    hasMore: data.length >= limit,
+    offset,
+  }
 }
 
 /**

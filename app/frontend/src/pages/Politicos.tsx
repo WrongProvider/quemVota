@@ -1,9 +1,21 @@
 import { useSearchParams, Link } from "react-router-dom"
-import { useState } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useDebounce } from "../hooks/useDebounce"
-import { usePoliticos } from "../hooks/usePoliticos"
+import {
+  usePoliticosInfinite,
+  selectAllPoliticos,
+  POLITICOS_PAGE_SIZE,
+} from "../hooks/usePoliticosInfinite"
 import Header from "../components/Header"
-import { Search, SlidersHorizontal, Users, MapPin, ChevronRight, X } from "lucide-react"
+import {
+  Search,
+  SlidersHorizontal,
+  Users,
+  MapPin,
+  ChevronRight,
+  X,
+  Loader2,
+} from "lucide-react"
 
 const UFs = [
   "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA",
@@ -15,18 +27,58 @@ export default function Politicos() {
   const [searchParams] = useSearchParams()
   const initialQ = searchParams.get("q") || ""
 
-  const [search, setSearch] = useState(initialQ)
+  const [search, setSearch]       = useState(initialQ)
   const [selectedUF, setSelectedUF] = useState("")
   const [showFilters, setShowFilters] = useState(false)
   const debouncedSearch = useDebounce(search, 400)
 
-  const { data, isLoading, isError } = usePoliticos({
-    q: debouncedSearch,
-    limit: 100,
-  })
+  // ── Sentinel ref para o Intersection Observer ──
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
-  const filtered = selectedUF ? data?.filter((p) => p.uf === selectedUF) : data
+  // ── Dados com infinite scroll ──
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = usePoliticosInfinite({ q: debouncedSearch, uf: selectedUF })
+
+  // Achata todas as páginas numa lista única
+  const allPoliticos = useMemo(() => selectAllPoliticos(data), [data])
+
+  // Total estimado: vem do backend via `total` na primeira página
+  const totalBackend = data?.pages[0]?.total
+
   const hasActiveFilters = !!(search || selectedUF)
+
+  // ── Intersection Observer ──
+  // Quando o sentinel entra na viewport, carrega a próxima página.
+  // rootMargin de 300px garante que o carregamento começa antes do usuário
+  // chegar literalmente ao fim da lista.
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { rootMargin: "300px" },
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  // ── Helpers de UI ──
+  function clearFilters() {
+    setSearch("")
+    setSelectedUF("")
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -50,11 +102,17 @@ export default function Politicos() {
                 </p>
               </div>
 
-              {!isLoading && filtered && (
+              {/* Contador — mostra carregados / total */}
+              {!isLoading && allPoliticos.length > 0 && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm flex-shrink-0">
                   <Users size={14} className="text-blue-500" />
                   <span className="font-mono font-semibold text-sm text-slate-700">
-                    {filtered.length}
+                    {allPoliticos.length}
+                    {totalBackend && totalBackend > allPoliticos.length && (
+                      <span className="text-slate-400 font-normal">
+                        /{totalBackend}
+                      </span>
+                    )}
                   </span>
                   <span className="text-xs text-slate-400">parlamentares</span>
                 </div>
@@ -64,7 +122,6 @@ export default function Politicos() {
 
           {/* ── SEARCH + FILTER ROW ── */}
           <div className="flex gap-3 mb-3 items-center">
-            {/* Search Input */}
             <div className="relative flex-1">
               <Search
                 size={17}
@@ -79,7 +136,6 @@ export default function Politicos() {
               />
             </div>
 
-            {/* Filter Toggle Button */}
             <button
               onClick={() => setShowFilters((v) => !v)}
               className={`flex items-center gap-2 px-4 py-3 border rounded-xl text-sm font-medium flex-shrink-0 shadow-sm transition-all ${
@@ -155,7 +211,7 @@ export default function Politicos() {
               )}
 
               <button
-                onClick={() => { setSearch(""); setSelectedUF(""); }}
+                onClick={clearFilters}
                 className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-xs hover:bg-red-50 hover:text-red-500 transition-colors"
               >
                 <X size={10} />
@@ -175,10 +231,10 @@ export default function Politicos() {
             </div>
           )}
 
-          {/* ── SKELETON LOADING ── */}
+          {/* ── SKELETON (primeira carga) ── */}
           {isLoading && (
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 9 }).map((_, i) => (
+              {Array.from({ length: POLITICOS_PAGE_SIZE }).map((_, i) => (
                 <li
                   key={i}
                   className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-4 animate-pulse"
@@ -196,7 +252,7 @@ export default function Politicos() {
           {/* ── GRID ── */}
           {!isLoading && !isError && (
             <>
-              {filtered?.length === 0 ? (
+              {allPoliticos.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
                     <Users size={24} className="text-slate-400" />
@@ -204,7 +260,7 @@ export default function Politicos() {
                   <p className="font-semibold text-slate-700">Nenhum parlamentar encontrado</p>
                   <p className="text-sm text-slate-400 mt-1">Tente ajustar os filtros de busca.</p>
                   <button
-                    onClick={() => { setSearch(""); setSelectedUF(""); }}
+                    onClick={clearFilters}
                     className="inline-flex items-center gap-1 mt-4 px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 text-xs hover:bg-red-50 hover:text-red-500 transition-colors"
                   >
                     <X size={10} /> Limpar filtros
@@ -212,7 +268,7 @@ export default function Politicos() {
                 </div>
               ) : (
                 <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {filtered?.map((p) => (
+                  {allPoliticos.map((p) => (
                     <li key={p.id}>
                       <Link
                         to={`/politicos_detalhe/${p.id}`}
@@ -257,6 +313,24 @@ export default function Politicos() {
                   ))}
                 </ul>
               )}
+
+              {/* ── SENTINEL + ESTADOS DO SCROLL ── */}
+              {/* Este div invisível é observado pelo IntersectionObserver.
+                  Quando entra na viewport, fetchNextPage() é chamado. */}
+              <div ref={sentinelRef} className="mt-8">
+                {isFetchingNextPage && (
+                  <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-400">
+                    <Loader2 size={16} className="animate-spin text-blue-400" />
+                    <span>Carregando mais parlamentares...</span>
+                  </div>
+                )}
+
+                {!hasNextPage && allPoliticos.length > 0 && (
+                  <p className="text-center text-xs text-slate-300 py-6 font-mono">
+                    ✓ Todos os {allPoliticos.length} parlamentares carregados
+                  </p>
+                )}
+              </div>
             </>
           )}
 

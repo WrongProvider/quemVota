@@ -16,11 +16,13 @@
 import { AxiosError } from "axios"
 import {
   fetchPoliticos,
+  fetchPoliticosPage,
   fetchPoliticoDetalhe,
   fetchPoliticoEstatisticas,
   fetchPoliticoPerformance,
   type ListarPoliticosParams,
   type Politico,
+  type PoliticosPage,
   type PoliticoDetalhe,
   type PoliticoEstatisticas,
   type PoliticoPerformance,
@@ -135,6 +137,25 @@ export async function listarPoliticosService(
     return await fetchPoliticos(params, signal)
   } catch (error) {
     throw normalizeError(error, "listarPoliticosService")
+  }
+}
+
+/**
+ * Retorna uma página de políticos para infinite scroll.
+ * O envelope { items, hasMore, offset } é construído em fetchPoliticosPage.
+ *
+ * @param params - Filtros + paginação (offset, limit)
+ * @param signal - AbortSignal repassado pelo React Query
+ * @throws {PoliticoServiceError}
+ */
+export async function listarPoliticosPageService(
+  params?: ListarPoliticosParams,
+  signal?: AbortSignal,
+): Promise<PoliticosPage> {
+  try {
+    return await fetchPoliticosPage(params, signal)
+  } catch (error) {
+    throw normalizeError(error, "listarPoliticosPageService")
   }
 }
 
