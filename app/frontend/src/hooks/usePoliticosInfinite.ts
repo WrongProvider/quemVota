@@ -68,14 +68,14 @@ export interface UsePoliticosInfiniteParams {
 export function usePoliticosInfinite(
   params: UsePoliticosInfiniteParams = {},
 ): UseInfiniteQueryResult<PoliticosPage, PoliticoServiceError> {
-  const { q, uf } = params
+  const { q, uf, partido } = params
 
   return useInfiniteQuery({
-    queryKey: politicosInfiniteKeys.list({ q, uf }),
+    queryKey: politicosInfiniteKeys.list({ q, uf, partido }),
 
     queryFn: ({ pageParam, signal }) =>
       listarPoliticosPageService(
-        { q, uf, offset: pageParam, limit: POLITICOS_PAGE_SIZE },
+        { q, uf, partido, offset: pageParam, limit: POLITICOS_PAGE_SIZE },
         signal,
       ),
 

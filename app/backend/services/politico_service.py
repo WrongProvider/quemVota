@@ -78,13 +78,14 @@ class PoliticoService:
         limit: int = 100,
         q: str | None = None,
         uf: str | None = None,
+        partido: str | None = None,
         offset: int = 0,
     ) -> list[PoliticoResponse]:
         safe_limit = min(abs(limit), _MAX_LIMIT_POLITICOS)
         safe_offset = max(offset, 0)
 
         politicos = await self._repo.get_politicos_repo(
-            q=q, uf=uf, limit=safe_limit, offset=safe_offset
+            q=q, uf=uf, partido=partido, limit=safe_limit, offset=safe_offset
         )
         return [PoliticoResponse.model_validate(p) for p in politicos]
 

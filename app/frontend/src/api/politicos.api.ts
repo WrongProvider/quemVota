@@ -33,6 +33,7 @@ const LIMITS = {
   ANO_MAX: 2100,
   MES_MIN: 1,
   MES_MAX: 12,
+  PARTIDO_LENGTH: 20,
 } as const
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,6 +94,7 @@ export interface ListarPoliticosParams {
   uf?: string
   limit?: number
   offset?: number
+  partido?: string
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -145,6 +147,13 @@ function sanitizeListarParams(params?: ListarPoliticosParams): Record<string, un
 
   if (params?.offset !== undefined) {
     sanitized.offset = Math.max(Math.floor(Number(params.offset)), 0)
+  }
+
+  if (params?.partido !== undefined) {
+    const partido = String(params.partido).trim().toUpperCase().slice(0, LIMITS.PARTIDO_LENGTH)
+    if (partido.length > 0) {
+      sanitized.partido = partido
+    }
   }
 
   return sanitized

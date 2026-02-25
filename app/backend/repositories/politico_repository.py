@@ -58,6 +58,7 @@ class PoliticoRepository:
         *,
         q: str | None = None,
         uf: str | None = None,
+        partido: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[Politico]:
@@ -73,7 +74,9 @@ class PoliticoRepository:
         if uf:
             # Normaliza para maiúsculas evitando bypass de filtro
             stmt = stmt.where(Politico.uf == uf.upper()[:2])
-
+        if partido:
+            stmt = stmt.where(Politico.partido_sigla == partido.upper()[:10])
+            
         stmt = stmt.order_by(Politico.nome).limit(safe_limit).offset(safe_offset)
 
         try:

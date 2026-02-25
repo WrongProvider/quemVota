@@ -76,6 +76,7 @@ def _politico_service(db: AsyncSession = Depends(get_db)) -> PoliticoService:
 async def listar_politicos(
     q: Annotated[str | None, Query(max_length=150, description="Busca por nome")] = None,
     uf: Annotated[str | None, Query(min_length=2, max_length=2, description="Sigla do estado")] = None,
+    partido: Annotated[str | None, Query(min_length=1, max_length=20, description="Sigla do partido")] = None,
     limit: LimitQuery = 100,
     offset: OffsetQuery = 0,
     service: PoliticoService = Depends(_politico_service),
@@ -84,8 +85,8 @@ async def listar_politicos(
     Retorna uma lista paginada de políticos.
     Campos retornados são definidos por `PoliticoResponse` (A03).
     """
-    logger.info("Listando políticos | q=%s uf=%s limit=%s offset=%s", q, uf, limit, offset)
-    return await service.get_politicos_service(q=q, uf=uf, limit=limit, offset=offset)
+    logger.info("Listando políticos | q=%s uf=%s partido=%s limit=%s offset=%s", q, uf, partido, limit, offset)
+    return await service.get_politicos_service(q=q, uf=uf, partido=partido, limit=limit, offset=offset)
 
 
 @router.get(

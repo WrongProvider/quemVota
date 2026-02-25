@@ -23,12 +23,36 @@ const UFs = [
   "RO","RR","RS","SC","SE","SP","TO",
 ]
 
+const Partidos = [
+  "REPUBLICANOS",
+  "SOLIDARIEDADE",
+  "UNIÃO",
+  "PCdoB",
+  "PDT",
+  "PL",
+  "PODE",
+  "PP",
+  "PRD",
+  "PSB",
+  "PSD",
+  "PSDB",
+  "PSOL",
+  "PT",
+  "PV",
+  "REDE",
+  "AVANTE",
+  "CIDADANIA",
+  "MDB",
+  "NOVO",
+]
+
 export default function Politicos() {
   const [searchParams] = useSearchParams()
   const initialQ = searchParams.get("q") || ""
 
   const [search, setSearch]       = useState(initialQ)
-  const [selectedUF, setSelectedUF] = useState("")
+  const [selectedUF,  setSelectedUF] = useState("")
+  const [selectedPartido, setSelectedPartido] = useState("")
   const [showFilters, setShowFilters] = useState(false)
   const debouncedSearch = useDebounce(search, 400)
 
@@ -43,7 +67,7 @@ export default function Politicos() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = usePoliticosInfinite({ q: debouncedSearch, uf: selectedUF })
+  } = usePoliticosInfinite({ q: debouncedSearch, uf: selectedUF, partido: selectedPartido })
 
   // Achata todas as páginas numa lista única
   const allPoliticos = useMemo(() => selectAllPoliticos(data), [data])
@@ -78,6 +102,7 @@ export default function Politicos() {
   function clearFilters() {
     setSearch("")
     setSelectedUF("")
+    setSelectedPartido("")
   }
 
   return (
@@ -146,7 +171,12 @@ export default function Politicos() {
             >
               <SlidersHorizontal size={15} />
               <span>Filtrar</span>
-              {selectedUF && (
+              {selectedUF && selectedPartido && (
+                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none">
+                  2
+                </span>
+              )}
+              {selectedUF && !selectedPartido && (
                 <span className="flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none">
                   1
                 </span>
@@ -178,7 +208,29 @@ export default function Politicos() {
                   </button>
                 ))}
               </div>
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin size={20} className="text-slate-400" />
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                  Filtrar por Partido
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {Partidos.map((partido) => (
+                  <button
+                    key={partido}
+                    onClick={() => setSelectedPartido(selectedPartido === partido ? "" : partido)}
+                    className={`px-3 py-1 rounded-lg border text-xs font-mono transition-all ${
+                      selectedPartido === partido   
+                        ? "border-blue-500 bg-blue-600 text-white"
+                        : "border-slate-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50"
+                    }`}
+                  >
+                    {partido}
+                  </button>
+                ))}
+              </div>
             </div>
+            
           )}
 
           {/* ── ACTIVE FILTERS ── */}
@@ -203,6 +255,18 @@ export default function Politicos() {
                   {selectedUF}
                   <button
                     onClick={() => setSelectedUF("")}
+                    className="opacity-60 hover:opacity-100 transition-opacity"
+                  >
+                    <X size={11} />
+                  </button>
+                </span>
+              )}
+
+              {selectedPartido && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium font-mono rounded-full border border-blue-100">
+                  {selectedPartido}
+                  <button
+                    onClick={() => setSelectedPartido("")}
                     className="opacity-60 hover:opacity-100 transition-opacity"
                   >
                     <X size={11} />
