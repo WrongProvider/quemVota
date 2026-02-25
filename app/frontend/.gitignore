@@ -21,6 +21,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-/injest_banco
+./injest_banco
 .env
 
