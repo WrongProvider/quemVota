@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom"
 import { usePoliticoEstatisticas, usePoliticoDetalhe, usePoliticoPerformance } from "../hooks/usePoliticos"
 import PoliticoGraficos from "../components/PoliticoGraficos"
+import LinhaDoTempo from "../components/LinhaDoTempo"
 import InfoBotao from "../components/InfoDicaBotao"
 import ToolDica from "../components/InfoDica"
 import Header from "../components/Header"
@@ -18,6 +19,8 @@ import {
   ChevronRight,
   ArrowLeft,
 } from "lucide-react"
+
+const PATH_FOTOS = "/politicos/" // As fotos devem estar disponíveis neste caminho público
 
 export default function PoliticoDetalhe() {
   const { id } = useParams()
@@ -149,7 +152,7 @@ export default function PoliticoDetalhe() {
                 <div className="profile-photo relative flex-shrink-0">
                   <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden ring-4 ring-white shadow-xl">
                     <img
-                      src={data.url_foto}
+                      src={`${PATH_FOTOS}${data.id}.jpg`}
                       alt={data.nome}
                       className="w-full h-full object-cover"
                     />
@@ -191,7 +194,7 @@ export default function PoliticoDetalhe() {
                     )}
                     {data.partido_sigla && (
                       <span className="flex items-center gap-1.5">
-                        <Users size={14} className="text-slate-400" />
+                        <Users size={20} className="text-slate-400" />
                         {data.partido_sigla}
                       </span>
                     )}
@@ -318,6 +321,15 @@ export default function PoliticoDetalhe() {
               <PoliticoGraficos performance={performance} />
             </section>
           )}
+
+          {/* ── LINHA DO TEMPO ── */}
+          <section className="mt-10">
+            <div className="flex items-center gap-2 mb-5">
+              <Receipt size={18} className="text-blue-500" />
+              <h2 className="display-font text-xl font-bold text-slate-800">Histórico de Gastos</h2>
+            </div>
+            <LinhaDoTempo politicoId={politicoId} />
+          </section>
         </div>
       </div>
     </>

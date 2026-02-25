@@ -24,6 +24,7 @@ export default function Header() {
   const navLinks = [
     { name: "Home", href: "/" },
     { name: "Parlamentares", href: "/politicos" },
+    { name: "Rankings", href: "/rankings" },
     { name: "Metodologia", href: "/metodologia" },
   ];
 

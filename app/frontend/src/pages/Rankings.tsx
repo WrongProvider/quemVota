@@ -19,6 +19,8 @@ import {
   useRankingLucroEmpresas,
 } from "../hooks/useRankings"
 
+const PATH_FOTOS = "/politicos/" // As fotos devem estar disponíveis neste caminho público
+
 import Header from "../components/Header"
 // Serviços
 import {
@@ -338,7 +340,7 @@ function PodiumCard({ politico, position }: { politico: any; position: number })
         {politico.foto && (
           <div className={`w-24 h-24 rounded-full overflow-hidden mx-auto mb-4 border-4 ${borderColors[position - 1]}`}>
             <img 
-              src={politico.foto} 
+              src={`${PATH_FOTOS}${politico.id}.jpg`} 
               alt={politico.nome}
               className="w-full h-full object-cover"
             />
@@ -409,7 +411,7 @@ function RankingCard({ position, politico, type }: {
         {type === "performance" && politico.foto && (
           <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
             <img 
-              src={politico.foto} 
+              src={`${PATH_FOTOS}${politico.id}.jpg`} 
               alt={politico.nome}
               className="w-full h-full object-cover"
             />

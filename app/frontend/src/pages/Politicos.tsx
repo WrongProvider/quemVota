@@ -46,6 +46,8 @@ const Partidos = [
   "NOVO",
 ]
 
+const PATH_FOTOS = "/politicos/" // As fotos devem estar disponíveis neste caminho público
+
 export default function Politicos() {
   const [searchParams] = useSearchParams()
   const initialQ = searchParams.get("q") || ""
@@ -344,7 +346,7 @@ export default function Politicos() {
                         {/* Photo */}
                         <div className="w-[76px] h-[76px] rounded-[14px] overflow-hidden bg-slate-100 border border-slate-200 group-hover:border-blue-200 flex-shrink-0 transition-colors">
                           <img
-                            src={p.url_foto}
+                            src={`${PATH_FOTOS}${p.id}.jpg`}
                             alt={p.nome}
                             loading="lazy"
                             className="w-full h-full object-cover"
