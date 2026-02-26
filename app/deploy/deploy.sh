@@ -13,8 +13,8 @@ fi
 
 DOMAIN="seudomain.com"
 EMAIL="seu@email.com"
-REPO="https://github.com/seu-usuario/quem-vota.git"
-APP_DIR="/opt/quemvota"
+REPO="https://github.com/seu-usuario/quemVota.git"
+APP_DIR="/opt/quemVota"
 DEPLOY_DIR="$APP_DIR/app/deploy"
 
 echo "════════════════════════════════════════════════"
