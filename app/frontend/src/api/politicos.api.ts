@@ -73,16 +73,50 @@ export interface NotasPerformance {
 
 export interface InfoPerformance {
   readonly valor_cota_mensal: number
+  readonly meses_considerados: number
   readonly total_gasto: number
   readonly cota_utilizada_pct: number
 }
 
 export interface PoliticoPerformance {
   readonly politico_id: number
+  readonly ano: number | null
   readonly score_final: number
   readonly media_global: number
   readonly detalhes: NotasPerformance
   readonly info: InfoPerformance
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Timeline — espelha a resposta de GET /politicos/{id}/timeline
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface TimelineNotasAno {
+  readonly assiduidade: number
+  readonly producao: number
+  readonly economia: number
+}
+
+export interface TimelineEstatisticasAno {
+  readonly total_votacoes: number
+  readonly total_despesas: number
+  readonly total_gasto: number
+  readonly media_mensal: number
+}
+
+export interface TimelineInfoAno {
+  readonly valor_cota_mensal: number
+  readonly meses_ativos: number
+  readonly cota_total: number
+  readonly cota_utilizada_pct: number
+}
+
+export interface TimelineEntrada {
+  readonly ano: number
+  readonly score: number
+  readonly notas: TimelineNotasAno
+  readonly estatisticas: TimelineEstatisticasAno
+  readonly info: TimelineInfoAno
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -99,7 +133,6 @@ export interface ListarPoliticosParams {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Guards de tipo em runtime — OWASP A08 (Data Integrity)
-// Garantem que respostas inesperadas da API não se propagam silenciosamente.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function assertPoliticoId(id: unknown): asserts id is number {
@@ -115,8 +148,7 @@ function assertArray<T>(value: unknown, context: string): asserts value is T[] {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sanitizadores de parâmetros — OWASP A04 (Insecure Design)
-// Coerce e limita valores antes de enviá-los à rede.
+// Sanitizadores — OWASP A04
 // ─────────────────────────────────────────────────────────────────────────────
 
 function sanitizeListarParams(params?: ListarPoliticosParams): Record<string, unknown> {
@@ -125,7 +157,6 @@ function sanitizeListarParams(params?: ListarPoliticosParams): Record<string, un
   if (params?.q !== undefined) {
     const trimmed = String(params.q).trim()
     if (trimmed.length > 0) {
-      // Trunca busca no limite do backend; nunca envia string vazia
       sanitized.q = trimmed.slice(0, LIMITS.SEARCH_MAX_LENGTH)
     }
   }
@@ -159,19 +190,26 @@ function sanitizeListarParams(params?: ListarPoliticosParams): Record<string, un
   return sanitized
 }
 
+/**
+ * Valida e coerce o parâmetro `ano`.
+ * Retorna undefined se o valor não estiver no intervalo permitido.
+ */
+function sanitizeAno(ano?: number | null): number | undefined {
+  if (ano == null) return undefined
+  const n = Math.floor(Number(ano))
+  if (n >= LIMITS.ANO_MIN && n <= LIMITS.ANO_MAX) return n
+  return undefined
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Helper interno — evita duplicação de lógica de requisição + abort signal
+// Helper interno — evita duplicação de lógica de requisição
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function get<T>(
   url: string,
   config?: AxiosRequestConfig,
-  controller?: AbortController,
 ): Promise<T> {
-  const { data } = await api.get<T>(url, {
-    ...config,
-    signal: controller?.signal,
-  })
+  const { data } = await api.get<T>(url, config)
   return data
 }
 
@@ -181,42 +219,27 @@ async function get<T>(
 
 /**
  * Lista políticos com filtros opcionais.
- * Parâmetros são sanitizados antes do envio.
- *
- * @param params   - Filtros de busca (q, uf, limit, offset)
- * @param signal   - AbortSignal para cancelamento (React strictMode / cleanup)
  */
 export async function fetchPoliticos(
   params?: ListarPoliticosParams,
   signal?: AbortSignal,
 ): Promise<Politico[]> {
   const sanitized = sanitizeListarParams(params)
-  // Barra final obrigatória: o FastAPI define a rota como "/politicos/" e redireciona
-  // "/politicos" com 307. O axios não segue redirects com query params no browser.
   const data = await get<Politico[]>("/politicos/", { params: sanitized, signal })
   assertArray<Politico>(data, "fetchPoliticos")
   return data
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// fetchPoliticosPage — para infinite scroll via useInfiniteQuery
-// O backend retorna array puro; o envelope é construído aqui no cliente
-// a partir do tamanho da página para detectar o fim dos dados.
+// Infinite scroll
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface PoliticosPage {
   readonly items: Politico[]
-  /** `true` quando o array retornado foi menor que o `limit` solicitado */
   readonly hasMore: boolean
   readonly offset: number
 }
 
-/**
- * Busca uma página de políticos — usada exclusivamente pelo useInfiniteQuery.
- *
- * @param params   - Filtros + paginação (offset, limit)
- * @param signal   - AbortSignal para cancelamento automático pelo React Query
- */
 export async function fetchPoliticosPage(
   params?: ListarPoliticosParams,
   signal?: AbortSignal,
@@ -237,9 +260,6 @@ export async function fetchPoliticosPage(
 
 /**
  * Retorna o detalhe de um político pelo ID interno.
- *
- * @param id     - ID inteiro positivo do político
- * @param signal - AbortSignal para cancelamento
  */
 export async function fetchPoliticoDetalhe(
   id: number,
@@ -253,26 +273,53 @@ export async function fetchPoliticoDetalhe(
  * Retorna as estatísticas gerais de um político.
  *
  * @param id     - ID inteiro positivo do político
+ * @param ano    - Quando fornecido, filtra pelo ano — permite comparação na timeline
  * @param signal - AbortSignal para cancelamento
  */
 export async function fetchPoliticoEstatisticas(
   id: number,
+  ano?: number | null,
   signal?: AbortSignal,
 ): Promise<PoliticoEstatisticas> {
   assertPoliticoId(id)
-  return get<PoliticoEstatisticas>(`/politicos/${id}/estatisticas`, { signal })
+  const params: Record<string, unknown> = {}
+  const anoSanitizado = sanitizeAno(ano)
+  if (anoSanitizado !== undefined) params.ano = anoSanitizado
+  return get<PoliticoEstatisticas>(`/politicos/${id}/estatisticas`, { params, signal })
 }
 
 /**
  * Retorna o score de performance parlamentar de um político.
  *
  * @param id     - ID inteiro positivo do político
+ * @param ano    - Quando fornecido, calcula o score apenas para aquele ano
  * @param signal - AbortSignal para cancelamento
  */
 export async function fetchPoliticoPerformance(
   id: number,
+  ano?: number | null,
   signal?: AbortSignal,
 ): Promise<PoliticoPerformance> {
   assertPoliticoId(id)
-  return get<PoliticoPerformance>(`/politicos/${id}/performance`, { signal })
+  const params: Record<string, unknown> = {}
+  const anoSanitizado = sanitizeAno(ano)
+  if (anoSanitizado !== undefined) params.ano = anoSanitizado
+  return get<PoliticoPerformance>(`/politicos/${id}/performance`, { params, signal })
+}
+
+/**
+ * Retorna a linha do tempo anual completa do parlamentar.
+ * Cada entrada corresponde a um ano com dados registrados no banco.
+ *
+ * @param id     - ID inteiro positivo do político
+ * @param signal - AbortSignal para cancelamento
+ */
+export async function fetchPoliticoTimeline(
+  id: number,
+  signal?: AbortSignal,
+): Promise<TimelineEntrada[]> {
+  assertPoliticoId(id)
+  const data = await get<TimelineEntrada[]>(`/politicos/${id}/timeline`, { signal })
+  assertArray<TimelineEntrada>(data, "fetchPoliticoTimeline")
+  return data
 }

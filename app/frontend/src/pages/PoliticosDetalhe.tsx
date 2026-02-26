@@ -1,5 +1,11 @@
+import { useState, useMemo } from "react"
 import { useParams, Link } from "react-router-dom"
-import { usePoliticoEstatisticas, usePoliticoDetalhe, usePoliticoPerformance } from "../hooks/usePoliticos"
+import {
+  usePoliticoEstatisticas,
+  usePoliticoDetalhe,
+  usePoliticoPerformance,
+  usePoliticoTimeline,
+} from "../hooks/usePoliticos"
 import PoliticoGraficos from "../components/PoliticoGraficos"
 import LinhaDoTempo from "../components/LinhaDoTempo"
 import InfoBotao from "../components/InfoDicaBotao"
@@ -18,16 +24,147 @@ import {
   Calendar,
   ChevronRight,
   ArrowLeft,
+  ChevronLeft,
 } from "lucide-react"
 
-const PATH_FOTOS = "/politicos/" // As fotos devem estar disponíveis neste caminho público
+const PATH_FOTOS = "/politicos/"
 
+// ── TIMELINE YEAR SELECTOR ──────────────────────────────────────────────────
+function TimelineSelector({
+  anos,
+  anoSelecionado,
+  onChange,
+}: {
+  anos: number[]
+  anoSelecionado: number | null
+  onChange: (ano: number | null) => void
+}) {
+  if (!anos.length) return null
+
+  const idx = anoSelecionado ? anos.indexOf(anoSelecionado) : -1
+
+  const handlePrev = () => {
+    if (idx > 0) onChange(anos[idx - 1])
+    else if (idx === -1) onChange(anos[anos.length - 1])
+  }
+
+  const handleNext = () => {
+    if (idx === -1) return
+    if (idx < anos.length - 1) onChange(anos[idx + 1])
+    else onChange(null) // "todos"
+  }
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-slate-50 border-b border-slate-100 px-6 py-3 text-center">
+        <p className="text-sm font-medium text-slate-500">
+          {anoSelecionado ? (
+            <>Exibindo dados de <strong className="text-slate-800">{anoSelecionado}</strong></>
+          ) : (
+            "Selecione um ano abaixo ou veja o mandato completo"
+          )}
+        </p>
+      </div>
+
+      <div className="px-6 py-5">
+        <div className="flex items-center gap-3">
+          {/* Seta esquerda */}
+          <button
+            onClick={handlePrev}
+            disabled={idx === 0}
+            className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+          >
+            <ChevronLeft size={16} />
+          </button>
+
+          {/* Track */}
+          <div className="flex-1 relative">
+            {/* Linha de conexão */}
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-slate-200 -translate-y-1/2 z-0" />
+
+            <div className="relative z-10 flex justify-between items-center">
+              {/* Botão "Todos" */}
+              <button
+                onClick={() => onChange(null)}
+                className={`w-9 h-9 rounded-lg border-2 text-xs font-bold transition-all ${
+                  anoSelecionado === null
+                    ? "bg-slate-700 border-slate-700 text-white shadow-md scale-110"
+                    : "bg-white border-slate-300 text-slate-500 hover:border-slate-400"
+                }`}
+                title="Mandato completo"
+              >
+                ∑
+              </button>
+
+              {/* Anos */}
+              {anos.map((ano) => {
+                const ativo = ano === anoSelecionado
+                return (
+                  <button
+                    key={ano}
+                    onClick={() => onChange(ativo ? null : ano)}
+                    className="flex flex-col items-center gap-1 group"
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 transition-all ${
+                        ativo
+                          ? "bg-yellow-400 border-yellow-500 scale-150 shadow-md"
+                          : "bg-white border-slate-300 group-hover:border-blue-400 group-hover:scale-125"
+                      }`}
+                    />
+                    {ativo ? (
+                      <span className="text-xs font-bold text-white bg-yellow-400 px-2 py-0.5 rounded-md shadow-sm mt-1">
+                        {ano}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-500 group-hover:text-blue-600 transition-colors mt-1">
+                        {ano}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Seta direita */}
+          <button
+            onClick={handleNext}
+            disabled={anoSelecionado === null}
+            className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
+        <p className="text-center text-[11px] text-slate-400 mt-4">
+          ⓘ Informações disponíveis desde {anos[0]}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── PAGE ────────────────────────────────────────────────────────────────────
 export default function PoliticoDetalhe() {
   const { id } = useParams()
   const politicoId = Number(id)
+
+  // Ano selecionado (null = mandato inteiro)
+  const [anoSelecionado, setAnoSelecionado] = useState<number | null>(null)
+
   const { data, isLoading, error } = usePoliticoDetalhe(politicoId)
-  const { data: stats } = usePoliticoEstatisticas(politicoId)
-  const { data: performance } = usePoliticoPerformance(politicoId)
+  const { data: timeline, isLoading: timelineLoading } = usePoliticoTimeline(politicoId)
+
+  // Stats e performance filtrados pelo ano
+  const { data: stats } = usePoliticoEstatisticas(politicoId, anoSelecionado)
+  const { data: performance } = usePoliticoPerformance(politicoId, anoSelecionado)
+
+  // Lista de anos disponíveis vinda da timeline
+  const anosDisponiveis = useMemo(
+    () => (timeline ?? []).map((t: { ano: number }) => t.ano).sort((a: number, b: number) => a - b),
+    [timeline]
+  )
 
   if (isLoading) return <LoadingScreen />
   if (error) return <ErrorScreen />
@@ -39,13 +176,6 @@ export default function PoliticoDetalhe() {
       : performance?.score_final >= 40
       ? "text-amber-500"
       : "text-red-500"
-
-  const scoreBg =
-    performance?.score_final >= 70
-      ? "bg-emerald-50 border-emerald-200"
-      : performance?.score_final >= 40
-      ? "bg-amber-50 border-amber-200"
-      : "bg-red-50 border-red-200"
 
   return (
     <>
@@ -118,6 +248,15 @@ export default function PoliticoDetalhe() {
           align-items: center;
           justify-content: center;
         }
+
+        /* Fade-in quando o ano muda */
+        .section-fade {
+          animation: sectionFade 0.3s ease both;
+        }
+        @keyframes sectionFade {
+          from { opacity: 0.4; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
 
       <div className="detail-root min-h-screen bg-[#f8f9fb]">
@@ -126,7 +265,6 @@ export default function PoliticoDetalhe() {
         {/* ── HERO SECTION ── */}
         <div className="pt-16">
           <div className="relative overflow-hidden bg-white border-b border-slate-100">
-            {/* Decorative background */}
             <div
               className="absolute inset-0 opacity-[0.03]"
               style={{
@@ -157,7 +295,6 @@ export default function PoliticoDetalhe() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  {/* Status badge */}
                   {data.situacao && (
                     <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500 text-white shadow-sm">
@@ -229,7 +366,7 @@ export default function PoliticoDetalhe() {
                   </div>
                 </div>
 
-                {/* SCORE RING (if available) */}
+                {/* SCORE RING */}
                 {performance && (
                   <div className="flex-shrink-0 text-center">
                     <div
@@ -241,7 +378,7 @@ export default function PoliticoDetalhe() {
                           {performance.score_final.toFixed(0)}
                         </span>
                         <span className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                          score
+                          {anoSelecionado ? anoSelecionado : "score"}
                         </span>
                       </div>
                     </div>
@@ -254,11 +391,43 @@ export default function PoliticoDetalhe() {
         </div>
 
         {/* ── MAIN CONTENT ── */}
-        <div className="max-w-5xl mx-auto px-6 py-10">
+        <div className="max-w-5xl mx-auto px-6 py-10 space-y-10">
+
+          {/* ── SELETOR DE ANO (TIMELINE) ── */}
+          {!timelineLoading && anosDisponiveis.length > 0 && (
+            <section>
+              <TimelineSelector
+                anos={anosDisponiveis}
+                anoSelecionado={anoSelecionado}
+                onChange={setAnoSelecionado}
+              />
+            </section>
+          )}
+
+          {timelineLoading && (
+            <div className="bg-white border border-slate-200 rounded-2xl h-28 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
+            </div>
+          )}
+
+          {/* Indicador de contexto do período */}
+          {anoSelecionado && (
+            <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+              <p className="text-sm text-blue-700 font-medium">
+                📅 Dados filtrados para o ano <strong>{anoSelecionado}</strong>
+              </p>
+              <button
+                onClick={() => setAnoSelecionado(null)}
+                className="text-xs text-blue-500 hover:text-blue-700 font-medium underline underline-offset-2 transition-colors"
+              >
+                Ver mandato completo
+              </button>
+            </div>
+          )}
 
           {/* ── ESTATÍSTICAS ── */}
           {stats && (
-            <section className="mb-10">
+            <section key={`stats-${anoSelecionado}`} className="section-fade">
               <div className="flex items-center gap-2 mb-5">
                 <BarChart2 size={18} className="text-blue-500" />
                 <h2 className="display-font text-xl font-bold text-slate-800">Estatísticas</h2>
@@ -295,25 +464,29 @@ export default function PoliticoDetalhe() {
                   valor={`R$ ${stats.media_mensal.toLocaleString("pt-BR")}`}
                   accent="amber"
                 />
-                <StatCard
-                  icon={<Calendar size={16} className="text-slate-400" />}
-                  titulo="Primeiro Ano"
-                  valor={stats.primeiro_ano ?? "—"}
-                  accent="slate"
-                />
-                <StatCard
-                  icon={<Calendar size={16} className="text-slate-400" />}
-                  titulo="Último Ano"
-                  valor={stats.ultimo_ano ?? "—"}
-                  accent="slate"
-                />
+                {!anoSelecionado && (
+                  <>
+                    <StatCard
+                      icon={<Calendar size={16} className="text-slate-400" />}
+                      titulo="Primeiro Ano"
+                      valor={stats.primeiro_ano ?? "—"}
+                      accent="slate"
+                    />
+                    <StatCard
+                      icon={<Calendar size={16} className="text-slate-400" />}
+                      titulo="Último Ano"
+                      valor={stats.ultimo_ano ?? "—"}
+                      accent="slate"
+                    />
+                  </>
+                )}
               </div>
             </section>
           )}
 
-          {/* ── GRÁFICOS ── */}
+          {/* ── PERFORMANCE PARLAMENTAR ── */}
           {performance && (
-            <section>
+            <section key={`perf-${anoSelecionado}`} className="section-fade">
               <div className="flex items-center gap-2 mb-5">
                 <TrendingUp size={18} className="text-blue-500" />
                 <h2 className="display-font text-xl font-bold text-slate-800">Performance Parlamentar</h2>
@@ -322,7 +495,7 @@ export default function PoliticoDetalhe() {
             </section>
           )}
 
-          {/* ── LINHA DO TEMPO ── */}
+          {/* ── HISTÓRICO DE GASTOS ── */}
           <section className="mt-10">
             <div className="flex items-center gap-2 mb-5">
               <Receipt size={18} className="text-blue-500" />
@@ -336,7 +509,7 @@ export default function PoliticoDetalhe() {
   )
 }
 
-// ── STAT CARD ──
+// ── STAT CARD ──────────────────────────────────────────────────────────────
 const accentMap: Record<string, string> = {
   blue:    "bg-blue-50 border-blue-100 hover:border-blue-300",
   violet:  "bg-violet-50 border-violet-100 hover:border-violet-300",
@@ -371,7 +544,7 @@ function StatCard({
   )
 }
 
-// ── LOADING ──
+// ── LOADING ────────────────────────────────────────────────────────────────
 function LoadingScreen() {
   return (
     <>
@@ -386,7 +559,7 @@ function LoadingScreen() {
   )
 }
 
-// ── ERROR ──
+// ── ERROR ──────────────────────────────────────────────────────────────────
 function ErrorScreen() {
   return (
     <>

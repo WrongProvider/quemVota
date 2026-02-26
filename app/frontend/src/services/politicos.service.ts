@@ -20,27 +20,28 @@ import {
   fetchPoliticoDetalhe,
   fetchPoliticoEstatisticas,
   fetchPoliticoPerformance,
+  fetchPoliticoTimeline,
   type ListarPoliticosParams,
   type Politico,
   type PoliticosPage,
   type PoliticoDetalhe,
   type PoliticoEstatisticas,
   type PoliticoPerformance,
+  type TimelineEntrada,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Erros de domínio — OWASP A03: mensagens controladas, sem vazamento interno
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Tipos de erro reconhecidos pelo serviço */
 export type ApiErrorKind =
-  | "not_found"       // 404
-  | "unauthorized"    // 401
-  | "forbidden"       // 403
-  | "rate_limited"    // 429
-  | "server_error"    // 5xx
-  | "network_error"   // sem resposta
-  | "cancelled"       // AbortError
+  | "not_found"
+  | "unauthorized"
+  | "forbidden"
+  | "rate_limited"
+  | "server_error"
+  | "network_error"
+  | "cancelled"
   | "unknown"
 
 export class PoliticoServiceError extends Error {
@@ -59,7 +60,6 @@ export class PoliticoServiceError extends Error {
 // Classificação e normalização de erros — OWASP A03 + A09
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Mensagens amigáveis por status — nunca expõem detalhes da infraestrutura */
 const HTTP_MESSAGES: Record<number, string> = {
   400: "Requisição inválida. Verifique os parâmetros enviados.",
   401: "Não autorizado. Faça login novamente.",
@@ -72,7 +72,6 @@ const HTTP_MESSAGES: Record<number, string> = {
 }
 
 function normalizeError(error: unknown, context: string): PoliticoServiceError {
-  // Requisição cancelada (AbortController / React cleanup)
   if (error instanceof Error && error.name === "CanceledError") {
     return new PoliticoServiceError("Requisição cancelada.", "cancelled")
   }
@@ -80,7 +79,6 @@ function normalizeError(error: unknown, context: string): PoliticoServiceError {
   if (error instanceof AxiosError) {
     const status = error.response?.status
 
-    // OWASP A09: loga estruturado em DEV; só status + contexto em produção
     if (import.meta.env.DEV) {
       console.warn(`[PoliticoService][${context}]`, { status, message: error.message })
     } else {
@@ -106,13 +104,9 @@ function normalizeError(error: unknown, context: string): PoliticoServiceError {
     return new PoliticoServiceError(message, kind, status)
   }
 
-  // Erros de tipagem / assertivas da camada de API
   if (error instanceof TypeError) {
     if (import.meta.env.DEV) console.error(`[PoliticoService][${context}] TypeError:`, error.message)
-    return new PoliticoServiceError(
-      "Dados recebidos em formato inválido.",
-      "unknown",
-    )
+    return new PoliticoServiceError("Dados recebidos em formato inválido.", "unknown")
   }
 
   return new PoliticoServiceError("Erro inesperado.", "unknown")
@@ -124,10 +118,6 @@ function normalizeError(error: unknown, context: string): PoliticoServiceError {
 
 /**
  * Lista políticos com filtros opcionais.
- *
- * @param params - Filtros de busca (sanitizados pela camada de API)
- * @param signal - AbortSignal para cancelamento (use em effects do React)
- * @throws {PoliticoServiceError}
  */
 export async function listarPoliticosService(
   params?: ListarPoliticosParams,
@@ -142,11 +132,6 @@ export async function listarPoliticosService(
 
 /**
  * Retorna uma página de políticos para infinite scroll.
- * O envelope { items, hasMore, offset } é construído em fetchPoliticosPage.
- *
- * @param params - Filtros + paginação (offset, limit)
- * @param signal - AbortSignal repassado pelo React Query
- * @throws {PoliticoServiceError}
  */
 export async function listarPoliticosPageService(
   params?: ListarPoliticosParams,
@@ -161,10 +146,6 @@ export async function listarPoliticosPageService(
 
 /**
  * Retorna o detalhe de um político pelo ID.
- *
- * @param id     - ID inteiro positivo
- * @param signal - AbortSignal para cancelamento
- * @throws {PoliticoServiceError}
  */
 export async function obterPoliticoDetalheService(
   id: number,
@@ -181,15 +162,16 @@ export async function obterPoliticoDetalheService(
  * Retorna as estatísticas de um político.
  *
  * @param id     - ID inteiro positivo
+ * @param ano    - Quando fornecido, filtra os dados pelo ano — útil para a timeline
  * @param signal - AbortSignal para cancelamento
- * @throws {PoliticoServiceError}
  */
 export async function obterPoliticoEstatisticasService(
   id: number,
+  ano?: number | null,
   signal?: AbortSignal,
 ): Promise<PoliticoEstatisticas> {
   try {
-    return await fetchPoliticoEstatisticas(id, signal)
+    return await fetchPoliticoEstatisticas(id, ano, signal)
   } catch (error) {
     throw normalizeError(error, "obterPoliticoEstatisticasService")
   }
@@ -199,16 +181,36 @@ export async function obterPoliticoEstatisticasService(
  * Retorna o score de performance de um político.
  *
  * @param id     - ID inteiro positivo
+ * @param ano    - Quando fornecido, calcula o score apenas para aquele ano
  * @param signal - AbortSignal para cancelamento
- * @throws {PoliticoServiceError}
  */
 export async function obterPoliticoPerformanceService(
   id: number,
+  ano?: number | null,
   signal?: AbortSignal,
 ): Promise<PoliticoPerformance> {
   try {
-    return await fetchPoliticoPerformance(id, signal)
+    return await fetchPoliticoPerformance(id, ano, signal)
   } catch (error) {
     throw normalizeError(error, "obterPoliticoPerformanceService")
+  }
+}
+
+/**
+ * Retorna a linha do tempo anual do parlamentar.
+ * Cada item contém score, notas detalhadas, estatísticas e info de cota
+ * para um ano com dados registrados no banco.
+ *
+ * @param id     - ID inteiro positivo
+ * @param signal - AbortSignal para cancelamento
+ */
+export async function obterPoliticoTimelineService(
+  id: number,
+  signal?: AbortSignal,
+): Promise<TimelineEntrada[]> {
+  try {
+    return await fetchPoliticoTimeline(id, signal)
+  } catch (error) {
+    throw normalizeError(error, "obterPoliticoTimelineService")
   }
 }
