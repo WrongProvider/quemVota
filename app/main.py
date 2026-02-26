@@ -62,6 +62,7 @@ async def lifespan(app: FastAPI):
     # STARTUP
     valkey_client = redis.from_url(
         "redis://localhost:6379",
+        # "redis://valkey:6379", #produção — descomente quando necessário
         encoding="utf8",
         decode_responses=False,
     )
