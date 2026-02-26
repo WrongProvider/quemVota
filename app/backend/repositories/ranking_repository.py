@@ -190,7 +190,7 @@ class RankingRepository:
                         cast(
                             (
                                 func.count(Presenca.id)
-                                .filter(Presenca.frequencia_sessao == "Presenca")
+                                .filter(Presenca.frequencia_sessao == "Presença")
                                 .cast(Float)
                                 / func.nullif(func.count(Presenca.id), 0)
                             )
