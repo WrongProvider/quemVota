@@ -11,9 +11,9 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-DOMAIN="quemvota.com.br"
+DOMAIN="seudomain.com.br"
 EMAIL="seu@email.com"
-REPO="https://github.com/seu-usuario/quem-vota.git"
+REPO="https://github.com/seu-usuario/quemVota.git"
 APP_DIR="/opt/quemVota"
 DEPLOY_DIR="$APP_DIR/app/deploy"
 
