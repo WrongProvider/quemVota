@@ -1,14 +1,11 @@
 /**
- * LinhaDoTempo.tsx — Linha do tempo interativa do parlamentar.
+ * LinhaDoTempo.tsx — Histórico de gastos parlamentar.
  *
- * Estado "Todos os anos" → visão geral de todos os gastos (por ano agregado).
- * Clica num ano         → detalha mensalmente aquele ano (categorias + fornecedores).
+ * Visão "Todos os anos" → gráfico + tabela por ano + dropdowns de empresas/categorias globais.
+ * Clica num ano        → gráfico mensal + dropdowns de empresas/categorias daquele ano.
  *
  * Props:
- *   politicoId   — ID numérico do parlamentar
- *
- * Dependências (instale se ainda não tiver):
- *   npm install recharts
+ *   politicoId — ID numérico do parlamentar
  */
 
 import { useState, useMemo } from "react"
@@ -22,7 +19,18 @@ import {
   CartesianGrid,
   Cell,
 } from "recharts"
-import { ChevronLeft, Receipt, TrendingDown, Users, CalendarDays, Loader2 } from "lucide-react"
+import {
+  ChevronLeft,
+  ChevronDown,
+  ChevronUp,
+  Receipt,
+  TrendingDown,
+  CalendarDays,
+  Loader2,
+  Building2,
+  Tag,
+  Users,
+} from "lucide-react"
 import { useDespesasResumoCompleto, useVotacoes } from "../hooks/useLinhaDoTempo"
 import type { DespesaResumoMensal } from "../api/linhaTempo.api"
 
@@ -32,6 +40,9 @@ import type { DespesaResumoMensal } from "../api/linhaTempo.api"
 
 const BRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
+
+const PCT = (v: number, total: number) =>
+  total > 0 ? ((v / total) * 100).toFixed(1) + "%" : "0%"
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 
@@ -69,32 +80,236 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Barra de "anos" — linha do tempo navegável
+// Barra de progresso reutilizável
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ProgressBar({ pct, color = "#3b82f6" }: { pct: number; color?: string }) {
+  return (
+    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1">
+      <div
+        className="h-full rounded-full transition-all duration-500"
+        style={{ width: `${Math.min(pct, 100)}%`, background: color }}
+      />
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dropdown reutilizável
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface DropdownSectionProps {
+  title: string
+  subtitle?: string
+  icon: React.ReactNode
+  defaultOpen?: boolean
+  children: React.ReactNode
+  badge?: string | number
+}
+
+function DropdownSection({
+  title,
+  subtitle,
+  icon,
+  defaultOpen = false,
+  children,
+  badge,
+}: DropdownSectionProps) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <div className="rounded-xl border border-slate-200 overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3.5 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-slate-500">{icon}</span>
+          <div>
+            <span className="text-sm font-semibold text-slate-700">{title}</span>
+            {subtitle && (
+              <span className="text-xs text-slate-400 ml-2">{subtitle}</span>
+            )}
+          </div>
+          {badge !== undefined && (
+            <span className="bg-slate-200 text-slate-600 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+              {badge}
+            </span>
+          )}
+        </div>
+        {open ? (
+          <ChevronUp size={15} className="text-slate-400 flex-shrink-0" />
+        ) : (
+          <ChevronDown size={15} className="text-slate-400 flex-shrink-0" />
+        )}
+      </button>
+
+      {open && (
+        <div className="divide-y divide-slate-100 animate-in fade-in slide-in-from-top-1 duration-150">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lista de fornecedores
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface FornecedorItem {
+  nome: string
+  total: number
+}
+
+function ListaFornecedores({
+  fornecedores,
+  total,
+}: {
+  fornecedores: FornecedorItem[]
+  total: number
+}) {
+  if (!fornecedores.length) {
+    return (
+      <p className="text-xs text-slate-400 text-center py-5">
+        Sem dados de fornecedores.
+      </p>
+    )
+  }
+
+  return (
+    <>
+      {fornecedores.map((f, i) => {
+        const pct = total > 0 ? (f.total / total) * 100 : 0
+        return (
+          <div key={f.nome ?? i} className="px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span
+                className="font-mono text-[10px] text-slate-300 w-5 flex-shrink-0 text-right"
+              >
+                {i + 1}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-baseline gap-2">
+                  <span className="text-xs text-slate-700 font-medium truncate">{f.nome}</span>
+                  <span className="font-mono text-xs text-slate-500 flex-shrink-0">{BRL(f.total)}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-blue-400 transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-slate-400 w-9 text-right flex-shrink-0">
+                    {pct.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })}
+    </>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lista de categorias
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface CategoriaItem {
+  nome: string
+  total: number
+}
+
+const CATEGORIA_COLORS = [
+  "#3b82f6", "#8b5cf6", "#10b981", "#f59e0b",
+  "#ef4444", "#06b6d4", "#ec4899", "#84cc16",
+  "#f97316", "#6366f1",
+]
+
+function ListaCategorias({
+  categorias,
+  total,
+}: {
+  categorias: CategoriaItem[]
+  total: number
+}) {
+  if (!categorias.length) {
+    return (
+      <p className="text-xs text-slate-400 text-center py-5">
+        Sem dados de categorias.
+      </p>
+    )
+  }
+
+  return (
+    <>
+      {categorias.map((cat, i) => {
+        const pct = total > 0 ? (cat.total / total) * 100 : 0
+        const color = CATEGORIA_COLORS[i % CATEGORIA_COLORS.length]
+        return (
+          <div key={cat.nome ?? i} className="px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span
+                className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                style={{ background: color }}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-baseline gap-2">
+                  <span className="text-xs text-slate-700 font-medium truncate">{cat.nome}</span>
+                  <span className="font-mono text-xs text-slate-500 flex-shrink-0">{BRL(cat.total)}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%`, background: color }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-slate-400 w-9 text-right flex-shrink-0">
+                    {pct.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })}
+    </>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Navegação da linha do tempo (pílulas de ano)
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface AnoPilula {
-  ano: number | null   // null = "todos"
+  ano: number | null
   label: string
   total_gasto: number
 }
 
-interface LinhaTempoNavProps {
+function LinhaTempoNav({
+  anos,
+  anoSelecionado,
+  onSelect,
+}: {
   anos: AnoPilula[]
   anoSelecionado: number | null
   onSelect: (ano: number | null) => void
-}
-
-function LinhaTempoNav({ anos, anoSelecionado, onSelect }: LinhaTempoNavProps) {
+}) {
   return (
     <div className="relative flex items-center gap-0 overflow-x-auto pb-2 select-none">
-      {/* Linha horizontal conectora */}
       <div className="absolute left-0 right-0 top-[22px] h-px bg-slate-200 z-0 pointer-events-none" />
-
       {anos.map((item, idx) => {
         const isActive = item.ano === anoSelecionado
         return (
-          <div key={item.ano ?? "todos"} className="relative flex flex-col items-center z-10 flex-shrink-0">
-            {/* Marcador */}
+          <div
+            key={item.ano ?? "todos"}
+            className="relative flex flex-col items-center z-10 flex-shrink-0"
+          >
             <button
               onClick={() => onSelect(item.ano)}
               className={`
@@ -108,8 +323,6 @@ function LinhaTempoNav({ anos, anoSelecionado, onSelect }: LinhaTempoNavProps) {
             >
               {item.label === "Todos" ? "★" : item.label.slice(2)}
             </button>
-
-            {/* Label abaixo */}
             <span
               className={`mt-1.5 text-[10px] font-medium whitespace-nowrap transition-colors
                 ${isActive ? "text-blue-600" : "text-slate-400"}
@@ -117,8 +330,6 @@ function LinhaTempoNav({ anos, anoSelecionado, onSelect }: LinhaTempoNavProps) {
             >
               {item.label}
             </span>
-
-            {/* Conector entre nós */}
             {idx < anos.length - 1 && (
               <div className="absolute top-[19px] left-[40px] w-8 h-px bg-slate-200" />
             )}
@@ -138,19 +349,22 @@ function PainelTodos({
   totalGeral,
   totalDespesas,
   onSelectAno,
+  fornecedores,
+  categorias,
 }: {
   anosData: { ano: number; total_gasto: number; qtd_despesas: number }[]
   totalGeral: number
   totalDespesas: number
   onSelectAno: (ano: number) => void
+  fornecedores: FornecedorItem[]
+  categorias: CategoriaItem[]
 }) {
-  const chartData = [...anosData].sort((a, b) => a.ano - b.ano).map((d) => ({
-    ...d,
-    label: String(d.ano),
-  }))
+  const chartData = [...anosData]
+    .sort((a, b) => a.ano - b.ano)
+    .map((d) => ({ ...d, label: String(d.ano) }))
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Cards de totais */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
@@ -163,7 +377,9 @@ function PainelTodos({
           <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide mb-1 flex items-center gap-1">
             <CalendarDays size={12} /> Nº de Despesas
           </p>
-          <p className="font-mono text-lg font-bold text-slate-700">{totalDespesas.toLocaleString("pt-BR")}</p>
+          <p className="font-mono text-lg font-bold text-slate-700">
+            {totalDespesas.toLocaleString("pt-BR")}
+          </p>
         </div>
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 col-span-2 md:col-span-1">
           <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide mb-1 flex items-center gap-1">
@@ -173,7 +389,7 @@ function PainelTodos({
         </div>
       </div>
 
-      {/* Gráfico de barras por ano */}
+      {/* Gráfico por ano */}
       <div>
         <p className="text-xs text-slate-400 font-medium mb-3 uppercase tracking-wide">
           Gastos por ano · clique para detalhar
@@ -185,7 +401,12 @@ function PainelTodos({
             barCategoryGap="30%"
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11, fill: "#94a3b8" }}
+              axisLine={false}
+              tickLine={false}
+            />
             <YAxis
               tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
               tick={{ fontSize: 10, fill: "#cbd5e1" }}
@@ -194,7 +415,11 @@ function PainelTodos({
               width={52}
             />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f1f5f9", radius: 6 }} />
-            <Bar dataKey="total_gasto" radius={[6, 6, 0, 0]} onClick={(d) => onSelectAno(d.ano)}>
+            <Bar
+              dataKey="total_gasto"
+              radius={[6, 6, 0, 0]}
+              onClick={(d) => onSelectAno(d.ano)}
+            >
               {chartData.map((entry) => (
                 <Cell
                   key={entry.ano}
@@ -212,9 +437,15 @@ function PainelTodos({
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="text-left text-[11px] text-slate-400 font-medium uppercase tracking-wide px-4 py-2.5">Ano</th>
-              <th className="text-right text-[11px] text-slate-400 font-medium uppercase tracking-wide px-4 py-2.5">Total Gasto</th>
-              <th className="text-right text-[11px] text-slate-400 font-medium uppercase tracking-wide px-4 py-2.5 hidden sm:table-cell">Despesas</th>
+              <th className="text-left text-[11px] text-slate-400 font-medium uppercase tracking-wide px-4 py-2.5">
+                Ano
+              </th>
+              <th className="text-right text-[11px] text-slate-400 font-medium uppercase tracking-wide px-4 py-2.5">
+                Total Gasto
+              </th>
+              <th className="text-right text-[11px] text-slate-400 font-medium uppercase tracking-wide px-4 py-2.5 hidden sm:table-cell">
+                Despesas
+              </th>
               <th className="px-4 py-2.5 w-10" />
             </tr>
           </thead>
@@ -226,15 +457,45 @@ function PainelTodos({
                 onClick={() => onSelectAno(row.ano)}
               >
                 <td className="px-4 py-3 font-semibold text-slate-700 font-mono">{row.ano}</td>
-                <td className="px-4 py-3 text-right font-mono text-slate-600">{BRL(row.total_gasto)}</td>
-                <td className="px-4 py-3 text-right text-slate-400 hidden sm:table-cell">{row.qtd_despesas}</td>
+                <td className="px-4 py-3 text-right font-mono text-slate-600">
+                  {BRL(row.total_gasto)}
+                </td>
+                <td className="px-4 py-3 text-right text-slate-400 hidden sm:table-cell">
+                  {row.qtd_despesas}
+                </td>
                 <td className="px-4 py-3 text-right">
-                  <ChevronLeft size={14} className="text-slate-300 group-hover:text-blue-500 rotate-180 transition-colors ml-auto" />
+                  <ChevronLeft
+                    size={14}
+                    className="text-slate-300 group-hover:text-blue-500 rotate-180 transition-colors ml-auto"
+                  />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* ── Dropdowns globais ── */}
+      <div className="space-y-3 pt-1">
+        <DropdownSection
+          title="Maiores Empresas"
+          subtitle="todo o período"
+          icon={<Building2 size={15} />}
+          badge={fornecedores.length}
+          defaultOpen={false}
+        >
+          <ListaFornecedores fornecedores={fornecedores} total={totalGeral} />
+        </DropdownSection>
+
+        <DropdownSection
+          title="Categorias de Gastos"
+          subtitle="todo o período"
+          icon={<Tag size={15} />}
+          badge={categorias.length}
+          defaultOpen={false}
+        >
+          <ListaCategorias categorias={categorias} total={totalGeral} />
+        </DropdownSection>
       </div>
     </div>
   )
@@ -252,8 +513,8 @@ function PainelAno({
 }: {
   ano: number
   historico: DespesaResumoMensal[]
-  fornecedores: { nome_fornecedor: string; total_recebido: number; qtd_notas: number }[]
-  categorias: { tipo_despesa: string; total: number; qtd: number }[]
+  fornecedores: FornecedorItem[]
+  categorias: CategoriaItem[]
 }) {
   const mesesDoAno = useMemo(
     () =>
@@ -268,11 +529,13 @@ function PainelAno({
   const maxMes = mesesDoAno.length > 0 ? Math.max(...mesesDoAno.map((m) => m.total_gasto)) : 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header do ano */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs text-slate-400 uppercase tracking-wide mb-0.5">Total em {ano}</p>
+          <p className="text-xs text-slate-400 uppercase tracking-wide mb-0.5">
+            Total em {ano}
+          </p>
           <p className="font-mono text-2xl font-bold text-blue-700">{BRL(totalAno)}</p>
         </div>
         <div className="text-right">
@@ -286,11 +549,22 @@ function PainelAno({
       {/* Gráfico mensal */}
       {mesesDoAno.length > 0 ? (
         <div>
-          <p className="text-xs text-slate-400 font-medium mb-3 uppercase tracking-wide">Mês a mês</p>
+          <p className="text-xs text-slate-400 font-medium mb-3 uppercase tracking-wide">
+            Mês a mês
+          </p>
           <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={mesesDoAno} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="25%">
+            <BarChart
+              data={mesesDoAno}
+              margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+              barCategoryGap="25%"
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: "#94a3b8" }}
+                axisLine={false}
+                tickLine={false}
+              />
               <YAxis
                 tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
                 tick={{ fontSize: 10, fill: "#cbd5e1" }}
@@ -311,58 +585,32 @@ function PainelAno({
           </ResponsiveContainer>
         </div>
       ) : (
-        <p className="text-sm text-slate-400 text-center py-6">Sem dados mensais para {ano}.</p>
+        <p className="text-sm text-slate-400 text-center py-6">
+          Sem dados mensais para {ano}.
+        </p>
       )}
 
-      {/* Categorias + Fornecedores em grid */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* Categorias */}
-        {categorias.length > 0 && (
-          <div className="rounded-xl border border-slate-200 overflow-hidden">
-            <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200">
-              <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">Por Categoria</p>
-            </div>
-            <div className="divide-y divide-slate-100">
-              {categorias.slice(0, 6).map((cat) => {
-                const pct = totalAno > 0 ? (cat.total / totalAno) * 100 : 0
-                return (
-                  <div key={cat.tipo_despesa} className="px-4 py-2.5">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-slate-600 truncate pr-2 max-w-[65%]">{cat.tipo_despesa}</span>
-                      <span className="font-mono text-xs text-slate-500 flex-shrink-0">{BRL(cat.total)}</span>
-                    </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-blue-400 rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
+      {/* ── Dropdowns do ano ── */}
+      <div className="space-y-3">
+        <DropdownSection
+          title="Maiores Empresas"
+          subtitle={String(ano)}
+          icon={<Building2 size={15} />}
+          badge={fornecedores.length}
+          defaultOpen={true}
+        >
+          <ListaFornecedores fornecedores={fornecedores} total={totalAno} />
+        </DropdownSection>
 
-        {/* Top fornecedores */}
-        {fornecedores.length > 0 && (
-          <div className="rounded-xl border border-slate-200 overflow-hidden">
-            <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200">
-              <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide flex items-center gap-1">
-                <Users size={11} /> Top Fornecedores
-              </p>
-            </div>
-            <div className="divide-y divide-slate-100">
-              {fornecedores.slice(0, 6).map((f, i) => (
-                <div key={f.nome_fornecedor} className="px-4 py-2.5 flex items-center gap-3">
-                  <span className="font-mono text-[10px] text-slate-300 w-4 flex-shrink-0">{i + 1}</span>
-                  <span className="text-xs text-slate-600 flex-1 truncate">{f.nome_fornecedor}</span>
-                  <span className="font-mono text-xs text-slate-500 flex-shrink-0">{BRL(f.total_recebido)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <DropdownSection
+          title="Categorias de Gastos"
+          subtitle={String(ano)}
+          icon={<Tag size={15} />}
+          badge={categorias.length}
+          defaultOpen={true}
+        >
+          <ListaCategorias categorias={categorias} total={totalAno} />
+        </DropdownSection>
       </div>
     </div>
   )
@@ -379,7 +627,6 @@ interface LinhaDoTempoProps {
 export default function LinhaDoTempo({ politicoId }: LinhaDoTempoProps) {
   const [anoSelecionado, setAnoSelecionado] = useState<number | null>(null)
 
-  // Busca "todos os dados" quando não há ano selecionado, ou o ano específico
   const { data: resumoGeral, isLoading: loadingGeral } = useDespesasResumoCompleto(politicoId)
   const { data: resumoAno, isLoading: loadingAno } = useDespesasResumoCompleto(
     politicoId,
@@ -389,13 +636,11 @@ export default function LinhaDoTempo({ politicoId }: LinhaDoTempoProps) {
   const resumo = anoSelecionado ? resumoAno : resumoGeral
   const isLoading = anoSelecionado ? loadingAno : loadingGeral
 
-  // Agrega por ano para a navegação e o painel "todos"
   const anosAgrupados = useMemo(
     () => (resumoGeral ? agruparPorAno(resumoGeral.historico_mensal) : []),
     [resumoGeral],
   )
 
-  // Monta a lista de nós da linha do tempo
   const nosTimeline: AnoPilula[] = useMemo(() => {
     const todosOsAnos = anosAgrupados.map((a) => ({
       ano: a.ano,
@@ -411,6 +656,25 @@ export default function LinhaDoTempo({ politicoId }: LinhaDoTempoProps) {
   const totalGeral = anosAgrupados.reduce((s, a) => s + a.total_gasto, 0)
   const totalDespesas = anosAgrupados.reduce((s, a) => s + a.qtd_despesas, 0)
 
+  // Normaliza fornecedores e categorias independente da forma que o backend retorna
+  const fornecedores: FornecedorItem[] = useMemo(() => {
+    if (!resumo) return []
+    return (resumo.top_fornecedores ?? []).map((f: any) => ({
+      nome: f.nome ?? f.nome_fornecedor ?? "—",
+      total: f.total ?? f.total_recebido ?? 0,
+    }))
+  }, [resumo])
+
+  const categorias: CategoriaItem[] = useMemo(() => {
+    if (!resumo) return []
+    // O backend pode retornar tanto `por_categoria` quanto `top_categorias`
+    const lista = resumo.por_categoria ?? resumo.top_categorias ?? []
+    return lista.map((c: any) => ({
+      nome: c.nome ?? c.tipo_despesa ?? "—",
+      total: c.total ?? 0,
+    }))
+  }, [resumo])
+
   return (
     <div
       style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -424,7 +688,7 @@ export default function LinhaDoTempo({ politicoId }: LinhaDoTempoProps) {
             style={{ fontFamily: "'Fraunces', serif" }}
             className="text-lg font-bold text-slate-800"
           >
-            Linha do Tempo
+            Histórico de Gastos
           </h3>
           {anoSelecionado && (
             <span className="bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">
@@ -470,8 +734,8 @@ export default function LinhaDoTempo({ politicoId }: LinhaDoTempoProps) {
           <PainelAno
             ano={anoSelecionado}
             historico={resumo.historico_mensal}
-            fornecedores={resumo.top_fornecedores}
-            categorias={resumo.por_categoria}
+            fornecedores={fornecedores}
+            categorias={categorias}
           />
         ) : (
           <PainelTodos
@@ -479,6 +743,8 @@ export default function LinhaDoTempo({ politicoId }: LinhaDoTempoProps) {
             totalGeral={totalGeral}
             totalDespesas={totalDespesas}
             onSelectAno={setAnoSelecionado}
+            fornecedores={fornecedores}
+            categorias={categorias}
           />
         )}
       </div>
