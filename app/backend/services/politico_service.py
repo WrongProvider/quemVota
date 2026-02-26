@@ -16,57 +16,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
 from backend.repositories.politico_repository import PoliticoRepository
+from backend.repositories.ranking_repository import RankingRepository
 from backend.schemas import PoliticoResponse
+from backend.services.performance_calc import calcular_score, resolve_cota_mensal
 from .ranking_service import RankingService
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Cotas mensais por UF — fonte: Câmara dos Deputados 2025
-# ---------------------------------------------------------------------------
-_COTAS_POR_UF: dict[str, float] = {
-    "AC": 50426.26, "AL": 46737.90, "AM": 49363.92, "AP": 49168.58,
-    "BA": 44804.65, "CE": 48245.57, "DF": 36582.46, "ES": 43217.71,
-    "GO": 41300.86, "MA": 47945.49, "MG": 41886.51, "MS": 46336.64,
-    "MT": 45221.83, "PA": 48021.25, "PB": 47826.36, "PE": 47470.60,
-    "PI": 46765.57, "PR": 44665.66, "RJ": 41553.77, "RN": 48525.79,
-    "RO": 49466.29, "RR": 51406.33, "RS": 46669.70, "SC": 45671.58,
-    "SE": 45933.06, "SP": 42837.33, "TO": 45297.41,
-}
-_COTA_PADRAO = 40_000.0  # fallback conservador
-
-# Pesos do score de performance
-_PESO_ASSIDUIDADE = 0.15
-_PESO_ECONOMIA = 0.40
-_PESO_PRODUCAO = 0.45
-
-# Meta de proposições por mês para nota máxima
-_META_PROPOSICOES_MES = 2
-
 # Limites de paginação (segunda linha de defesa)
 _MAX_LIMIT_POLITICOS = 600
-_MAX_LIMIT_VOTACOES = 20
-_MAX_LIMIT_DESPESAS = 20
-_MAX_LIMIT_RESUMO = 60
-
-
-def _resolve_cota_mensal(uf: str | None) -> float:
-    """Retorna a cota mensal para a UF, com fallback seguro."""
-    if uf and uf.upper() in _COTAS_POR_UF:
-        return _COTAS_POR_UF[uf.upper()]
-    return _COTA_PADRAO
+_MAX_LIMIT_VOTACOES  = 20
+_MAX_LIMIT_DESPESAS  = 20
+_MAX_LIMIT_RESUMO    = 60
 
 
 class PoliticoService:
     """
     Orquestra as regras de negócio de políticos.
-
     Não expõe detalhes de infraestrutura (SQL, ORM) para a camada HTTP.
     """
 
     def __init__(self, db: AsyncSession) -> None:
-        self._repo = PoliticoRepository(db)
-        self._db = db
+        self._repo         = PoliticoRepository(db)
+        self._ranking_repo = RankingRepository(db)
+        self._db           = db
 
     # ------------------------------------------------------------------
     # Listagem
@@ -81,10 +54,9 @@ class PoliticoService:
         partido: str | None = None,
         offset: int = 0,
     ) -> list[PoliticoResponse]:
-        safe_limit = min(abs(limit), _MAX_LIMIT_POLITICOS)
+        safe_limit  = min(abs(limit), _MAX_LIMIT_POLITICOS)
         safe_offset = max(offset, 0)
-
-        politicos = await self._repo.get_politicos_repo(
+        politicos   = await self._repo.get_politicos_repo(
             q=q, uf=uf, partido=partido, limit=safe_limit, offset=safe_offset
         )
         return [PoliticoResponse.model_validate(p) for p in politicos]
@@ -107,10 +79,11 @@ class PoliticoService:
     # ------------------------------------------------------------------
 
     async def get_politicos_votacoes_service(
-        self, politico_id: int,
+        self,
+        politico_id: int,
         *,
         limit: int = 20,
-        ano: int | None = None
+        ano: int | None = None,
     ):
         safe_limit = min(abs(limit), _MAX_LIMIT_VOTACOES)
         return await self._repo.get_politicos_votacoes_repo(
@@ -159,71 +132,168 @@ class PoliticoService:
         )
 
     # ------------------------------------------------------------------
-    # Estatísticas
+    # Estatísticas — agora com filtro de ano
     # ------------------------------------------------------------------
 
-    async def get_politico_estatisticas_service(self, politico_id: int):
-        return await self._repo.get_politicos_estatisticas_repo(politico_id)
+    async def get_politico_estatisticas_service(
+        self,
+        politico_id: int,
+        *,
+        ano: int | None = None,
+    ):
+        """
+        Retorna estatísticas gerais do parlamentar.
+
+        Args:
+            politico_id: ID do parlamentar.
+            ano: quando fornecido, filtra votações e despesas pelo ano,
+                 permitindo comparação justa na linha do tempo.
+        """
+        return await self._repo.get_politicos_estatisticas_repo(
+            politico_id, ano=ano
+        )
 
     # ------------------------------------------------------------------
-    # Performance
+    # Performance — agora com filtro de ano
     # ------------------------------------------------------------------
 
-    async def get_politico_performance_service(self, politico_id: int) -> dict:
+    async def get_politico_performance_service(
+        self,
+        politico_id: int,
+        *,
+        ano: int | None = None,
+    ) -> dict:
         """
         Calcula o score de performance do parlamentar.
 
+        Usa calcular_score() de performance_calc.py — mesma função do
+        RankingService — garantindo números idênticos ao ranking geral
+        quando ano=None.
+
+        Args:
+            politico_id: ID do parlamentar.
+            ano: quando fornecido, o score reflete apenas aquele ano,
+                 possibilitando comparação justa na linha do tempo.
+
         Fórmula:
-          score = assiduidade × 15% + economia × 40% + produção × 45%
+            score = assiduidade × 15% + economia × 40% + produção × 45%
 
         Lança HTTP 404 se o político não existir.
         """
-        data = await self._repo.get_politico_performance_data(politico_id)
-        if not data:
+        politico = await self._repo.get_politico_repo(politico_id)
+        if not politico:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Político não encontrado.",
             )
 
-        # 1. Assiduidade (0–100)
-        nota_assiduidade = (data["presencas"] / data["total_sessoes"]) * 100
-
-        # 2. Economia (0–100)
-        cota_mensal = _resolve_cota_mensal(data.get("uf"))
-        cota_total = cota_mensal * data["meses_mandato"]
-        economia_ratio = (cota_total - data["total_gasto"]) / cota_total
-        nota_economia = max(0.0, economia_ratio * 100)
-
-        # 3. Produção (0–100, capped)
-        meta_producao = data["meses_mandato"] * _META_PROPOSICOES_MES
-        nota_producao = (
-            min((data["total_proposicoes"] / meta_producao) * 100, 100.0)
-            if meta_producao > 0
-            else 0.0
+        raw_row = await self._ranking_repo.get_performance_data_by_id(
+            politico_id, ano=ano
         )
+        if not raw_row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Dados de performance não encontrados para este político.",
+            )
 
-        score_final = (
-            nota_assiduidade * _PESO_ASSIDUIDADE
-            + nota_economia * _PESO_ECONOMIA
-            + nota_producao * _PESO_PRODUCAO
-        )
+        result = calcular_score(raw_row)
+        meta   = result.pop("_meta")
 
         media_global = await RankingService(self._db).get_media_global_cached()
 
         return {
-            "politico_id": politico_id,
-            "score_final": round(score_final, 2),
+            "politico_id":  politico_id,
+            "ano":          ano,           # None = mandato inteiro
+            "score_final":  result["score"],
             "media_global": round(media_global, 2),
             "detalhes": {
-                "nota_assiduidade": round(nota_assiduidade, 2),
-                "nota_economia": round(nota_economia, 2),
-                "nota_producao": round(nota_producao, 2),
+                "nota_assiduidade": result["notas"]["assiduidade"],
+                "nota_economia":    result["notas"]["economia"],
+                "nota_producao":    result["notas"]["producao"],
             },
             "info": {
-                "valor_cota_mensal": cota_mensal,
-                "total_gasto": data["total_gasto"],
-                "cota_utilizada_pct": round(
-                    (data["total_gasto"] / cota_total) * 100, 2
-                ),
+                "valor_cota_mensal":  meta["cota_mensal"],
+                "meses_considerados": meta["meses_mandato"],
+                "total_gasto":        meta["total_gasto"],
+                "cota_utilizada_pct": meta["cota_utilizada_pct"],
             },
         }
+
+    # ------------------------------------------------------------------
+    # Timeline — série histórica anual
+    # ------------------------------------------------------------------
+
+    async def get_politico_timeline_service(self, politico_id: int) -> list[dict]:
+        """
+        Retorna a evolução anual de performance, estatísticas e gastos do
+        parlamentar — uma entrada por ano com dados registrados no banco.
+
+        Cada item da lista contém:
+          - ano
+          - score e notas detalhadas (assiduidade, economia, produção)
+          - estatísticas do ano (votações, despesas, total gasto, média mensal)
+          - info de cota (valor, % utilizada)
+
+        Exemplo de resposta:
+        [
+          {
+            "ano": 2023,
+            "score": 61.4,
+            "notas": { "assiduidade": 87.0, "economia": 74.2, "producao": 38.5 },
+            "estatisticas": {
+              "total_votacoes": 142,
+              "total_despesas": 89,
+              "total_gasto": 312400.0,
+              "media_mensal": 26033.33
+            },
+            "info": {
+              "valor_cota_mensal": 42837.33,
+              "meses_ativos": 12,
+              "cota_total": 514047.96,
+              "cota_utilizada_pct": 60.73
+            }
+          },
+          ...
+        ]
+
+        Lança HTTP 404 se o político não existir.
+        """
+        politico = await self._repo.get_politico_repo(politico_id)
+        if not politico:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Político não encontrado.",
+            )
+
+        timeline_raw = await self._ranking_repo.get_timeline_data_by_id(politico_id)
+        if not timeline_raw:
+            return []
+
+        resultado = []
+        for entry in timeline_raw:
+            raw  = entry["raw"]
+            calc = calcular_score(raw)
+            meta = calc.pop("_meta")
+
+            meses_ativos = meta["meses_mandato"]
+            total_gasto  = meta["total_gasto"]
+
+            resultado.append({
+                "ano":   entry["ano"],
+                "score": calc["score"],
+                "notas": calc["notas"],
+                "estatisticas": {
+                    "total_votacoes": entry["total_votacoes"],
+                    "total_despesas": entry["total_despesas"],
+                    "total_gasto":    round(total_gasto, 2),
+                    "media_mensal":   round(total_gasto / meses_ativos, 2) if meses_ativos else 0.0,
+                },
+                "info": {
+                    "valor_cota_mensal":  meta["cota_mensal"],
+                    "meses_ativos":       meses_ativos,
+                    "cota_total":         round(meta["cota_total"], 2),
+                    "cota_utilizada_pct": meta["cota_utilizada_pct"],
+                },
+            })
+
+        return resultado

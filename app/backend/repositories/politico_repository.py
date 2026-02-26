@@ -11,7 +11,7 @@ Segurança (OWASP):
 
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import case, select, func, desc, String
+from sqlalchemy import case, desc, func, select, String
 from sqlalchemy.exc import SQLAlchemyError
 
 from backend.schemas import (
@@ -34,13 +34,10 @@ from backend.models import (
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Limites máximos absolutos (defesa em profundidade — OWASP A04)
-# ---------------------------------------------------------------------------
 _MAX_LIMIT_POLITICOS = 600
-_MAX_LIMIT_VOTACOES = 20
-_MAX_LIMIT_DESPESAS = 20
-_MAX_LIMIT_RESUMO = 60
+_MAX_LIMIT_VOTACOES  = 20
+_MAX_LIMIT_DESPESAS  = 20
+_MAX_LIMIT_RESUMO    = 60
 
 
 class PoliticoRepository:
@@ -62,21 +59,18 @@ class PoliticoRepository:
         limit: int = 100,
         offset: int = 0,
     ) -> list[Politico]:
-        """Retorna lista paginada de políticos com filtros opcionais."""
-        safe_limit = min(abs(limit), _MAX_LIMIT_POLITICOS)
+        safe_limit  = min(abs(limit), _MAX_LIMIT_POLITICOS)
         safe_offset = max(offset, 0)
 
         stmt = select(Politico)
 
-        # OWASP A03/A01 — ilike usa bind parameter internamente no SQLAlchemy
         if q:
             stmt = stmt.where(Politico.nome.ilike(f"%{q}%"))
         if uf:
-            # Normaliza para maiúsculas evitando bypass de filtro
             stmt = stmt.where(Politico.uf == uf.upper()[:2])
         if partido:
             stmt = stmt.where(Politico.partido_sigla == partido.upper()[:10])
-            
+
         stmt = stmt.order_by(Politico.nome).limit(safe_limit).offset(safe_offset)
 
         try:
@@ -91,7 +85,6 @@ class PoliticoRepository:
     # ------------------------------------------------------------------
 
     async def get_politico_repo(self, politico_id: int) -> Politico | None:
-        """Retorna um político pelo ID interno. Retorna None se não encontrado."""
         stmt = select(Politico).where(Politico.id == politico_id)
         try:
             result = await self.db.execute(stmt)
@@ -105,13 +98,12 @@ class PoliticoRepository:
     # ------------------------------------------------------------------
 
     async def get_politicos_votacoes_repo(
-        self, 
-        politico_id: int, 
+        self,
+        politico_id: int,
         *,
         limit: int = 20,
-        ano: int | None = None
+        ano: int | None = None,
     ) -> list[PoliticoVoto]:
-        """Últimas votações de um político."""
         safe_limit = min(abs(limit), _MAX_LIMIT_VOTACOES)
 
         stmt = (
@@ -135,6 +127,7 @@ class PoliticoRepository:
         )
         if ano is not None:
             stmt = stmt.where(Proposicao.ano == ano)
+
         try:
             result = await self.db.execute(stmt)
             return [
@@ -169,8 +162,7 @@ class PoliticoRepository:
         limit: int = 20,
         offset: int = 0,
     ) -> list[PoliticoDespesaDetalhe]:
-        """Despesas individuais paginadas."""
-        safe_limit = min(abs(limit), _MAX_LIMIT_DESPESAS)
+        safe_limit  = min(abs(limit), _MAX_LIMIT_DESPESAS)
         safe_offset = max(offset, 0)
 
         stmt = (
@@ -185,7 +177,6 @@ class PoliticoRepository:
             .where(Despesa.politico_id == politico_id)
         )
 
-        # Filtros numéricos — sem risco de SQL injection via ORM
         if ano is not None:
             stmt = stmt.where(Despesa.ano == ano)
         if mes is not None:
@@ -211,7 +202,6 @@ class PoliticoRepository:
         ano: int | None = None,
         limit: int | None = None,
     ) -> list[PoliticoDespesaResumo]:
-        """Resumo mensal de gastos."""
         stmt = (
             select(
                 Despesa.ano,
@@ -245,7 +235,7 @@ class PoliticoRepository:
             raise
 
     # ------------------------------------------------------------------
-    # Despesas — resumo completo (histórico + top fornecedores + categorias)
+    # Despesas — resumo completo
     # ------------------------------------------------------------------
 
     async def get_politicos_despesas_resumo_completo_repo(
@@ -283,6 +273,8 @@ class PoliticoRepository:
             .order_by(desc("total"))
             .limit(10)
         )
+        if ano is not None:
+            stmt_empresas = stmt_empresas.where(Despesa.ano == ano)
 
         stmt_categorias = (
             select(
@@ -294,6 +286,8 @@ class PoliticoRepository:
             .order_by(desc("total"))
             .limit(10)
         )
+        if ano is not None:
+            stmt_categorias = stmt_categorias.where(Despesa.ano == ano)
 
         try:
             res_h = await self.db.execute(stmt_historico)
@@ -324,15 +318,35 @@ class PoliticoRepository:
         )
 
     # ------------------------------------------------------------------
-    # Estatísticas
+    # Estatísticas — agora com filtro de ano
     # ------------------------------------------------------------------
 
     async def get_politicos_estatisticas_repo(
-        self, politico_id: int
+        self,
+        politico_id: int,
+        *,
+        ano: int | None = None,
     ) -> PoliticoEstatisticasResponse:
+        """
+        Retorna estatísticas agregadas do parlamentar.
+
+        Args:
+            politico_id: ID do parlamentar.
+            ano: quando fornecido, filtra votações e despesas pelo ano,
+                 permitindo comparação justa na linha do tempo.
+        """
+        # --- Votações ---
         stmt_votos = select(func.count(func.distinct(Voto.votacao_id))).where(
             Voto.politico_id == politico_id
         )
+        if ano is not None:
+            stmt_votos = (
+                stmt_votos
+                .join(Votacao, Votacao.id == Voto.votacao_id)
+                .where(func.extract("year", Votacao.data) == ano)
+            )
+
+        # --- Despesas ---
         stmt_despesas = select(
             func.count(Despesa.id),
             func.coalesce(func.sum(Despesa.valor_liquido), 0),
@@ -340,123 +354,49 @@ class PoliticoRepository:
             func.max(Despesa.ano),
         ).where(Despesa.politico_id == politico_id)
 
+        if ano is not None:
+            stmt_despesas = stmt_despesas.where(Despesa.ano == ano)
+
         try:
-            res_votos = await self.db.execute(stmt_votos)
+            res_votos    = await self.db.execute(stmt_votos)
             res_despesas = await self.db.execute(stmt_despesas)
         except SQLAlchemyError:
             logger.exception("Erro ao buscar estatísticas do político id=%s", politico_id)
             raise
 
-        total_votacoes = res_votos.scalar() or 0
-        total_despesas, total_gasto, primeiro_ano, ultimo_ano = res_despesas.one()
+        total_votacoes                                          = res_votos.scalar() or 0
+        total_despesas, total_gasto, primeiro_ano, ultimo_ano  = res_despesas.one()
 
-        media_mensal = 0.0
-        if primeiro_ano and ultimo_ano:
-            total_meses = (ultimo_ano - primeiro_ano + 1) * 12
-            if total_meses > 0:
-                media_mensal = float(total_gasto) / total_meses
+        # Quando filtrado por ano, meses = meses distintos com despesa naquele ano
+        if ano is not None:
+            stmt_meses = select(
+                func.count(func.distinct(Despesa.mes))
+            ).where(Despesa.politico_id == politico_id, Despesa.ano == ano)
+            try:
+                res_meses    = await self.db.execute(stmt_meses)
+                total_meses  = res_meses.scalar() or 1
+            except SQLAlchemyError:
+                logger.exception("Erro ao buscar meses ativos do político id=%s", politico_id)
+                raise
+        else:
+            # Mandato inteiro: (anos de diferença + 1) × 12
+            total_meses = (
+                (ultimo_ano - primeiro_ano + 1) * 12
+                if primeiro_ano and ultimo_ano
+                else 1
+            )
+
+        media_mensal = (
+            round(float(total_gasto) / total_meses, 2)
+            if total_meses > 0 and total_gasto
+            else 0.0
+        )
 
         return PoliticoEstatisticasResponse(
             total_votacoes=total_votacoes,
             total_despesas=total_despesas or 0,
             total_gasto=float(total_gasto or 0),
-            media_mensal=round(media_mensal, 2),
+            media_mensal=media_mensal,
             primeiro_ano=primeiro_ano,
             ultimo_ano=ultimo_ano,
         )
-
-    # ------------------------------------------------------------------
-    # Dados brutos para cálculo de performance
-    # ------------------------------------------------------------------
-
-    async def get_politico_performance_data(self, politico_id: int) -> dict | None:
-        """
-        Retorna os dados brutos necessários para o cálculo de performance.
-        Retorna None se o político não existir.
-        """
-        politico = await self.db.get(Politico, politico_id)
-        if not politico:
-            return None
-
-        stmt_presenca = select(
-            func.count(Presenca.id).label("total_sessoes"),
-            func.sum(
-                case((Presenca.frequencia_sessao == "Presença", 1), else_=0)
-            ).label("presencas_reais"),
-        ).where(Presenca.politico_id == politico_id)
-
-        # Proposições com pesos diferenciados por tipo e proponência
-        stmt_producao = (
-            select(
-                func.sum(
-                    case(
-                        (
-                            Proposicao.sigla_tipo.in_(["PEC", "PL", "PLC", "PLP"]),
-                            case((ProposicaoAutor.proponente == True, 1.0), else_=0.2),
-                        ),
-                        (
-                            Proposicao.sigla_tipo.in_(["PDC", "PRC", "MPV"]),
-                            case((ProposicaoAutor.proponente == True, 0.5), else_=0.1),
-                        ),
-                        else_=case((ProposicaoAutor.proponente == True, 0.05), else_=0.01),
-                    )
-                ).label("pontuacao_total"),
-                func.count(
-                    case((Proposicao.sigla_tipo.in_(["PEC", "PL", "PLC", "PLP"]), 1))
-                ).label("qtd_alta"),
-                func.count(
-                    case((Proposicao.sigla_tipo.in_(["PDC", "PRC", "MPV"]), 1))
-                ).label("qtd_media"),
-                func.count(
-                    case(
-                        (
-                            ~Proposicao.sigla_tipo.in_(
-                                ["PEC", "PL", "PLC", "PLP", "PDC", "PRC", "MPV"]
-                            ),
-                            1,
-                        )
-                    )
-                ).label("qtd_baixa"),
-            )
-            .select_from(ProposicaoAutor)
-            .join(Proposicao, Proposicao.id == ProposicaoAutor.proposicao_id)
-            .where(ProposicaoAutor.politico_id == politico_id)
-        )
-
-        stmt_gastos = select(
-            func.sum(Despesa.valor_liquido),
-            func.count(
-                func.distinct(Despesa.ano.cast(String) + "-" + Despesa.mes.cast(String))
-            ),
-        ).where(Despesa.politico_id == politico_id)
-
-        try:
-            res_p = await self.db.execute(stmt_presenca)
-            res_prod = await self.db.execute(stmt_producao)
-            res_g = await self.db.execute(stmt_gastos)
-        except SQLAlchemyError:
-            logger.exception(
-                "Erro ao buscar dados de performance do político id=%s", politico_id
-            )
-            raise
-
-        p_data = res_p.one()
-        prod_data = res_prod.mappings().one()
-        g_data = res_g.one()
-
-        return {
-            "uf": politico.uf,
-            "presencas": p_data.presencas_reais or 0,
-            "total_sessoes": p_data.total_sessoes or 1,
-            "pontuacao_producao": float(prod_data["pontuacao_total"] or 0),
-            "total_proposicoes": (
-                (prod_data["qtd_alta"] or 0)
-                + (prod_data["qtd_media"] or 0)
-                + (prod_data["qtd_baixa"] or 0)
-            ),
-            "qtd_alta": prod_data["qtd_alta"] or 0,
-            "qtd_media": prod_data["qtd_media"] or 0,
-            "qtd_baixa": prod_data["qtd_baixa"] or 0,
-            "total_gasto": float(g_data[0] or 0),
-            "meses_mandato": g_data[1] or 1,
-        }
