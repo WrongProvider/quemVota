@@ -11,9 +11,9 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-DOMAIN="seudomain.com"
+DOMAIN="quemvota.com.br"
 EMAIL="seu@email.com"
-REPO="https://github.com/seu-usuario/quemVota.git"
+REPO="https://github.com/seu-usuario/quem-vota.git"
 APP_DIR="/opt/quemVota"
 DEPLOY_DIR="$APP_DIR/app/deploy"
 
@@ -70,38 +70,38 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
-# ── 5. Criar pasta conf.d e nginx temporário (HTTP) para Certbot ──────────────
-echo "→ Subindo serviços (HTTP primeiro, para Certbot)..."
-mkdir -p conf.d
+# ── 5. Subir banco e cache ────────────────────────────────────────────────────
+echo "→ Subindo postgres e valkey..."
+docker compose up -d postgres valkey
+echo "→ Aguardando healthchecks..."
+sleep 15
 
-cat > conf.d/quemvota.conf << NGINX_HTTP
-server {
-    listen 80;
-    server_name $DOMAIN www.$DOMAIN;
-    location /.well-known/acme-challenge/ { root /var/www/certbot; }
-    location / { return 200 'ok'; }
-}
-NGINX_HTTP
-
-docker compose up -d --build nginx certbot postgres valkey api
-sleep 5
-
-# ── 6. Obter certificado SSL ──────────────────────────────────────────────────
+# ── 6. Obter certificado SSL (standalone — porta 80 livre neste momento) ──────
 echo "→ Solicitando certificado SSL para $DOMAIN..."
-docker compose run --rm certbot certonly \
-    --webroot -w /var/www/certbot \
+mkdir -p certbot_certs certbot_www
+
+docker run --rm \
+    -p 80:80 \
+    -v "$DEPLOY_DIR/certbot_certs:/etc/letsencrypt" \
+    -v "$DEPLOY_DIR/certbot_www:/var/www/certbot" \
+    certbot/certbot certonly \
+    --standalone \
     --email "$EMAIL" \
     --agree-tos \
     --no-eff-email \
+    --force-renewal \
     -d "$DOMAIN" -d "www.$DOMAIN"
+
+echo "✔ Certificado obtido!"
 
 # ── 7. Nginx com HTTPS ────────────────────────────────────────────────────────
 echo "→ Aplicando configuração HTTPS..."
+mkdir -p conf.d
+
 cat > conf.d/quemvota.conf << 'NGINX_HTTPS'
 server {
     listen 80;
     server_name DOMAIN_PLACEHOLDER www.DOMAIN_PLACEHOLDER;
-    location /.well-known/acme-challenge/ { root /var/www/certbot; }
     location / { return 301 https://$host$request_uri; }
 }
 
@@ -144,10 +144,17 @@ NGINX_HTTPS
 
 sed -i "s/DOMAIN_PLACEHOLDER/$DOMAIN/g" conf.d/quemvota.conf
 
-docker compose up -d --build --force-recreate nginx frontend
-echo "✔ Nginx reiniciado com HTTPS"
+# ── 8. Subir todos os serviços ────────────────────────────────────────────────
+docker compose up -d --build --force-recreate
+echo "✔ Todos os serviços no ar com HTTPS"
 
-# ── 8. Status final ───────────────────────────────────────────────────────────
+# ── 9. Renovação automática via cron ─────────────────────────────────────────
+echo "→ Configurando renovação automática do certificado..."
+CRON_JOB="0 3 * * * docker run --rm -p 80:80 -v $DEPLOY_DIR/certbot_certs:/etc/letsencrypt -v $DEPLOY_DIR/certbot_www:/var/www/certbot certbot/certbot renew --standalone --quiet && docker compose -f $DEPLOY_DIR/docker-compose.yml restart nginx"
+(crontab -l 2>/dev/null | grep -v certbot; echo "$CRON_JOB") | crontab -
+echo "✔ Cron configurado (renova às 3h todo dia)"
+
+# ── 10. Status final ──────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════════════"
 echo "  ✅ Deploy concluído!"

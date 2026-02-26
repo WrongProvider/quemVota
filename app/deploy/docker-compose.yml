@@ -80,32 +80,17 @@ services:
       - "443:443"
     volumes:
       - ./conf.d:/etc/nginx/conf.d:ro
-      - certbot_www:/var/www/certbot:ro
-      - certbot_certs:/etc/letsencrypt:ro
+      - ./certbot_certs:/etc/letsencrypt:ro   # pasta local gerada pelo deploy.sh
+      - ./certbot_www:/var/www/certbot:ro
     depends_on:
       - api
       - frontend
     networks:
       - frontend
 
-  # ── SSL (Certbot) ───────────────────────────────────────────────────────────
-  certbot:
-    image: certbot/certbot
-    container_name: quemvota_certbot
-    volumes:
-      - certbot_www:/var/www/certbot
-      - certbot_certs:/etc/letsencrypt
-    entrypoint: >
-      sh -c "trap exit TERM; while :; do
-        certbot renew --webroot -w /var/www/certbot --quiet;
-        sleep 12h & wait $${!};
-      done"
-
 volumes:
   postgres_data:
   valkey_data:
-  certbot_www:
-  certbot_certs:
 
 networks:
   backend:
