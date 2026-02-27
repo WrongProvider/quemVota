@@ -16,6 +16,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from backend.schemas import (
     ItemRanking,
+    ItemRankingFornecedor,
     PoliticoDespesaDetalhe,
     PoliticoDespesaResumo,
     PoliticoDespesaResumoCompleto,
@@ -247,6 +248,7 @@ class PoliticoRepository:
     ) -> PoliticoDespesaResumoCompleto:
         safe_limit = min(abs(limit_meses), _MAX_LIMIT_RESUMO) if limit_meses else None
 
+        # ── Histórico mensal ──────────────────────────────────────────
         stmt_historico = (
             select(
                 Despesa.ano,
@@ -263,19 +265,68 @@ class PoliticoRepository:
         if safe_limit:
             stmt_historico = stmt_historico.limit(safe_limit)
 
+        # ── Top fornecedores ─────────────────────────────────────────
+        #
+        # Para cada fornecedor, além do total gasto, buscamos a
+        # `categoria_principal` — o tipo_despesa mais frequente nas
+        # notas fiscais daquele fornecedor para este parlamentar.
+        #
+        # Estratégia: subquery que ranqueia cada (fornecedor, tipo_despesa)
+        # por contagem decrescente e filtra apenas o rank = 1 (modo).
+        #
+        # Compatível com PostgreSQL, SQLite e MySQL via window function.
+        #
+        fornecedor_rank_sq = (
+            select(
+                Despesa.nome_fornecedor,
+                Despesa.tipo_despesa,
+                func.count(Despesa.id).label("qtd"),
+                func.rank()
+                .over(
+                    partition_by=Despesa.nome_fornecedor,
+                    order_by=func.count(Despesa.id).desc(),
+                )
+                .label("rnk"),
+            )
+            .where(Despesa.politico_id == politico_id)
+            .group_by(Despesa.nome_fornecedor, Despesa.tipo_despesa)
+        )
+        if ano is not None:
+            fornecedor_rank_sq = fornecedor_rank_sq.where(Despesa.ano == ano)
+        fornecedor_rank_sq = fornecedor_rank_sq.subquery("fornecedor_rank")
+
+        # Categoria predominante por fornecedor (rank = 1)
+        categoria_principal_sq = (
+            select(
+                fornecedor_rank_sq.c.nome_fornecedor,
+                fornecedor_rank_sq.c.tipo_despesa.label("categoria_principal"),
+            )
+            .where(fornecedor_rank_sq.c.rnk == 1)
+            .subquery("categoria_principal")
+        )
+
         stmt_empresas = (
             select(
                 Despesa.nome_fornecedor.label("nome"),
                 func.sum(Despesa.valor_liquido).label("total"),
+                categoria_principal_sq.c.categoria_principal,
+            )
+            .join(
+                categoria_principal_sq,
+                Despesa.nome_fornecedor == categoria_principal_sq.c.nome_fornecedor,
             )
             .where(Despesa.politico_id == politico_id)
-            .group_by(Despesa.nome_fornecedor)
+            .group_by(
+                Despesa.nome_fornecedor,
+                categoria_principal_sq.c.categoria_principal,
+            )
             .order_by(desc("total"))
             .limit(10)
         )
         if ano is not None:
             stmt_empresas = stmt_empresas.where(Despesa.ano == ano)
 
+        # ── Top categorias ────────────────────────────────────────────
         stmt_categorias = (
             select(
                 Despesa.tipo_despesa.label("nome"),
@@ -308,7 +359,11 @@ class PoliticoRepository:
                 for row in res_h.mappings()
             ],
             top_fornecedores=[
-                ItemRanking(nome=row.nome, total=float(row.total or 0))
+                ItemRankingFornecedor(
+                    nome=row.nome,
+                    total=float(row.total or 0),
+                    categoria_principal=row.categoria_principal,
+                )
                 for row in res_e.mappings()
             ],
             top_categorias=[
@@ -364,7 +419,7 @@ class PoliticoRepository:
             logger.exception("Erro ao buscar estatísticas do político id=%s", politico_id)
             raise
 
-        total_votacoes                                          = res_votos.scalar() or 0
+        total_votacoes = res_votos.scalar() or 0
         total_despesas, total_gasto, primeiro_ano, ultimo_ano  = res_despesas.one()
 
         # Quando filtrado por ano, meses = meses distintos com despesa naquele ano

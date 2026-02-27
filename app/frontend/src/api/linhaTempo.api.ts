@@ -21,21 +21,28 @@ export interface DespesaResumoMensal {
 }
 
 export interface DespesaFornecedor {
-  readonly nome_fornecedor: string
-  readonly total_recebido: number
-  readonly qtd_notas: number
+  readonly nome: string
+  readonly total: number
+  /**
+   * Tipo de despesa mais frequente nas notas fiscais deste fornecedor
+   * para o parlamentar consultado. Calculado via window function no backend
+   * (rank por contagem de ocorrências, particionado por fornecedor).
+   *
+   * Pode ser null em fornecedores com apenas uma categoria registrada
+   * ou em dados históricos anteriores à adição do campo.
+   */
+  readonly categoria_principal: string | null
 }
 
 export interface DespesaCategoria {
-  readonly tipo_despesa: string
+  readonly nome: string
   readonly total: number
-  readonly qtd: number
 }
 
 export interface DespesaResumoCompleto {
   readonly historico_mensal: DespesaResumoMensal[]
   readonly top_fornecedores: DespesaFornecedor[]
-  readonly por_categoria: DespesaCategoria[]
+  readonly top_categorias: DespesaCategoria[]
 }
 
 export interface Votacao {

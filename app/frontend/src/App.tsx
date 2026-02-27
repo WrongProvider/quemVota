@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import Politicos from "./pages/Politicos"
 import Rankings from "./pages/Rankings"
 import PoliticoDetalhe from "./pages/PoliticosDetalhe"
+import ProjetosVotacoes from "./pages/ProjetoVotacoes"
 import Home from "./pages/Home"
 import './App.css'
 import Metodologia from "./pages/Metodologia"
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="*" element={<p>Página não encontrada</p>} />
         <Route path="/sobre" element={<p>Sobre o projeto</p>} />
         <Route path="/metodologia" element={<Metodologia />} />
+        <Route path="/proposicoes" element={<ProjetosVotacoes />} />
       </Routes>
       
     </BrowserRouter>

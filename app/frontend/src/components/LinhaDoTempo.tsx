@@ -160,6 +160,7 @@ function DropdownSection({
 interface FornecedorItem {
   nome: string
   total: number
+  categoria_principal?: string | null
 }
 
 function ListaFornecedores({
@@ -183,18 +184,28 @@ function ListaFornecedores({
         const pct = total > 0 ? (f.total / total) * 100 : 0
         return (
           <div key={f.nome ?? i} className="px-4 py-3">
-            <div className="flex items-center gap-3">
-              <span
-                className="font-mono text-[10px] text-slate-300 w-5 flex-shrink-0 text-right"
-              >
+            <div className="flex items-start gap-3">
+              <span className="font-mono text-[10px] text-slate-300 w-5 flex-shrink-0 text-right mt-0.5">
                 {i + 1}
               </span>
               <div className="flex-1 min-w-0">
+                {/* Nome + valor */}
                 <div className="flex justify-between items-baseline gap-2">
                   <span className="text-xs text-slate-700 font-medium truncate">{f.nome}</span>
-                  <span className="font-mono text-xs text-slate-500 flex-shrink-0">{BRL(f.total)}</span>
+                  <span className="font-mono text-xs text-slate-500 flex-shrink-0">
+                    {BRL(f.total)}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
+
+                {/* Categoria principal */}
+                {f.categoria_principal && (
+                  <span className="inline-block mt-0.5 text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md leading-tight truncate max-w-full">
+                    {f.categoria_principal}
+                  </span>
+                )}
+
+                {/* Barra de progresso + percentual */}
+                <div className="flex items-center gap-2 mt-1.5">
                   <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full bg-blue-400 transition-all duration-500"
@@ -662,6 +673,7 @@ export default function LinhaDoTempo({ politicoId }: LinhaDoTempoProps) {
     return (resumo.top_fornecedores ?? []).map((f: any) => ({
       nome: f.nome ?? f.nome_fornecedor ?? "—",
       total: f.total ?? f.total_recebido ?? 0,
+      categoria_principal: f.categoria_principal ?? null,
     }))
   }, [resumo])
 

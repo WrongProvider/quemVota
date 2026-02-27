@@ -182,8 +182,8 @@ export default function Home() {
                 icon: "🧩",
                 title: "Projetos e Votações",
                 desc: "Pesquise por votações e proposições legislativas em tramitação ou encerradas.",
-                link: null,
-                cta: null,
+                link: "/proposicoes",
+                cta: "Explorar proposições",
               },
               {
                 icon: "⚖️",

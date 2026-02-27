@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 
-from backend.api.v1 import politico_api, ranking_api
+from backend.api.v1 import politico_api, ranking_api, proposicao_api
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Origens permitidas — edite aqui ao adicionar novos ambientes
@@ -111,6 +111,8 @@ app.add_middleware(
 
 app.include_router(politico_api.router)
 app.include_router(ranking_api.router)
+app.include_router(proposicao_api.router_proposicoes)
+app.include_router(proposicao_api.router_votacoes)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
