@@ -42,6 +42,7 @@ import type {
   ProposicoesFiltros,
   VotacoesFiltros,
 } from "../api/proposicoes.api"
+import Header from "../components/Header"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -740,164 +741,167 @@ export default function ProjetosVotacoes() {
   const painelAberto = proposicaoSelecionada !== null || votacaoSelecionada !== null
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif" }} className="min-h-screen bg-gray-50">
+    <>
+        <Header />
+            <div style={{ fontFamily: "'DM Sans', sans-serif" }} className="min-h-screen bg-gray-50">
 
-      {/* ── Cabeçalho da página ── */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <p className="text-xs font-semibold tracking-widest uppercase text-blue-600 mb-2">
-            Legislativo
-          </p>
-          <h1
-            style={{ fontFamily: "'Fraunces', serif" }}
-            className="text-3xl font-bold text-slate-900 mb-1"
-          >
-            Projetos e Votações
-          </h1>
-          <p className="text-slate-500 text-sm">
-            Pesquise proposições em tramitação e votações realizadas na Câmara dos Deputados.
-          </p>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className={`flex gap-6 transition-all duration-300 ${painelAberto ? "" : ""}`}>
-
-          {/* ── Coluna principal ── */}
-          <div className="flex-1 min-w-0">
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-
-              {/* Abas */}
-              <div className="flex border-b border-slate-200">
-                <button
-                  onClick={() => handleAba("projetos")}
-                  className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-                    aba === "projetos"
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-slate-500 hover:text-slate-700"
-                  }`}
+            {/* ── Cabeçalho da página ── */}
+            <div className="bg-white border-b border-slate-200">
+                <div className="max-w-7xl mx-auto px-6 py-8">
+                <p className="text-xs font-semibold tracking-widest uppercase text-blue-600 mb-2">
+                    Legislativo
+                </p>
+                <h1
+                    style={{ fontFamily: "'Fraunces', serif" }}
+                    className="text-3xl font-bold text-slate-900 mb-1"
                 >
-                  <FileText size={15} /> Projetos
-                </button>
-                <button
-                  onClick={() => handleAba("votacoes")}
-                  className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-                    aba === "votacoes"
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  <Vote size={15} /> Votações
-                </button>
-              </div>
-
-              {/* Filtros */}
-              <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
-                {aba === "projetos" ? (
-                  <FiltrosProposicoes filtros={filtrosProposicoes} onChange={setFiltrosProposicoes} />
-                ) : (
-                  <FiltrosVotacoes filtros={filtrosVotacoes} onChange={setFiltrosVotacoes} />
-                )}
-              </div>
-
-              {/* Lista */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={aba}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  {aba === "projetos" ? (
-                    loadingProposicoes ? (
-                      <EstadoLoading />
-                    ) : proposicoes.length === 0 ? (
-                      <EstadoVazio mensagem="Nenhuma proposição encontrada com os filtros selecionados." />
-                    ) : (
-                      <>
-                        {proposicoes.map((p) => (
-                          <CardProposicao
-                            key={p.id}
-                            proposicao={p}
-                            selecionada={proposicaoSelecionada === p.id}
-                            onClick={() => setProposicaoSelecionada(
-                              proposicaoSelecionada === p.id ? null : p.id
-                            )}
-                          />
-                        ))}
-                        <Paginacao
-                          offset={filtrosProposicoes.offset ?? 0}
-                          limit={filtrosProposicoes.limit ?? 20}
-                          total={proposicoes.length}
-                          onChange={(o) => setFiltrosProposicoes((f) => ({ ...f, offset: o }))}
-                        />
-                      </>
-                    )
-                  ) : (
-                    loadingVotacoes ? (
-                      <EstadoLoading />
-                    ) : votacoes.length === 0 ? (
-                      <EstadoVazio mensagem="Nenhuma votação encontrada com os filtros selecionados." />
-                    ) : (
-                      <>
-                        {votacoes.map((v) => (
-                          <CardVotacao
-                            key={v.id}
-                            votacao={v}
-                            selecionada={votacaoSelecionada === v.id}
-                            onClick={() => setVotacaoSelecionada(
-                              votacaoSelecionada === v.id ? null : v.id
-                            )}
-                          />
-                        ))}
-                        <Paginacao
-                          offset={filtrosVotacoes.offset ?? 0}
-                          limit={filtrosVotacoes.limit ?? 20}
-                          total={votacoes.length}
-                          onChange={(o) => setFiltrosVotacoes((f) => ({ ...f, offset: o }))}
-                        />
-                      </>
-                    )
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* ── Painel lateral de detalhe ── */}
-          <AnimatePresence>
-            {painelAberto && (
-              <motion.div
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 420, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="flex-shrink-0 overflow-hidden"
-              >
-                <div className="w-[420px] bg-white rounded-2xl border border-slate-200 shadow-sm h-[calc(100vh-180px)] sticky top-6">
-                  <AnimatePresence mode="wait">
-                    {aba === "projetos" && proposicaoSelecionada !== null && (
-                      <PainelProposicao
-                        key={proposicaoSelecionada}
-                        id={proposicaoSelecionada}
-                        onClose={() => setProposicaoSelecionada(null)}
-                      />
-                    )}
-                    {aba === "votacoes" && votacaoSelecionada !== null && (
-                      <PainelVotacao
-                        key={votacaoSelecionada}
-                        id={votacaoSelecionada}
-                        onClose={() => setVotacaoSelecionada(null)}
-                      />
-                    )}
-                  </AnimatePresence>
+                    Projetos e Votações
+                </h1>
+                <p className="text-slate-500 text-sm">
+                    Pesquise proposições em tramitação e votações realizadas na Câmara dos Deputados.
+                </p>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    </div>
+            </div>
+
+            <div className="max-w-7xl mx-auto px-6 py-6">
+                <div className={`flex gap-6 transition-all duration-300 ${painelAberto ? "" : ""}`}>
+
+                {/* ── Coluna principal ── */}
+                <div className="flex-1 min-w-0">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+                    {/* Abas */}
+                    <div className="flex border-b border-slate-200">
+                        <button
+                        onClick={() => handleAba("projetos")}
+                        className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+                            aba === "projetos"
+                            ? "border-blue-500 text-blue-600"
+                            : "border-transparent text-slate-500 hover:text-slate-700"
+                        }`}
+                        >
+                        <FileText size={15} /> Projetos
+                        </button>
+                        <button
+                        onClick={() => handleAba("votacoes")}
+                        className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+                            aba === "votacoes"
+                            ? "border-blue-500 text-blue-600"
+                            : "border-transparent text-slate-500 hover:text-slate-700"
+                        }`}
+                        >
+                        <Vote size={15} /> Votações
+                        </button>
+                    </div>
+
+                    {/* Filtros */}
+                    <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+                        {aba === "projetos" ? (
+                        <FiltrosProposicoes filtros={filtrosProposicoes} onChange={setFiltrosProposicoes} />
+                        ) : (
+                        <FiltrosVotacoes filtros={filtrosVotacoes} onChange={setFiltrosVotacoes} />
+                        )}
+                    </div>
+
+                    {/* Lista */}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                        key={aba}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15 }}
+                        >
+                        {aba === "projetos" ? (
+                            loadingProposicoes ? (
+                            <EstadoLoading />
+                            ) : proposicoes.length === 0 ? (
+                            <EstadoVazio mensagem="Nenhuma proposição encontrada com os filtros selecionados." />
+                            ) : (
+                            <>
+                                {proposicoes.map((p) => (
+                                <CardProposicao
+                                    key={p.id}
+                                    proposicao={p}
+                                    selecionada={proposicaoSelecionada === p.id}
+                                    onClick={() => setProposicaoSelecionada(
+                                    proposicaoSelecionada === p.id ? null : p.id
+                                    )}
+                                />
+                                ))}
+                                <Paginacao
+                                offset={filtrosProposicoes.offset ?? 0}
+                                limit={filtrosProposicoes.limit ?? 20}
+                                total={proposicoes.length}
+                                onChange={(o) => setFiltrosProposicoes((f) => ({ ...f, offset: o }))}
+                                />
+                            </>
+                            )
+                        ) : (
+                            loadingVotacoes ? (
+                            <EstadoLoading />
+                            ) : votacoes.length === 0 ? (
+                            <EstadoVazio mensagem="Nenhuma votação encontrada com os filtros selecionados." />
+                            ) : (
+                            <>
+                                {votacoes.map((v) => (
+                                <CardVotacao
+                                    key={v.id}
+                                    votacao={v}
+                                    selecionada={votacaoSelecionada === v.id}
+                                    onClick={() => setVotacaoSelecionada(
+                                    votacaoSelecionada === v.id ? null : v.id
+                                    )}
+                                />
+                                ))}
+                                <Paginacao
+                                offset={filtrosVotacoes.offset ?? 0}
+                                limit={filtrosVotacoes.limit ?? 20}
+                                total={votacoes.length}
+                                onChange={(o) => setFiltrosVotacoes((f) => ({ ...f, offset: o }))}
+                                />
+                            </>
+                            )
+                        )}
+                        </motion.div>
+                    </AnimatePresence>
+                    </div>
+                </div>
+
+                {/* ── Painel lateral de detalhe ── */}
+                <AnimatePresence>
+                    {painelAberto && (
+                    <motion.div
+                        initial={{ width: 0, opacity: 0 }}
+                        animate={{ width: 420, opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="flex-shrink-0 overflow-hidden"
+                    >
+                        <div className="w-[420px] bg-white rounded-2xl border border-slate-200 shadow-sm h-[calc(100vh-180px)] sticky top-6">
+                        <AnimatePresence mode="wait">
+                            {aba === "projetos" && proposicaoSelecionada !== null && (
+                            <PainelProposicao
+                                key={proposicaoSelecionada}
+                                id={proposicaoSelecionada}
+                                onClose={() => setProposicaoSelecionada(null)}
+                            />
+                            )}
+                            {aba === "votacoes" && votacaoSelecionada !== null && (
+                            <PainelVotacao
+                                key={votacaoSelecionada}
+                                id={votacaoSelecionada}
+                                onClose={() => setVotacaoSelecionada(null)}
+                            />
+                            )}
+                        </AnimatePresence>
+                        </div>
+                    </motion.div>
+                    )}
+                </AnimatePresence>
+                </div>
+            </div>
+            </div>
+    </>
   )
 }
