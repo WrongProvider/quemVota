@@ -13,6 +13,7 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import case, desc, func, select, String
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import selectinload
 
 from backend.schemas import (
     ItemRanking,
@@ -22,6 +23,9 @@ from backend.schemas import (
     PoliticoDespesaResumoCompleto,
     PoliticoEstatisticasResponse,
     PoliticoVoto,
+    ProposicaoAutorResumo,
+    ProposicaoParaPolitico,
+    TemaResumoSimples
 )
 from backend.models import (
     Despesa,
@@ -31,6 +35,7 @@ from backend.models import (
     Proposicao,
     Votacao,
     Voto,
+    VerbaGabinete,
 )
 
 logger = logging.getLogger(__name__)
@@ -455,3 +460,106 @@ class PoliticoRepository:
             primeiro_ano=primeiro_ano,
             ultimo_ano=ultimo_ano,
         )
+    
+    async def get_politico_proposicoes_repo(
+        self,
+        politico_id: int,
+        *,
+        limit: int = 100,
+    ) -> list:
+        """
+        Retorna todas as proposições em que o político é autor
+        (principal ou coautor), ordenadas por data de apresentação desc.
+
+        Usa selectinload para autores e temas — evita produto cartesiano
+        com múltiplos relacionamentos carregados via JOIN.
+        """
+
+        safe_limit = min(abs(limit), 100)
+
+        # Busca IDs de proposições onde o político é autor
+        stmt_ids = (
+            select(ProposicaoAutor.proposicao_id)
+            .where(ProposicaoAutor.politico_id == politico_id)
+            .distinct()
+        )
+
+        try:
+            result_ids = await self.db.execute(stmt_ids)
+            proposicao_ids = [row[0] for row in result_ids.all()]
+        except SQLAlchemyError:
+            logger.exception("Erro ao buscar ids de proposições do político id=%s", politico_id)
+            raise
+
+        if not proposicao_ids:
+            return []
+
+        # Busca as proposições com autores e temas já carregados
+        stmt = (
+            select(Proposicao)
+            .where(Proposicao.id.in_(proposicao_ids))
+            .options(
+                selectinload(Proposicao.autores),
+                selectinload(Proposicao.temas),
+            )
+            .order_by(desc(Proposicao.data_apresentacao))
+            .limit(safe_limit)
+        )
+
+        try:
+            result = await self.db.execute(stmt)
+            proposicoes = result.scalars().all()
+        except SQLAlchemyError:
+            logger.exception("Erro ao buscar proposições do político id=%s", politico_id)
+            raise
+
+        return [
+            ProposicaoParaPolitico(
+                id=p.id,
+                id_camara=p.id_camara,
+                sigla_tipo=p.sigla_tipo,
+                numero=p.numero,
+                ano=p.ano,
+                descricao_tipo=p.descricao_tipo,
+                ementa=p.ementa,
+                keywords=p.keywords,
+                data_apresentacao=p.data_apresentacao,
+                url_inteiro_teor=p.url_inteiro_teor,
+                autores=[
+                    ProposicaoAutorResumo(
+                        politico_id=a.politico_id,
+                        nome=a.nome,
+                        tipo=a.tipo,
+                        proponente=bool(a.proponente),
+                    )
+                    for a in p.autores
+                ],
+                temas=[
+                    TemaResumoSimples(id=t.id, tema=t.tema)
+                    for t in p.temas
+                ],
+            )
+            for p in proposicoes
+        ]
+    
+    async def get_politico_verba_gabinete_repo(
+        self,
+        politico_id: int,
+        *,
+        ano: int | None = None,
+        mes: int | None = None,
+    ) -> float:
+        stmt = select(func.coalesce(func.sum(VerbaGabinete.valor_liquido), 0)).where(
+            VerbaGabinete.politico_id == politico_id,
+        )
+        if ano is not None:
+            stmt = stmt.where(VerbaGabinete.ano == ano)
+        if mes is not None:
+            stmt = stmt.where(VerbaGabinete.mes == mes)
+
+        try:
+            result = await self.db.execute(stmt)
+            return float(result.scalar() or 0)
+        except SQLAlchemyError:
+            logger.exception("Erro ao buscar verba de gabinete do político id=%s", politico_id)
+            raise

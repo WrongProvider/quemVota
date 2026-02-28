@@ -29,6 +29,7 @@ from backend.schemas import (
     PoliticoEstatisticasResponse,
     PoliticoResponse,
     PoliticoVoto,
+    ProposicaoParaPolitico,
 )
 from backend.services.politico_service import PoliticoService
 from backend.api.v1.keybuilder import politico_key_builder
@@ -243,3 +244,21 @@ async def timeline(
     """
     logger.info("Timeline | político id=%s", politico_id)
     return await service.get_politico_timeline_service(politico_id)
+
+@router.get(
+    "/{politico_id}/proposicoes",
+    response_model=list[ProposicaoParaPolitico],
+    summary="Proposições em que o político é autor ou coautor",
+)
+@cache(expire=86400, key_builder=politico_key_builder)
+async def proposicoes_do_politico(
+    politico_id: PoliticoIdPath,
+    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    service: PoliticoService = Depends(_politico_service),
+):
+    """
+    Retorna proposições onde o político figura como autor.
+    O campo `proponente=true` indica autoria principal.
+    """
+    logger.info("Proposições | político id=%s limit=%s", politico_id, limit)
+    return await service.get_politico_proposicoes_service(politico_id, limit=limit)

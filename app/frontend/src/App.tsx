@@ -11,6 +11,7 @@ import DisclaimerBanner from "./components/DisclaimerBanner"
 import Faq from "./pages/Faq"
 import Sobre from "./pages/Sobre"
 import Roadmap from "./pages/Roadmap"
+import GlobalExternalLinkModal from "./components/GlobalExternalLinkModal"
 
 export default function App() {
   return (
@@ -27,8 +28,9 @@ export default function App() {
         <Route path="/proposicoes" element={<ProjetosVotacoes />} />
         <Route path="/roadmap" element={<Roadmap />} />
         <Route path="*" element={<p>Página não encontrada</p>} />
+        
       </Routes>
-      
+      <GlobalExternalLinkModal />
     </BrowserRouter>
   )
 }

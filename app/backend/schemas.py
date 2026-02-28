@@ -330,3 +330,41 @@ class VotacaoDetalhe(VotacaoResponse):
 
     class Config:
         from_attributes = True
+
+class ProposicaoAutorResumo(BaseModel):
+    politico_id: Optional[int] = None
+    nome: str
+    tipo: Optional[str] = None
+    proponente: bool = False
+
+    class Config:
+        from_attributes = True
+
+
+class TemaResumoSimples(BaseModel):
+    id: int
+    tema: str
+
+    class Config:
+        from_attributes = True
+
+
+class ProposicaoParaPolitico(BaseModel):
+    # Proposição retornada no endpoint /politicos/{id}/proposicoes.
+    # Inclui lista de autores e temas para o frontend poder distinguir
+    # autor principal (proponente=True) de coautores.
+    id: int
+    id_camara: int
+    sigla_tipo: Optional[str] = None
+    numero: Optional[int] = None
+    ano: Optional[int] = None
+    descricao_tipo: Optional[str] = None
+    ementa: Optional[str] = None
+    keywords: Optional[str] = None
+    data_apresentacao: Optional[datetime] = None
+    url_inteiro_teor: Optional[str] = None
+    autores: List[ProposicaoAutorResumo] = []
+    temas: List[TemaResumoSimples] = []
+
+    class Config:
+        from_attributes = True

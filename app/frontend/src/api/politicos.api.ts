@@ -54,6 +54,7 @@ export interface PoliticoDetalhe extends Politico {
   readonly condicao_eleitoral?: string
   readonly email_gabinete?: string
   readonly telefone_gabinete?: string
+  readonly id_camara?: number
 }
 
 export interface PoliticoEstatisticas {

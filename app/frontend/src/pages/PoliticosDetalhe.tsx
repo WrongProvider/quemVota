@@ -25,6 +25,7 @@ import {
   ChevronRight,
   ArrowLeft,
   ChevronLeft,
+  ExternalLink
 } from "lucide-react"
 
 const PATH_FOTOS = "/politicos/"
@@ -152,6 +153,9 @@ export default function PoliticoDetalhe() {
 
   // Ano selecionado (null = mandato inteiro)
   const [anoSelecionado, setAnoSelecionado] = useState<number | null>(null)
+
+  // Controle do modal de redirecionamento
+  const [avisoSaidaAberto, setAvisoSaidaAberto] = useState(false)
 
   const { data, isLoading, error } = usePoliticoDetalhe(politicoId)
   const { data: timeline, isLoading: timelineLoading } = usePoliticoTimeline(politicoId)
@@ -385,6 +389,18 @@ export default function PoliticoDetalhe() {
                     <p className="text-xs text-slate-400 mt-2 font-medium">Performance</p>
                   </div>
                 )}
+              </div>
+              {/* ── LINK OFICIAL DA CÂMARA (ADICIONADO AQUI) ── */}
+              <div className="mt-8 flex justify-center border-t border-slate-100 pt-6">
+                <a
+                  href={`https://www.camara.leg.br/deputados/${data.id_camara}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 transition-colors"
+                >
+                  <ExternalLink size={16} />
+                  Confira os dados oficiais da Câmara: <span className="font-medium underline underline-offset-2">https://www.camara.leg.br/deputados/{data.id}</span>
+                </a>
               </div>
             </div>
           </div>
