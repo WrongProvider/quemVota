@@ -4,8 +4,8 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from backend.database import SessionLocal
-from backend.models import Proposicao # Importamos o modelo para fazer a query do cache
+from injest_banco.db.database import SessionLocal
+from injest_banco.db.models import Proposicao # Importamos o modelo para fazer a query do cache
 from db_upsert import (
     upsert_proposicao, upsert_proposicao_autor, upsert_votacao_index,
     upsert_votacao_orientacoes, upsert_votacao_votos, carregar_por_id_camara

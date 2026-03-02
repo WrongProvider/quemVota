@@ -3,7 +3,7 @@ from datetime import date, datetime
 import re
 import logging
 from sqlalchemy.orm import Session
-from backend.models import (
+from injest_banco.db.models import (
     Orgao,
     OrgaoMembro,
     Partido,

@@ -97,7 +97,7 @@ services:
     depends_on:
       - postgres
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_SUPERUSER}:${POSTGRES_SUPERPASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_SUPERUSER}:${POSTGRES_SUPERPASSWORD}@postgres:5432/${POSTGRES_DB}
     command: python injest_banco/main.py
     networks:
       - backend

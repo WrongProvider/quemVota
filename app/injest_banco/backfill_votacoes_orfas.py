@@ -1,7 +1,7 @@
 import logging
 import time
-from backend.database import SessionLocal
-from backend.models import Votacao, Proposicao
+from injest_banco.db.database import SessionLocal
+from injest_banco.db.models import Votacao, Proposicao
 from api_camara import camara_get
 from db_upsert import upsert_proposicao
 

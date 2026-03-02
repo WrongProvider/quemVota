@@ -1,7 +1,7 @@
 import logging
 from datetime import date, timedelta
 
-from backend.database import SessionLocal
+from injest_banco.db.database import SessionLocal
 from api_camara import (
     buscar_eventos,
     buscar_evento_detalhe,

@@ -1,7 +1,7 @@
 import logging
 import argparse
-from backend.database import SessionLocal
-from backend.models import Partido, PartidoMembro, PartidoLider, Politico
+from injest_banco.db.database import SessionLocal
+from injest_banco.db.models import Partido, PartidoMembro, PartidoLider, Politico
 # Importamos apenas o que realmente existe no seu api_camara.py
 from api_camara import (
     camara_get, 

@@ -3,8 +3,8 @@ import time
 import logging
 from sqlalchemy.orm import Session
 
-from backend.database import SessionLocal
-from backend.models import Politico
+from injest_banco.db.database import SessionLocal
+from injest_banco.db.models import Politico
 
 API_BASE = "https://dadosabertos.camara.leg.br/api/v2"
 HEADERS = {"accept": "application/json"}

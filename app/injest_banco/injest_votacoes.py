@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
-from backend.database import SessionLocal
-from backend.models import Votacao, Evento
+from injest_banco.db.database import SessionLocal
+from injest_banco.db.models import Votacao, Evento
 from api_camara import (
     camara_get,
     camara_paginado
@@ -81,7 +81,7 @@ def injest_votacoes(dias_atras=15):
                         id_prop_camara = int(uri_prop.split("/")[-1])
                         
                         # Verifica se a proposição já existe no nosso banco
-                        from backend.models import Proposicao
+                        from injest_banco.db.models import Proposicao
                         prop_existe = db.query(Proposicao).filter_by(id_camara=id_prop_camara).first()
                         
                         if not prop_existe:

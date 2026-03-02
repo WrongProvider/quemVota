@@ -1,6 +1,6 @@
 import logging
 
-from backend.database import SessionLocal
+from injest_banco.db.database import SessionLocal
 from api_camara import (
     buscar_orgaos,
     buscar_orgao_detalhe,

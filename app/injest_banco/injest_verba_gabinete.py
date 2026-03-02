@@ -2,8 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import logging
 import time
-from backend.database import SessionLocal
-from backend.models import Politico
+from injest_banco.db.database import SessionLocal
+from injest_banco.db.models import Politico
 from db_upsert import upsert_verba
 
 # Configuração de Logs

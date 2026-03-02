@@ -1,6 +1,6 @@
 # backend/injest/injest_camara.py
 import logging
-from backend.database import SessionLocal
+from injest_banco.db.database import SessionLocal
 # Use camara_paginado para garantir que pega todos os 513 deputados
 from api_camara import camara_paginado 
 from db_upsert import (

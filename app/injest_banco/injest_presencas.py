@@ -5,8 +5,8 @@ from datetime import date, datetime, timedelta
 import time
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
-from backend.database import SessionLocal
-from backend.models import Politico, Presenca
+from injest_banco.db.database import SessionLocal
+from injest_banco.db.models import Politico, Presenca
 import os
 
 logging.basicConfig(level=logging.INFO)
