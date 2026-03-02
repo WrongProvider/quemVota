@@ -399,7 +399,7 @@ export default function PoliticoDetalhe() {
                   className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 transition-colors"
                 >
                   <ExternalLink size={16} />
-                  Confira os dados oficiais da Câmara: <span className="font-medium underline underline-offset-2">https://www.camara.leg.br/deputados/{data.id}</span>
+                  Confira os dados oficiais da Câmara: <span className="font-medium underline underline-offset-2">https://www.camara.leg.br/deputados/{data.id_camara}</span>
                 </a>
               </div>
             </div>

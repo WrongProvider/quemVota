@@ -98,6 +98,7 @@ services:
       - postgres
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_SUPERUSER}:${POSTGRES_SUPERPASSWORD}@postgres:5432/${POSTGRES_DB}
+      VALKEY_URL: redis://valkey:6379 
     command: python -m injest_banco.main
     networks:
       - backend
