@@ -40,6 +40,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+COPY injest_banco/ ./injest_banco/
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
