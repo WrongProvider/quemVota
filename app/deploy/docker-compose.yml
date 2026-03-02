@@ -21,7 +21,9 @@ services:
 
   # injest
   ingest:
-    build: .
+    build:
+      context: ../          # raiz de app/ — tem requirements.txt, main.py e injest_banco/
+      dockerfile: deploy/Dockerfile
     container_name: quemvota_ingest
     depends_on:
       - postgres

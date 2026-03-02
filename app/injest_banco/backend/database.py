@@ -1,24 +1,24 @@
 import os
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy import create_engine
 
-# 1. URLs de Conexão
-# O Async precisa do driver +asyncpg, o Sync usa o padrão (psycopg2)
-ASYNC_URL = os.getenv("DATABASE_URL")
-SYNC_URL = ASYNC_URL.replace("+asyncpg", "") # Remove o driver async para o engine sync
+# URL de conexão (obrigatória)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL não definida nas variáveis de ambiente")
 
 class Base(DeclarativeBase):
     pass
 
-# --- CONFIGURAÇÃO ASYNC (Para o FastAPI) ---
-async_engine = create_async_engine(ASYNC_URL, echo=False)
-AsyncSessionLocal = async_sessionmaker(async_engine, expire_on_commit=False)
+# --- CONFIGURAÇÃO SYNC ---
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+)
 
-async def get_db():
-    async with AsyncSessionLocal() as session:
-        yield session
-
-# --- CONFIGURAÇÃO SYNC (Para os Scripts de Ingestão) ---
-sync_engine = create_engine(SYNC_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=sync_engine, autoflush=False, autocommit=False)
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False,
+)
