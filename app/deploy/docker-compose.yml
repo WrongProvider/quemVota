@@ -39,7 +39,7 @@ services:
   api:
     build:
       context: ../          # raiz de app/ — tem requirements.txt, main.py e backend/
-      dockerfile: deploy/Dockerfile
+      dockerfile: deploy/Dockerfile.api
     container_name: quemvota_api
     restart: unless-stopped
     environment:
@@ -92,7 +92,7 @@ services:
   ingest:
     build:
       context: ../          # raiz de app/ — tem requirements.txt, main.py e injest_banco/
-      dockerfile: deploy/Dockerfile
+      dockerfile: deploy/Dockerfile.injest
     container_name: quemvota_ingest
     depends_on:
       - postgres
