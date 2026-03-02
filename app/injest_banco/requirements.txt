@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+sqlalchemy.orm
+psycopg2-binary
+requests
+httpx
+fastapi-cache2[redis]
+sqlalchemy[asyncio]
+asyncpg
+bs4
+Pillow

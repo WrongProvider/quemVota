@@ -19,6 +19,15 @@ services:
       timeout: 5s
       retries: 5
 
+  # injest
+  ingest:
+    build: .
+    container_name: quemvota_ingest
+    depends_on:
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_SUPERUSER}:${POSTGRES_SUPERPASSWORD}@postgres:5432/quemvota
+    command: python injest_banco/main.py
   # ── Cache (Valkey) ──────────────────────────────────────────────────────────
   valkey:
     image: valkey/valkey:7-alpine

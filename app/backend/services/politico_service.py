@@ -17,10 +17,10 @@ from fastapi import HTTPException, status
 
 from backend.repositories.politico_repository import PoliticoRepository
 from backend.repositories.ranking_repository import RankingRepository
-from backend.schemas import PoliticoResponse
+from backend.schemas import PoliticoResponse, AtividadeLegislativaResponse
 from backend.services.performance_calc import calcular_score, resolve_cota_mensal
 from .ranking_service import RankingService
-
+import asyncio
 logger = logging.getLogger(__name__)
 
 # Limites de paginação (segunda linha de defesa)
@@ -28,6 +28,7 @@ _MAX_LIMIT_POLITICOS = 600
 _MAX_LIMIT_VOTACOES  = 20
 _MAX_LIMIT_DESPESAS  = 20
 _MAX_LIMIT_RESUMO    = 60
+_MAX_LIMIT_ATIVIDADE = 100
 
 
 class PoliticoService:
@@ -307,4 +308,73 @@ class PoliticoService:
         safe_limit = min(abs(limit), 100)
         return await self._repo.get_politico_proposicoes_repo(
             politico_id=politico_id, limit=safe_limit
+        )
+    
+    async def get_politico_atividade_legislativa_service(
+        self,
+        politico_id: int,
+        *,
+        ano: int | None = None,
+        limit_votacoes: int = 20,
+        limit_proposicoes: int = 20,
+        offset_votacoes: int = 0,
+        offset_proposicoes: int = 0,
+    ) -> "AtividadeLegislativaResponse":
+        """
+        Retorna em uma única chamada as votações nominais e as proposições
+        em que o parlamentar é autor ou coautor.
+
+        As duas queries ao banco são disparadas em paralelo via asyncio.gather,
+        reduzindo a latência total ao tempo da query mais lenta (não à soma).
+
+        Args:
+            politico_id:        ID interno do parlamentar.
+            ano:                Filtra votações e proposições pelo ano.
+            limit_votacoes:     Itens de votação por página (máx. 100).
+            limit_proposicoes:  Itens de proposição por página (máx. 100).
+            offset_votacoes:    Deslocamento para paginação de votações.
+            offset_proposicoes: Deslocamento para paginação de proposições.
+
+        Lança HTTP 404 se o político não existir.
+        """
+
+        # ── Valida existência do político ─────────────────────────────────
+        politico = await self._repo.get_politico_repo(politico_id)
+        if not politico:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Político não encontrado.",
+            )
+
+        safe_lv  = min(abs(limit_votacoes),    100)
+        safe_lp  = min(abs(limit_proposicoes), 100)
+        safe_ov  = max(offset_votacoes, 0)
+        safe_op  = max(offset_proposicoes, 0)
+
+        # ── Queries paralelas — reduz latência ────────────────────────────
+        (votacoes, total_v), (proposicoes, total_p) = await asyncio.gather(
+            self._repo.get_atividade_votacoes_repo(
+                politico_id,
+                ano=ano,
+                limit=safe_lv,
+                offset=safe_ov,
+            ),
+            self._repo.get_atividade_proposicoes_repo(
+                politico_id,
+                ano=ano,
+                limit=safe_lp,
+                offset=safe_op,
+            ),
+        )
+
+        return AtividadeLegislativaResponse(
+            votacoes=votacoes,
+            proposicoes=proposicoes,
+            total_votacoes=total_v,
+            total_proposicoes=total_p,
+            limit_votacoes=safe_lv,
+            limit_proposicoes=safe_lp,
+            offset_votacoes=safe_ov,
+            offset_proposicoes=safe_op,
+            ano=ano,
         )

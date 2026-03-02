@@ -368,3 +368,113 @@ class ProposicaoParaPolitico(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Schemas para o endpoint GET /politicos/{id}/atividade-legislativa
+#
+# Retorna em uma única chamada todas as votações nominais e as proposições
+# em que o político é autor (principal ou coautor), agrupadas por tipo
+# e com suporte a filtros de ano e paginação independente por seção.
+# =============================================================================
+
+from typing import Optional, List
+from datetime import date, datetime
+from pydantic import BaseModel
+
+
+class VotacaoResumida(BaseModel):
+    """
+    Votação na qual o político participou com voto nominal.
+
+    Campos relevantes para o frontend:
+      - id_votacao:      ID interno da votação (útil para deep-link)
+      - data:            Data da sessão
+      - proposicao_*:    Dados da proposição votada (desnormalizados)
+      - voto:            Como o parlamentar votou ("Sim", "Não", "Obstrução"…)
+      - aprovacao:       Resultado final: 1 aprovada, 0 rejeitada, -1 indefinido
+      - tipo_votacao:    "Nominal" ou "Simbólica"
+      - sigla_orgao:     Órgão que realizou a votação (ex: "PLEN", "CCJ")
+    """
+
+    id_votacao: int
+    data: Optional[date] = None
+
+    proposicao_id: Optional[int] = None
+    proposicao_sigla: Optional[str] = None   # Ex: "PL", "PEC"
+    proposicao_numero: Optional[int] = None
+    proposicao_ano: Optional[int] = None
+    proposicao_ementa: Optional[str] = None
+
+    voto: str                                # Como o político votou
+    aprovacao: Optional[int] = None          # 1 | 0 | -1
+    tipo_votacao: Optional[str] = None
+    sigla_orgao: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ProposicaoResumida(BaseModel):
+    """
+    Proposição em que o político é autor ou coautor.
+
+    Campos relevantes para o frontend:
+      - proponente:   True se for o autor principal/proponente da matéria
+      - tipo_autoria: Tipo de autoria registrada (ex: "Deputado", "Comissão")
+      - temas:        Temas legislativos para categorização visual
+    """
+
+    id: int
+    id_camara: int
+
+    sigla_tipo: Optional[str] = None         # Ex: "PL", "PEC", "MPV"
+    numero: Optional[int] = None
+    ano: Optional[int] = None
+    descricao_tipo: Optional[str] = None
+
+    ementa: Optional[str] = None
+    keywords: Optional[str] = None
+    data_apresentacao: Optional[datetime] = None
+    url_inteiro_teor: Optional[str] = None
+
+    proponente: bool = False                 # True = autor principal
+    tipo_autoria: Optional[str] = None       # Tipo registrado em ProposicaoAutor
+
+    temas: List[str] = []                    # Lista de strings para leveza
+
+    class Config:
+        from_attributes = True
+
+
+class AtividadeLegislativaResponse(BaseModel):
+    """
+    Resposta consolidada do endpoint GET /politicos/{id}/atividade-legislativa.
+
+    Retorna votações + proposições do parlamentar em um único request,
+    evitando waterfalls no frontend.
+
+    Campos de paginação:
+      - total_votacoes:    total de registros de voto do parlamentar (com filtros)
+      - total_proposicoes: total de proposições em que é autor (com filtros)
+      - limit / offset:    espelham os parâmetros da requisição
+
+    Filtros aplicados (quando fornecidos):
+      - ano:  filtra votações por ano da votação e proposições por ano
+    """
+
+    votacoes: List[VotacaoResumida]
+    proposicoes: List[ProposicaoResumida]
+
+    # Metadados de paginação
+    total_votacoes: int
+    total_proposicoes: int
+    limit_votacoes: int
+    limit_proposicoes: int
+    offset_votacoes: int
+    offset_proposicoes: int
+
+    # Filtros aplicados (espelhados para o cliente saber o que foi usado)
+    ano: Optional[int] = None
+
+    class Config:
+        from_attributes = True

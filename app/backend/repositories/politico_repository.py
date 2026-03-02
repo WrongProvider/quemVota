@@ -25,7 +25,8 @@ from backend.schemas import (
     PoliticoVoto,
     ProposicaoAutorResumo,
     ProposicaoParaPolitico,
-    TemaResumoSimples
+    TemaResumoSimples,
+    VotacaoResumida
 )
 from backend.models import (
     Despesa,
@@ -563,3 +564,228 @@ class PoliticoRepository:
         except SQLAlchemyError:
             logger.exception("Erro ao buscar verba de gabinete do político id=%s", politico_id)
             raise
+
+    # Dois métodos novos:
+    #   - get_atividade_votacoes_repo   → votações nominais do político
+    #   - get_atividade_proposicoes_repo → proposições onde é autor/coautor
+    #
+    # Ambos aceitam paginação e filtro por ano independentes,
+    # consumidos pelo serviço via asyncio.gather (queries paralelas).
+    # =============================================================================
+
+    async def get_atividade_votacoes_repo(
+        self,
+        politico_id: int,
+        *,
+        ano: int | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list, int]:
+        """
+        Retorna (lista_de_votações, total_count) para o político.
+
+        O total_count é calculado numa subquery separada para suportar
+        paginação correta sem carregar todos os registros em memória.
+
+        Args:
+            politico_id: ID interno do parlamentar.
+            ano:         Quando fornecido, filtra pelo ano da votação.
+            limit:       Máximo de itens retornados (cap: 100).
+            offset:      Deslocamento para paginação.
+
+        Returns:
+            Tupla (votações, total) onde votações é lista de VotacaoResumida
+            e total é o count sem paginação aplicada.
+        """
+
+        safe_limit  = min(abs(limit), 100)
+        safe_offset = max(offset, 0)
+
+        # ── Query base compartilhada por dados e count ─────────────────────
+        base_filter = [Voto.politico_id == politico_id]
+        if ano is not None:
+            base_filter.append(func.extract("year", Votacao.data) == ano)
+
+        # ── Count total (sem limit/offset) ─────────────────────────────────
+        stmt_count = (
+            select(func.count())
+            .select_from(Voto)
+            .join(Votacao, Votacao.id == Voto.votacao_id)
+            .where(*base_filter)
+        )
+
+        # ── Dados paginados ────────────────────────────────────────────────
+        stmt_data = (
+            select(
+                Votacao.id.label("id_votacao"),
+                Votacao.data,
+                Votacao.proposicao_id,
+                Proposicao.sigla_tipo.label("proposicao_sigla"),
+                Proposicao.numero.label("proposicao_numero"),
+                Proposicao.ano.label("proposicao_ano"),
+                Proposicao.ementa.label("proposicao_ementa"),
+                Voto.tipo_voto.label("voto"),
+                Votacao.aprovacao,
+                Votacao.tipo_votacao,
+                Votacao.sigla_orgao,
+            )
+            .select_from(Voto)
+            .join(Votacao, Votacao.id == Voto.votacao_id)
+            .outerjoin(Proposicao, Proposicao.id == Votacao.proposicao_id)
+            .where(*base_filter)
+            .order_by(desc(Votacao.data))
+            .limit(safe_limit)
+            .offset(safe_offset)
+        )
+
+        try:
+            res_count = await self.db.execute(stmt_count)
+            res_data  = await self.db.execute(stmt_data)
+        except SQLAlchemyError:
+            logger.exception(
+                "Erro ao buscar votações (atividade) do político id=%s", politico_id
+            )
+            raise
+
+        total = res_count.scalar() or 0
+        rows  = res_data.mappings().all()
+
+        votacoes = [
+            VotacaoResumida(
+                id_votacao=row["id_votacao"],
+                data=row["data"],
+                proposicao_id=row["proposicao_id"],
+                proposicao_sigla=row["proposicao_sigla"],
+                proposicao_numero=row["proposicao_numero"],
+                proposicao_ano=row["proposicao_ano"],
+                proposicao_ementa=row["proposicao_ementa"],
+                voto=row["voto"],
+                aprovacao=row["aprovacao"],
+                tipo_votacao=row["tipo_votacao"],
+                sigla_orgao=row["sigla_orgao"],
+            )
+            for row in rows
+        ]
+
+        return votacoes, total
+
+    async def get_atividade_proposicoes_repo(
+        self,
+        politico_id: int,
+        *,
+        ano: int | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list, int]:
+        """
+        Retorna (lista_de_proposições, total_count) para proposições em que
+        o político é autor ou coautor.
+
+        Usa selectinload para temas e carrega dados de autoria (proponente,
+        tipo_autoria) a partir de ProposicaoAutor — sem produto cartesiano.
+
+        Args:
+            politico_id: ID interno do parlamentar.
+            ano:         Quando fornecido, filtra pelo ano de apresentação.
+            limit:       Máximo de itens retornados (cap: 100).
+            offset:      Deslocamento para paginação.
+
+        Returns:
+            Tupla (proposições, total) onde proposições é lista de
+            ProposicaoResumida e total é o count sem paginação aplicada.
+        """
+        from backend.schemas import ProposicaoResumida  # import local evita circular
+
+        safe_limit  = min(abs(limit), 100)
+        safe_offset = max(offset, 0)
+
+        # ── Filtro base na tabela de autores ───────────────────────────────
+        base_filter = [ProposicaoAutor.politico_id == politico_id]
+        if ano is not None:
+            base_filter.append(Proposicao.ano == ano)
+
+        # ── Count total ────────────────────────────────────────────────────
+        stmt_count = (
+            select(func.count(func.distinct(ProposicaoAutor.proposicao_id)))
+            .select_from(ProposicaoAutor)
+            .join(Proposicao, Proposicao.id == ProposicaoAutor.proposicao_id)
+            .where(*base_filter)
+        )
+
+        # ── IDs paginados (evita subquery com selectinload) ────────────────
+        stmt_ids = (
+            select(
+                ProposicaoAutor.proposicao_id,
+                ProposicaoAutor.proponente,
+                ProposicaoAutor.tipo.label("tipo_autoria"),
+            )
+            .join(Proposicao, Proposicao.id == ProposicaoAutor.proposicao_id)
+            .where(*base_filter)
+            .order_by(desc(Proposicao.data_apresentacao))
+            .limit(safe_limit)
+            .offset(safe_offset)
+        )
+
+        try:
+            res_count = await self.db.execute(stmt_count)
+            res_ids   = await self.db.execute(stmt_ids)
+        except SQLAlchemyError:
+            logger.exception(
+                "Erro ao buscar proposições (atividade) do político id=%s", politico_id
+            )
+            raise
+
+        total     = res_count.scalar() or 0
+        autoria_rows = res_ids.mappings().all()
+
+        if not autoria_rows:
+            return [], total
+
+        # Mapa auxiliar: proposicao_id → metadados de autoria
+        autoria_map: dict[int, dict] = {
+            row["proposicao_id"]: {
+                "proponente":   bool(row["proponente"]),
+                "tipo_autoria": row["tipo_autoria"],
+            }
+            for row in autoria_rows
+        }
+        ids_paginados = list(autoria_map.keys())
+
+        # ── Busca proposições com temas já carregados ──────────────────────
+        stmt_props = (
+            select(Proposicao)
+            .where(Proposicao.id.in_(ids_paginados))
+            .options(selectinload(Proposicao.temas))
+            .order_by(desc(Proposicao.data_apresentacao))
+        )
+
+        try:
+            res_props = await self.db.execute(stmt_props)
+        except SQLAlchemyError:
+            logger.exception(
+                "Erro ao buscar detalhes de proposições do político id=%s", politico_id
+            )
+            raise
+
+        proposicoes_orm = res_props.scalars().all()
+
+        proposicoes = [
+            ProposicaoResumida(
+                id=p.id,
+                id_camara=p.id_camara,
+                sigla_tipo=p.sigla_tipo,
+                numero=p.numero,
+                ano=p.ano,
+                descricao_tipo=p.descricao_tipo,
+                ementa=p.ementa,
+                keywords=p.keywords,
+                data_apresentacao=p.data_apresentacao,
+                url_inteiro_teor=p.url_inteiro_teor,
+                proponente=autoria_map[p.id]["proponente"],
+                tipo_autoria=autoria_map[p.id]["tipo_autoria"],
+                temas=[t.tema for t in p.temas],
+            )
+            for p in proposicoes_orm
+        ]
+
+        return proposicoes, total

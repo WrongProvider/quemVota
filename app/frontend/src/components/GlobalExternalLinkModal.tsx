@@ -44,7 +44,7 @@ export default function GlobalExternalLinkModal() {
           </div>
           <h3 className="text-xl font-bold text-slate-800 mb-2" style={{ fontFamily: 'Fraunces, serif' }}>
             Aviso de Redirecionamento
-          </h3>
+          </h3> 
           <p className="text-sm text-slate-600 mb-6">
             Você está saindo do <strong>quemvota.com.br</strong> e será redirecionado para:<br />
             <span className="inline-block mt-2 px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-mono text-slate-500 break-all border border-slate-200">

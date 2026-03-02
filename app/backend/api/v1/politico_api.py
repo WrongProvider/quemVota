@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
 from backend.schemas import (
+    AtividadeLegislativaResponse,
     PoliticoDespesaDetalhe,
     PoliticoDespesaResumo,
     PoliticoDespesaResumoCompleto,
@@ -262,3 +263,106 @@ async def proposicoes_do_politico(
     """
     logger.info("Proposições | político id=%s limit=%s", politico_id, limit)
     return await service.get_politico_proposicoes_service(politico_id, limit=limit)
+
+
+@router.get(
+    "/{politico_id}/atividade-legislativa",
+    response_model=AtividadeLegislativaResponse,
+    summary="Votações e proposições consolidadas do parlamentar",
+    description=(
+        "Retorna em um único request todas as votações nominais em que o "
+        "parlamentar participou **e** as proposições em que é autor ou coautor. "
+        "\n\n"
+        "**Paginação independente**: use `limit_votacoes`/`offset_votacoes` e "
+        "`limit_proposicoes`/`offset_proposicoes` para navegar cada seção "
+        "sem recarregar a outra."
+        "\n\n"
+        "**Filtro por ano**: quando `ano` é fornecido, ambas as seções são "
+        "filtradas pelo mesmo valor — útil para exibir a atividade de um "
+        "mandato ou exercício específico."
+        "\n\n"
+        "O campo `proponente=true` em cada proposição indica autoria principal."
+    ),
+    responses={404: {"description": "Político não encontrado"}},
+)
+@cache(expire=86400, key_builder=politico_key_builder)
+async def atividade_legislativa(
+    politico_id: PoliticoIdPath,
+    ano: AnoQuery = None,
+    limit_votacoes: Annotated[
+        int,
+        Query(ge=1, le=100, description="Máximo de votações por página"),
+    ] = 20,
+    limit_proposicoes: Annotated[
+        int,
+        Query(ge=1, le=100, description="Máximo de proposições por página"),
+    ] = 20,
+    offset_votacoes: Annotated[
+        int,
+        Query(ge=0, description="Deslocamento para paginação de votações"),
+    ] = 0,
+    offset_proposicoes: Annotated[
+        int,
+        Query(ge=0, description="Deslocamento para paginação de proposições"),
+    ] = 0,
+    service: PoliticoService = Depends(_politico_service),
+):
+    """
+    Exemplo de resposta:
+    ```json
+    {
+      "votacoes": [
+        {
+          "id_votacao": 9182,
+          "data": "2024-06-12",
+          "proposicao_id": 2345,
+          "proposicao_sigla": "PL",
+          "proposicao_numero": 1087,
+          "proposicao_ano": 2023,
+          "proposicao_ementa": "Dispõe sobre...",
+          "voto": "Sim",
+          "aprovacao": 1,
+          "tipo_votacao": "Nominal",
+          "sigla_orgao": "PLEN"
+        }
+      ],
+      "proposicoes": [
+        {
+          "id": 441,
+          "id_camara": 2407052,
+          "sigla_tipo": "PL",
+          "numero": 3842,
+          "ano": 2024,
+          "ementa": "Altera a Lei nº...",
+          "proponente": true,
+          "tipo_autoria": "Deputado",
+          "temas": ["Direito Penal e Processual Penal", "Segurança Pública"]
+        }
+      ],
+      "total_votacoes": 347,
+      "total_proposicoes": 12,
+      "limit_votacoes": 20,
+      "limit_proposicoes": 20,
+      "offset_votacoes": 0,
+      "offset_proposicoes": 0,
+      "ano": null
+    }
+    ```
+    """
+    logger.info(
+        "Atividade legislativa | político id=%s ano=%s lv=%s lp=%s ov=%s op=%s",
+        politico_id,
+        ano,
+        limit_votacoes,
+        limit_proposicoes,
+        offset_votacoes,
+        offset_proposicoes,
+    )
+    return await service.get_politico_atividade_legislativa_service(
+        politico_id,
+        ano=ano,
+        limit_votacoes=limit_votacoes,
+        limit_proposicoes=limit_proposicoes,
+        offset_votacoes=offset_votacoes,
+        offset_proposicoes=offset_proposicoes,
+    )
