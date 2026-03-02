@@ -14,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from backend.database import Base
+from injest_banco.db.database import Base
 
 class Politico(Base):
     __tablename__ = "politicos"
