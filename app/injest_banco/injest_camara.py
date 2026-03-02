@@ -2,8 +2,8 @@
 import logging
 from injest_banco.db.database import SessionLocal
 # Use camara_paginado para garantir que pega todos os 513 deputados
-from api_camara import camara_paginado 
-from db_upsert import (
+from injest_banco.api_camara import camara_paginado 
+from injest_banco.db_upsert import (
     carregar_por_id_camara,
     upsert_politico,
     carregar_partidos_por_sigla

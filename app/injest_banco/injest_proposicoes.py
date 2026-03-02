@@ -1,4 +1,4 @@
-from api_camara import camara_get, camara_paginado, buscar_votacao_votos, buscar_votacao_orientacoes
+from injest_banco.api_camara import camara_get, camara_paginado, buscar_votacao_votos, buscar_votacao_orientacoes
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 from injest_banco.db.database import SessionLocal
 from injest_banco.db.models import Proposicao # Importamos o modelo para fazer a query do cache
-from db_upsert import (
+from injest_banco.db_upsert import (
     upsert_proposicao, upsert_proposicao_autor, upsert_votacao_index,
     upsert_votacao_orientacoes, upsert_votacao_votos, carregar_por_id_camara
 )

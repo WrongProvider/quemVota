@@ -1,8 +1,8 @@
 import logging
 from injest_banco.db.database import SessionLocal
 from injest_banco.db.models import Politico
-from api_camara import camara_paginado
-from db_upsert import upsert_despesa
+from injest_banco.api_camara import camara_paginado
+from injest_banco.db_upsert import upsert_despesa
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

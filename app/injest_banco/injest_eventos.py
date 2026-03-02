@@ -2,14 +2,14 @@ import logging
 from datetime import date, timedelta
 
 from injest_banco.db.database import SessionLocal
-from api_camara import (
+from injest_banco.api_camara import (
     buscar_eventos,
     buscar_evento_detalhe,
     buscar_evento_deputados,
     buscar_evento_pauta,
     buscar_evento_votacoes,
 )
-from db_upsert import (
+from injest_banco.db_upsert import (
     carregar_eventos_indexados,
     upsert_evento_index,
     upsert_evento_detalhado,

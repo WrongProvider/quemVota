@@ -4,7 +4,7 @@ import logging
 import time
 from injest_banco.db.database import SessionLocal
 from injest_banco.db.models import Politico
-from db_upsert import upsert_verba
+from injest_banco.db_upsert import upsert_verba
 
 # Configuração de Logs
 logging.basicConfig(level=logging.INFO)

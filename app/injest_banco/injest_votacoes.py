@@ -2,11 +2,11 @@ import logging
 from datetime import datetime, timedelta
 from injest_banco.db.database import SessionLocal
 from injest_banco.db.models import Votacao, Evento
-from api_camara import (
+from injest_banco.api_camara import (
     camara_get,
     camara_paginado
 )
-from db_upsert import (
+from injest_banco.db_upsert import (
     carregar_por_id_camara,
     upsert_votacao_index,
     upsert_votacao_orientacoes,

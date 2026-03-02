@@ -12,13 +12,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Importações usando o caminho do pacote
-from injest_proposicoes import injest_proposicoes
-from injest_partidos import injest_partidos
-from injest_camara import injest_politicos
-from injest_votacoes import injest_votacoes
-from injest_despesas import injest_despesas
-from injest_presencas import injest_presencas_ano, injest_presencas_dia
-from injest_verba_gabinete import injest_verbas_gabinete
+from injest_banco.injest_proposicoes import injest_proposicoes
+from injest_banco.injest_partidos import injest_partidos
+from injest_banco.injest_camara import injest_politicos
+from injest_banco.injest_votacoes import injest_votacoes
+from injest_banco.injest_despesas import injest_despesas
+from injest_banco.injest_presencas import injest_presencas_ano, injest_presencas_dia
+from injest_banco.injest_verba_gabinete import injest_verbas_gabinete
 
 def executar_pipeline():
     logger.info("🚀 Iniciando Pipeline de Ingestão de Dados...")

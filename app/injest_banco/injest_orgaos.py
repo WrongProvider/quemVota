@@ -1,13 +1,13 @@
 import logging
 
 from injest_banco.db.database import SessionLocal
-from api_camara import (
+from injest_banco.api_camara import (
     buscar_orgaos,
     buscar_orgao_detalhe,
     buscar_orgao_membros,
     buscar_orgao_eventos,
 )
-from db_upsert import (
+from injest_banco.db_upsert import (
     carregar_orgaos_por_id_camara,
     upsert_orgao,
     enrich_orgao,

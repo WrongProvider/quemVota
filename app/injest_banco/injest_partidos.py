@@ -3,11 +3,11 @@ import argparse
 from injest_banco.db.database import SessionLocal
 from injest_banco.db.models import Partido, PartidoMembro, PartidoLider, Politico
 # Importamos apenas o que realmente existe no seu api_camara.py
-from api_camara import (
+from injest_banco.api_camara import (
     camara_get, 
     camara_paginado
 )
-from db_upsert import carregar_por_id_camara, parse_datetime
+from injest_banco.db_upsert import carregar_por_id_camara, parse_datetime
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
