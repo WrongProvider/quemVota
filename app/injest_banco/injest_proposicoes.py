@@ -16,70 +16,81 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def injest_proposicoes(anos=[2025, 2026]):
-    db = SessionLocal()
-    cache_politicos = carregar_por_id_camara(db)
-    
-    # 🚀 O CACHE: Busca todos os IDs de proposições já salvos no banco
-    # Fazemos uma query que traz apenas a coluna id_camara para economizar RAM
-    logger.info("🔍 Montando cache de proposições já existentes...")
-    existing_props = {p[0] for p in db.query(Proposicao.id_camara).all()}
-    logger.info(f"📦 Cache montado! {len(existing_props)} proposições prontas para serem puladas.")
-    
-    for ano in anos:
-        logger.info(f"📅 Iniciando busca de proposições do ano {ano}...")
-        params = {"ano": ano, "ordem": "DESC", "ordenarPor": "id"}
-        proposicoes = camara_paginado("/proposicoes", params=params)
+    with SessionLocal() as db:
+        cache_politicos = carregar_por_id_camara(db)
+        
+        # 🚀 O CACHE: Busca todos os IDs de proposições já salvos no banco
+        # Fazemos uma query que traz apenas a coluna id_camara para economizar RAM
+        logger.info("🔍 Montando cache de proposições já existentes...")
+        existing_props = {p[0] for p in db.query(Proposicao.id_camara).all()}
+        logger.info(f"📦 Cache montado! {len(existing_props)} proposições prontas para serem puladas.")
+        
+        for ano in anos:
+            logger.info(f"📅 Iniciando busca de proposições do ano {ano}...")
+            params = {"ano": ano, "ordem": "DESC", "ordenarPor": "id"}
+            proposicoes = camara_paginado("/proposicoes", params=params)
 
-        for p_resumo in proposicoes:
-            id_camara_prop = p_resumo['id']
+            for p_resumo in proposicoes:
+                id_camara_prop = p_resumo['id']
 
-            # 🛑 VERIFICAÇÃO DO CACHE: Se já existe, pula para a próxima!
-            if id_camara_prop in existing_props:
-                # print(f"⏭️ Prop {p_resumo['siglaTipo']} {p_resumo['numero']} - Já no banco. Pulando.")
-                continue
+                if id_camara_prop in existing_props:
+                    continue
 
-            # 1. Salva a Proposição
-            prop_db = upsert_proposicao(db, p_resumo)
-            db.flush()
-
-            # 2. Autores
-            autores_data = camara_get(f"/proposicoes/{id_camara_prop}/autores")
-            for auth in autores_data.get("dados", []):
-                upsert_proposicao_autor(db, prop_db.id, auth, cache_politicos)
-
-            # 3. Votações vinculadas a esta proposição específica
-            try:
-                vots_vinc = camara_get(f"/proposicoes/{id_camara_prop}/votacoes")
-                for v_vinc in vots_vinc.get("dados", []):
+                # ==========================================
+                # FASE 1: BUSCA NA REDE (APIs) - Sem mexer no DB
+                # ==========================================
+                autores_data = camara_get(f"/proposicoes/{id_camara_prop}/autores").get("dados", [])
+                vots_vinc_data = camara_get(f"/proposicoes/{id_camara_prop}/votacoes").get("dados", [])
+                
+                votacoes_completas = []
+                for v_vinc in vots_vinc_data:
+                    id_vot = v_vinc['id']
                     try:
-                        # Upsert da Votação vinculada
-                        vot_obj = upsert_votacao_index(db, None, v_vinc)
+                        # Buscamos tudo da API antes de abrir a transação
+                        orientacoes = buscar_votacao_orientacoes(id_vot)
+                        votos_gen = buscar_votacao_votos(id_vot)
+                        
+                        votacoes_completas.append({
+                            "resumo": v_vinc,
+                            "orientacoes": orientacoes,
+                            "votos": list(votos_gen) 
+                        })
+                    except Exception as e:
+                        logger.warning(f"⚠️ Erro ao baixar dados da votação {id_vot}: {e}")
+                        continue
+
+                # ==========================================
+                # FASE 2: TRANSAÇÃO NO BANCO (Super rápida!)
+                # ==========================================
+                try:
+                    # 1. Salva a Proposição
+                    prop_db = upsert_proposicao(db, p_resumo)
+                    db.flush() # Aqui a transação começa!
+
+                    # 2. Autores
+                    for auth in autores_data:
+                        upsert_proposicao_autor(db, prop_db.id, auth, cache_politicos)
+
+                    # 3. Votações vinculadas
+                    for vot_data in votacoes_completas:
+                        vot_obj = upsert_votacao_index(db, None, vot_data["resumo"])
                         vot_obj.proposicao_id = prop_db.id 
                         db.flush()
 
-                        id_vot = v_vinc['id']
-                        
-                        # Orientações
-                        orientacoes = buscar_votacao_orientacoes(id_vot)
-                        upsert_votacao_orientacoes(db, vot_obj, {"dados": orientacoes})
+                        upsert_votacao_orientacoes(db, vot_obj, {"dados": vot_data["orientacoes"]})
+                        upsert_votacao_votos(db, vot_obj, {"dados": vot_data["votos"]}, cache_politicos)
 
-                        # Votos
-                        votos_gen = buscar_votacao_votos(id_vot)
-                        lista_votos = list(votos_gen) 
-                        upsert_votacao_votos(db, vot_obj, {"dados": lista_votos}, cache_politicos)
+                    db.commit() # Transação fechada em milissegundos!
+                    
+                    existing_props.add(id_camara_prop)
+                    logger.info(f"✅ Prop {p_resumo['siglaTipo']} {p_resumo['numero']} salva e comitada rapidamente.")
 
-                    except Exception as e_vot:
-                        logger.warning(f"⚠️ Pulando detalhes da votação {v_vinc.get('id')}: {e_vot}")
-                        db.rollback()
-                        continue
+                except Exception as e_db:
+                    logger.error(f"❌ Erro ao salvar dados no DB para prop {id_camara_prop}: {e_db}")
+                    db.rollback() # Limpa a transação em caso de erro
 
-            except Exception as e_prop_vots:
-                logger.error(f"❌ Erro ao buscar lista de votações da prop {id_camara_prop}: {e_prop_vots}")
-            
-            db.commit()
-            
-            # Adiciona ao cache em memória para caso venha repetido na paginação
-            existing_props.add(id_camara_prop)
-            print(f"✅ Prop {p_resumo['siglaTipo']} {p_resumo['numero']} - OK")
-
-    db.close()
+                db.commit()
+                
+                # Adiciona ao cache em memória para caso venha repetido na paginação
+                existing_props.add(id_camara_prop)
+                print(f"✅ Prop {p_resumo['siglaTipo']} {p_resumo['numero']} - OK")

@@ -18,8 +18,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def injest_votacoes(dias_atras=15):
-    db = SessionLocal()
-    try:
+    with SessionLocal() as db:
         # 1. Preparação: Cache de políticos para processar os votos sem lag
         cache_politicos = carregar_por_id_camara(db)
         
@@ -125,13 +124,6 @@ def injest_votacoes(dias_atras=15):
                 votacao_obj.votos_importados = True
                 db.commit() 
                 logger.info(f"✅ Votação {id_votacao_api} finalizada com sucesso.")
-
-    except Exception as e:
-        db.rollback()
-        logger.error(f"❌ Erro crítico na ingestão de votações: {e}")
-        raise
-    finally:
-        db.close()
 
 if __name__ == "__main__":
     injest_votacoes()
