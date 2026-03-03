@@ -38,8 +38,9 @@ def executar_pipeline():
         injest_fotos()
 
         # backfill_politicos_detalhes()  # Roda este script depois de ter os políticos básicos para corrigir os detalhes faltantes (fotos e partidos)
+        logger.info("backfill")
         backfill_politicos_detalhes()
-        
+
         # x. Verba de Gabinete (Depende dos Políticos)
         # logger.info("--- Passo 3: Verba de Gabinete ---")
         # injest_verbas_gabinete(ano=2025)  # Você pode ajustar o ano conforme necessário
