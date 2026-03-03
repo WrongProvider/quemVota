@@ -28,7 +28,7 @@ import {
   ExternalLink
 } from "lucide-react"
 
-const PATH_FOTOS = "/politicos/"
+const PATH_FOTOS = "/fotos_politicos/"
 
 // ── TIMELINE YEAR SELECTOR ──────────────────────────────────────────────────
 function TimelineSelector({

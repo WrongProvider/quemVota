@@ -29,7 +29,7 @@ const Partidos = [
   "CIDADANIA","MDB","NOVO",
 ]
 
-const PATH_FOTOS = "/politicos/"
+const PATH_FOTOS = "/fotos_politicos/"
 
 export default function Politicos() {
   const [searchParams] = useSearchParams()
