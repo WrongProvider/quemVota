@@ -5,7 +5,7 @@ from io import BytesIO
 from PIL import Image
 
 # Configurações
-PASTA_DESTINO = "../frontend/public/politicos" # Mude para a pasta real da sua VPS
+PASTA_DESTINO = "../frontend/public/fotos_politicos" # Mude para a pasta real da sua VPS
 TIMEOUT_REQUISICAO = 10 # Segundos antes de desistir de uma foto demorada
 
 def configurar_pasta():

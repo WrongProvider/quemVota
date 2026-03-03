@@ -12,6 +12,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Importações usando o caminho do pacote
+from app.injest_banco import backfill_politicos_detalhes, injest_fotos
 from injest_banco.injest_proposicoes import injest_proposicoes
 from injest_banco.injest_partidos import injest_partidos
 from injest_banco.injest_camara import injest_politicos
@@ -25,13 +26,20 @@ def executar_pipeline():
     
     try:
         # 1. Partidos (Base para os outros)
-        # logger.info("--- Passo 1: Partidos ---")
-        # injest_partidos()
+        logger.info("--- Passo 1: Partidos ---")
+        injest_partidos()
         
         # 2. Políticos (Dependem dos Partidos)
         logger.info("--- Passo 2: Políticos ---")
         injest_politicos()
+        
+        # injest_fotos()  # Rodar este script separadamente para evitar sobrecarga e lidar com erros de download
+        logger.info("fotos")
+        injest_fotos()
 
+        # backfill_politicos_detalhes()  # Roda este script depois de ter os políticos básicos para corrigir os detalhes faltantes (fotos e partidos)
+        backfill_politicos_detalhes()
+        
         # x. Verba de Gabinete (Depende dos Políticos)
         # logger.info("--- Passo 3: Verba de Gabinete ---")
         # injest_verbas_gabinete(ano=2025)  # Você pode ajustar o ano conforme necessário
