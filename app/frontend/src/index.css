@@ -6,6 +6,7 @@
   line-height: 1.5;
   background-color: #ffffff;
   color: #213547;
+  --banner-height: 72px; /* altura aproximada do banner */
 }
 
 body {

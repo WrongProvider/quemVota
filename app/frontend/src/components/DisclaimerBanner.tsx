@@ -7,7 +7,7 @@ export default function DisclaimerBanner() {
   if (dismissed) return null
 
   return (
-    <div className="bg-amber-50 border-t-2 border-amber-400">
+    <div className="sticky top-10 z-40 bg-amber-50 border-b-2 border-amber-400">
       <div className="max-w-5xl mx-auto px-4 py-4 flex items-start gap-3">
 
         {/* Ícone */}
@@ -34,7 +34,7 @@ export default function DisclaimerBanner() {
           className="flex-shrink-0 p-1 rounded-lg text-amber-500 hover:bg-amber-100 hover:text-amber-700 transition-colors mt-0.5"
           aria-label="Fechar aviso, estou ciente que o projeto está em desenvolvimento"
         >
-          <XMarkIcon className="w-4 h-4" />
+          <XMarkIcon className="w-10 h-10" />
         </button>
 
       </div>
