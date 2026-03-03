@@ -1,272 +1,78 @@
-import { AlertCircle, Database, TrendingUp, DollarSign, FileText, Users } from "lucide-react"
+import {
+  AlertCircle,
+  Database,
+  TrendingUp,
+  DollarSign,
+  FileText,
+  Users,
+  ChevronDown,
+} from "lucide-react"
+import { useState } from "react"
+import { Link } from "react-router-dom"
 import Header from "../components/Header"
 
-export default function Metodologia() {
+// ─────────────────────────────────────────────────────────────────────────────
+// Acordeão reutilizável (mesmo padrão do FAQ)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function Acordeao({
+  title,
+  icon,
+  children,
+  defaultOpen = false,
+}: {
+  title: string
+  icon: React.ReactNode
+  children: React.ReactNode
+  defaultOpen?: boolean
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+
   return (
-    <>
-      <Header />
-      <div className="max-w-4xl mx-auto px-8 py-12 font-sans">
-
-        {/* HEADER */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-4 text-slate-800">
-            📊 Metodologia de Cálculo
-          </h1>
-          <p className="text-lg text-slate-500 leading-relaxed">
-            Entenda como calculamos o score de performance parlamentar com base em três pilares principais:
-            assiduidade, economia e produção legislativa.
-          </p>
+    <div
+      className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-colors ${
+        open ? "bg-slate-50/50" : ""
+      }`}
+    >
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left hover:bg-slate-50 transition-colors cursor-pointer border-0 bg-transparent"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0">
+            {icon}
+          </div>
+          <span
+            style={{ fontFamily: "'Fraunces', serif" }}
+            className="text-base font-bold text-slate-800"
+          >
+            {title}
+          </span>
         </div>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 flex-shrink-0 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
 
-        {/* FONTES DE DADOS */}
-        <Section icon={<Database size={24} className="text-blue-500" />} title="Fontes de Dados">
-          <p className="mb-4">
-            Todos os dados utilizados são provenientes de fontes públicas e oficiais:
-          </p>
-          <ul className="leading-loose text-slate-600 list-disc list-inside space-y-1">
-            <li>
-              <strong>API Pública da Câmara dos Deputados:</strong>{" "}
-              <a
-                href="https://dadosabertos.camara.leg.br/swagger/api.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:underline"
-              >
-                dadosabertos.camara.leg.br
-              </a>
-            </li>
-            <li>
-              <strong>Webservice de Dados Abertos Legislativos:</strong>{" "}
-              <a
-                href="https://www2.camara.leg.br/transparencia/dados-abertos/dados-abertos-legislativo/webservices/proposicoes-1"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:underline"
-              >
-                Proposições e Autoria
-              </a>
-            </li>
-          </ul>
-        </Section>
-
-        {/* SCORE FINAL */}
-        <Section icon={<TrendingUp size={24} className="text-emerald-500" />} title="Score Final de Performance">
-          <p className="mb-6">
-            O score final é calculado através de uma <strong>média ponderada</strong> de três critérios,
-            variando de 0 a 100 pontos:
-          </p>
-
-          <FormulaBox>
-            <code className="text-lg">
-              Score Final = (Assiduidade × 0.15) + (Economia × 0.40) + (Produção × 0.45)
-            </code>
-          </FormulaBox>
-
-          <div className="grid grid-cols-3 gap-4 mt-6">
-            <WeightCard label="Assiduidade" weight="15%" colorClass="border-blue-500 text-blue-500" />
-            <WeightCard label="Economia" weight="40%" colorClass="border-emerald-500 text-emerald-500" />
-            <WeightCard label="Produção" weight="45%" colorClass="border-purple-500 text-purple-500" />
-          </div>
-        </Section>
-
-        {/* CRITÉRIO 1: ASSIDUIDADE */}
-        <Section icon={<Users size={24} className="text-blue-500" />} title="1. Assiduidade (Peso: 15%)">
-          <p className="mb-4">
-            Mede a presença do parlamentar nas sessões de votação da Câmara.
-            Uma alta taxa de presença indica comprometimento com as atividades legislativas.
-          </p>
-
-          <FormulaBox>
-            <code>Nota Assiduidade = (Presenças ÷ Total de Sessões) × 100</code>
-          </FormulaBox>
-
-          <ExampleBox>
-            <strong>Exemplo:</strong><br />
-            Parlamentar presente em 150 de 177 sessões:<br />
-            <code>(150 ÷ 177) × 100 = 84,75 pontos</code>
-          </ExampleBox>
-        </Section>
-
-        {/* CRITÉRIO 2: ECONOMIA */}
-        <Section icon={<DollarSign size={24} className="text-emerald-500" />} title="2. Economia (Peso: 40%)">
-          <p className="mb-4">
-            Avalia o uso responsável da cota parlamentar (CEAP - Cota para Exercício da Atividade Parlamentar).
-            Cada estado possui um limite mensal diferente.
-          </p>
-
-          <FormulaBox>
-            <div className="mb-2">
-              <code>Cota Total do Período = Cota Mensal × Meses de Mandato</code>
-            </div>
-            <div className="mb-2">
-              <code>Economia = (Cota Total - Gasto Total) ÷ Cota Total</code>
-            </div>
-            <div>
-              <code>Nota Economia = Economia × 100</code>
-            </div>
-          </FormulaBox>
-
-          <ExampleBox>
-            <strong>Exemplo (Amapá - R$ 40.000/mês):</strong><br />
-            Mandato de 12 meses, gastou R$ 489.064,11<br />
-            Cota total: <code>R$ 40.000 × 12 = R$ 480.000</code><br />
-            Neste caso: gastou mais que a cota → <code>Nota = 0 pontos</code><br /><br />
-            <em className="text-slate-500">
-              * Se o gasto for menor que a cota, a nota aumenta proporcionalmente
-            </em>
-          </ExampleBox>
-
-          <div className="mt-6 p-4 bg-slate-100 rounded-lg">
-            <p className="m-0 text-sm text-slate-600">
-              💡 <strong>Nota:</strong> As cotas variam por UF devido a diferenças de distância de Brasília
-              e custo de vida. Estados mais distantes possuem cotas maiores para cobrir deslocamentos.
-            </p>
-          </div>
-        </Section>
-
-        {/* CRITÉRIO 3: PRODUÇÃO */}
-        <Section icon={<FileText size={24} className="text-purple-500" />} title="3. Produção Legislativa (Peso: 45%)">
-          <p className="mb-4">
-            Avalia a quantidade e relevância das proposições legislativas apresentadas pelo parlamentar.
-            Diferentes tipos de proposição recebem pontuações diferentes, e ser <strong>autor principal</strong> vale mais.
-          </p>
-
-          <div className="mb-6">
-            <h4 className="mb-3 text-slate-800 font-semibold">
-              Sistema de Pontuação por Tipo de Proposição:
-            </h4>
-            <ScoreTable>
-              <thead>
-                <tr>
-                  <th>Tipo</th>
-                  <th>Descrição</th>
-                  <th>Autor Principal</th>
-                  <th>Coautor</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>Alta Relevância</strong></td>
-                  <td>PEC, PL, PLC, PLP</td>
-                  <td className="text-emerald-500 font-bold">1.0 ponto</td>
-                  <td className="text-slate-500">0.2 pontos</td>
-                </tr>
-                <tr>
-                  <td><strong>Média Relevância</strong></td>
-                  <td>PDC, PRC, MPV</td>
-                  <td className="text-amber-500 font-bold">0.5 pontos</td>
-                  <td className="text-slate-500">0.1 pontos</td>
-                </tr>
-                <tr>
-                  <td><strong>Baixa Relevância</strong></td>
-                  <td>Outros tipos</td>
-                  <td className="text-gray-500 font-bold">0.05 pontos</td>
-                  <td className="text-gray-400">0.01 pontos</td>
-                </tr>
-              </tbody>
-            </ScoreTable>
-          </div>
-
-          <FormulaBox>
-            <div className="mb-2">
-              <code>Meta de Produção = Meses de Mandato × 2 proposições/mês</code>
-            </div>
-            <div>
-              <code>Nota Produção = min((Total de Proposições ÷ Meta) × 100, 100)</code>
-            </div>
-          </FormulaBox>
-
-          <ExampleBox>
-            <strong>Exemplo:</strong><br />
-            Mandato de 12 meses, apresentou:<br />
-            • 3 PLs como autor principal = 3.0 pontos<br />
-            • 2 PECs como coautor = 0.4 pontos<br />
-            • 5 PDCs como autor = 2.5 pontos<br />
-            <strong>Total:</strong> 5.9 pontos (≈ 6 proposições)<br /><br />
-            Meta: <code>12 × 2 = 24 proposições</code><br />
-            Nota: <code>(6 ÷ 24) × 100 = 25 pontos</code>
-          </ExampleBox>
-
-          <div className="mt-6 p-4 bg-slate-100 rounded-lg">
-            <p className="m-0 text-sm text-slate-600">
-              📌 <strong>Legenda dos tipos:</strong><br />
-              <strong>PEC</strong> = Proposta de Emenda Constitucional |{" "}
-              <strong>PL</strong> = Projeto de Lei |{" "}
-              <strong>PLC</strong> = Projeto de Lei Complementar |{" "}
-              <strong>PLP</strong> = Projeto de Lei do Plano Plurianual |{" "}
-              <strong>PDC</strong> = Projeto de Decreto Legislativo |{" "}
-              <strong>PRC</strong> = Projeto de Resolução |{" "}
-              <strong>MPV</strong> = Medida Provisória
-            </p>
-          </div>
-        </Section>
-
-        {/* CLASSIFICAÇÃO */}
-        <Section icon={<TrendingUp size={24} className="text-amber-500" />} title="Classificação do Score">
-          <p className="mb-6">
-            Com base no score final, os parlamentares são classificados em:
-          </p>
-
-          <div className="grid gap-4">
-            <ClassificationCard label="Excelente" range="80 - 100" colorClass="border-emerald-500 bg-emerald-50 text-emerald-600" />
-            <ClassificationCard label="Bom"       range="60 - 79"  colorClass="border-blue-500 bg-blue-50 text-blue-600" />
-            <ClassificationCard label="Regular"   range="40 - 59"  colorClass="border-amber-500 bg-amber-50 text-amber-600" />
-            <ClassificationCard label="Crítico"   range="0 - 39"   colorClass="border-red-500 bg-red-50 text-red-600" />
-          </div>
-        </Section>
-
-        {/* LIMITAÇÕES */}
-        <Section icon={<AlertCircle size={24} className="text-slate-500" />} title="Limitações e Considerações">
-          <ul className="leading-loose text-slate-600 list-disc list-inside space-y-2">
-            <li>
-              <strong>Dados em desenvolvimento:</strong> O banco de dados ainda está sendo ajustado
-              e pode apresentar inconsistências.
-            </li>
-            <li>
-              <strong>Contexto político:</strong> O score não captura nuances como qualidade das proposições,
-              impacto social ou contexto político de ausências justificadas.
-            </li>
-            <li>
-              <strong>Atualização:</strong> Os dados são atualizados periodicamente conforme disponibilidade
-              da API da Câmara.
-            </li>
-            <li>
-              <strong>Uso educacional:</strong> Esta ferramenta tem fins educacionais e de transparência,
-              não substituindo análises políticas profundas.
-            </li>
-          </ul>
-        </Section>
-
-        {/* RODAPÉ */}
-        <div className="mt-16 pt-8 border-t-2 border-slate-200 text-center text-slate-500">
-          <p className="m-0 text-sm">
-            Dúvidas ou sugestões? Entre em contato através do nosso repositório no GitHub.
-          </p>
+      {open && (
+        <div className="px-6 pb-6 border-t border-slate-100 pt-5 text-sm text-slate-600 leading-relaxed space-y-4">
+          {children}
         </div>
-      </div>
-    </>
+      )}
+    </div>
   )
 }
 
-// ========== COMPONENTES AUXILIARES ==========
-
-function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
-  return (
-    <section className="mb-12">
-      <div className="flex items-center gap-3 mb-6">
-        {icon}
-        <h2 className="text-3xl font-bold m-0 text-slate-800">{title}</h2>
-      </div>
-      <div className="text-base leading-relaxed text-slate-600">
-        {children}
-      </div>
-    </section>
-  )
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Blocos visuais internos
+// ─────────────────────────────────────────────────────────────────────────────
 
 function FormulaBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-slate-50 border-2 border-slate-200 rounded-lg p-5 font-mono text-sm overflow-x-auto mb-4">
+    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 font-mono text-sm overflow-x-auto">
       {children}
     </div>
   )
@@ -274,42 +80,354 @@ function FormulaBox({ children }: { children: React.ReactNode }) {
 
 function ExampleBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mt-4 text-sm leading-relaxed">
+    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm leading-relaxed">
       {children}
     </div>
   )
 }
 
-function WeightCard({ label, weight, colorClass }: { label: string; weight: string; colorClass: string }) {
+function WeightCards() {
+  const weights = [
+    { label: "Assiduidade", weight: "15%", color: "bg-blue-50 border-blue-200 text-blue-600" },
+    { label: "Economia",    weight: "40%", color: "bg-emerald-50 border-emerald-200 text-emerald-600" },
+    { label: "Produção",    weight: "45%", color: "bg-purple-50 border-purple-200 text-purple-600" },
+  ]
+
   return (
-    <div className={`bg-slate-50 border-4 ${colorClass} rounded-lg p-4 text-center`}>
-      <div className={`text-3xl font-bold mb-1 ${colorClass.split(" ").find(c => c.startsWith("text-"))}`}>
-        {weight}
-      </div>
-      <div className="text-sm text-slate-500 font-medium">{label}</div>
+    <div className="grid grid-cols-3 gap-3 mt-2">
+      {weights.map((w) => (
+        <div key={w.label} className={`rounded-xl border-2 p-4 text-center ${w.color}`}>
+          <div className="text-2xl font-bold mb-1">{w.weight}</div>
+          <div className="text-xs font-medium opacity-75">{w.label}</div>
+        </div>
+      ))}
     </div>
   )
 }
 
-function ScoreTable({ children }: { children: React.ReactNode }) {
+function ScoreTable() {
+  const rows = [
+    { relevancia: "Alta",  tipos: "PEC, PL, PLC, PLP",  principal: "1.0 pt",  coautor: "0.2 pt",  cor: "text-emerald-600" },
+    { relevancia: "Média", tipos: "PDC, PRC, MPV",        principal: "0.5 pt",  coautor: "0.1 pt",  cor: "text-amber-600" },
+    { relevancia: "Baixa", tipos: "Outros tipos",          principal: "0.05 pt", coautor: "0.01 pt", cor: "text-slate-500" },
+  ]
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-sm [&_th]:bg-slate-100 [&_th]:p-3 [&_th]:text-left [&_th]:font-semibold [&_th]:text-slate-800 [&_th]:border-b-2 [&_th]:border-slate-200 [&_td]:p-3 [&_td]:border-b [&_td]:border-slate-200 [&_tr:last-child_td]:border-b-0">
-        {children}
+    <div className="overflow-x-auto rounded-xl border border-slate-200">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-slate-50 border-b border-slate-200">
+            <th className="text-left text-[11px] text-slate-400 font-semibold uppercase tracking-wide px-4 py-3">Relevância</th>
+            <th className="text-left text-[11px] text-slate-400 font-semibold uppercase tracking-wide px-4 py-3">Tipos</th>
+            <th className="text-left text-[11px] text-slate-400 font-semibold uppercase tracking-wide px-4 py-3">Autor Principal</th>
+            <th className="text-left text-[11px] text-slate-400 font-semibold uppercase tracking-wide px-4 py-3">Coautor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.relevancia} className="border-b border-slate-100 last:border-0">
+              <td className={`px-4 py-3 font-semibold ${r.cor}`}>{r.relevancia}</td>
+              <td className="px-4 py-3 text-slate-600 font-mono text-xs">{r.tipos}</td>
+              <td className={`px-4 py-3 font-bold ${r.cor}`}>{r.principal}</td>
+              <td className="px-4 py-3 text-slate-400">{r.coautor}</td>
+            </tr>
+          ))}
+        </tbody>
       </table>
     </div>
   )
 }
 
-function ClassificationCard({ label, range, colorClass }: {
-  label: string
-  range: string
-  colorClass: string
-}) {
+function ClassificacaoCards() {
+  const items = [
+    { label: "Excelente", range: "80 – 100 pts", color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+    { label: "Bom",       range: "60 – 79 pts",  color: "bg-blue-50 border-blue-200 text-blue-700" },
+    { label: "Regular",   range: "40 – 59 pts",  color: "bg-amber-50 border-amber-200 text-amber-700" },
+    { label: "Crítico",   range: "0 – 39 pts",   color: "bg-red-50 border-red-200 text-red-600" },
+  ]
+
   return (
-    <div className={`flex items-center justify-between border-2 rounded-lg px-6 py-4 ${colorClass}`}>
-      <span className="text-lg font-semibold">{label}</span>
-      <span className="text-base font-medium">{range} pontos</span>
+    <div className="grid gap-2">
+      {items.map((i) => (
+        <div
+          key={i.label}
+          className={`flex items-center justify-between border-2 rounded-xl px-5 py-3 ${i.color}`}
+        >
+          <span className="font-semibold text-sm">{i.label}</span>
+          <span className="text-sm font-medium">{i.range}</span>
+        </div>
+      ))}
     </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Página
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function Metodologia() {
+  return (
+    <>
+      <Header />
+      <div className="min-h-screen bg-gray-50 pt-16">
+
+        {/* ── Header da página ── */}
+        <div className="bg-white border-b border-slate-200">
+          <div className="max-w-4xl mx-auto px-6 py-12">
+            <p className="text-xs font-semibold tracking-widest uppercase text-blue-600 mb-3">
+              Institucional
+            </p>
+            <h1
+              style={{ fontFamily: "'Fraunces', serif" }}
+              className="text-4xl font-bold text-slate-900 mb-4 leading-tight"
+            >
+              Metodologia de Cálculo
+            </h1>
+            <p className="text-base text-slate-500 leading-relaxed max-w-2xl">
+              Entenda como calculamos o score de performance parlamentar com base em três pilares:{" "}
+              <strong className="text-slate-700">assiduidade</strong>,{" "}
+              <strong className="text-slate-700">economia</strong> e{" "}
+              <strong className="text-slate-700">produção legislativa</strong>.
+            </p>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-6 py-10 space-y-4">
+
+          {/* ── Score Final ── */}
+          <Acordeao
+            title="Score Final de Performance"
+            icon={<TrendingUp size={18} className="text-emerald-600" />}
+            defaultOpen
+          >
+            <p>
+              O score final é uma <strong>média ponderada</strong> de três critérios, variando de 0 a
+              100 pontos:
+            </p>
+            <FormulaBox>
+              Score Final = (Assiduidade × 0,15) + (Economia × 0,40) + (Produção × 0,45)
+            </FormulaBox>
+            <WeightCards />
+          </Acordeao>
+
+          {/* ── Fontes de Dados ── */}
+          <Acordeao
+            title="Fontes de Dados"
+            icon={<Database size={18} className="text-blue-600" />}
+          >
+            <p>Todos os dados utilizados são provenientes de fontes públicas e oficiais:</p>
+            <ul className="space-y-2 mt-1">
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-0.5">•</span>
+                <span>
+                  <strong>API Pública da Câmara dos Deputados:</strong>{" "}
+                  <a
+                    href="https://dadosabertos.camara.leg.br/swagger/api.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    dadosabertos.camara.leg.br
+                  </a>
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-0.5">•</span>
+                <span>
+                  <strong>Webservice de Dados Abertos Legislativos:</strong>{" "}
+                  <a
+                    href="https://www2.camara.leg.br/transparencia/dados-abertos/dados-abertos-legislativo/webservices/proposicoes-1"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Proposições e Autoria
+                  </a>
+                </span>
+              </li>
+            </ul>
+          </Acordeao>
+
+          {/* ── Assiduidade ── */}
+          <Acordeao
+            title="1. Assiduidade — Peso: 15%"
+            icon={<Users size={18} className="text-blue-500" />}
+          >
+            <p>
+              Mede a presença do parlamentar nas sessões de votação da Câmara. Uma alta taxa de
+              presença indica comprometimento com as atividades legislativas.
+            </p>
+            <FormulaBox>
+              Nota Assiduidade = (Presenças ÷ Total de Sessões) × 100
+            </FormulaBox>
+            <ExampleBox>
+              <strong>Exemplo:</strong> Parlamentar presente em 150 de 177 sessões
+              <br />
+              (150 ÷ 177) × 100 = <strong>84,75 pontos</strong>
+            </ExampleBox>
+          </Acordeao>
+
+          {/* ── Economia ── */}
+          <Acordeao
+            title="2. Economia — Peso: 40%"
+            icon={<DollarSign size={18} className="text-emerald-500" />}
+          >
+            <p>
+              Avalia o uso responsável da cota parlamentar (CEAP). Cada estado possui um limite
+              mensal diferente, calculado com base na distância de Brasília e custo de vida.
+            </p>
+            <FormulaBox>
+              <div className="space-y-1">
+                <div>Cota Total do Período = Cota Mensal × Meses de Mandato</div>
+                <div>Economia = (Cota Total − Gasto Total) ÷ Cota Total</div>
+                <div>Nota Economia = Economia × 100</div>
+              </div>
+            </FormulaBox>
+            <ExampleBox>
+              <strong>Exemplo (Amapá — R$ 40.000/mês):</strong>
+              <br />
+              Mandato de 12 meses, gastou R$ 489.064,11
+              <br />
+              Cota total: R$ 40.000 × 12 = R$ 480.000
+              <br />
+              Neste caso: gastou mais que a cota → <strong>Nota = 0 pontos</strong>
+              <br />
+              <span className="text-slate-500 text-xs">
+                * Se o gasto for menor que a cota, a nota aumenta proporcionalmente.
+              </span>
+            </ExampleBox>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-500">
+              💡 As cotas variam por UF — estados mais distantes possuem cotas maiores para cobrir
+              deslocamentos.
+            </div>
+          </Acordeao>
+
+          {/* ── Produção Legislativa ── */}
+          <Acordeao
+            title="3. Produção Legislativa — Peso: 45%"
+            icon={<FileText size={18} className="text-purple-500" />}
+          >
+            <p>
+              Avalia a quantidade e relevância das proposições legislativas apresentadas. Diferentes
+              tipos recebem pontuações distintas, e ser <strong>autor principal</strong> vale mais do
+              que coautor.
+            </p>
+            <ScoreTable />
+            <FormulaBox>
+              <div className="space-y-1">
+                <div>Meta de Produção = Meses de Mandato × 2 proposições/mês</div>
+                <div>Nota Produção = min((Total Ponderado ÷ Meta) × 100, 100)</div>
+              </div>
+            </FormulaBox>
+            <ExampleBox>
+              <strong>Exemplo:</strong> Mandato de 12 meses
+              <br />
+              3 PLs como autor principal = 3,0 pts · 2 PECs como coautor = 0,4 pts · 5 PDCs como
+              autor = 2,5 pts
+              <br />
+              <strong>Total: 5,9 pts ≈ 6 proposições</strong>
+              <br />
+              Meta: 12 × 2 = 24 · Nota: (6 ÷ 24) × 100 = <strong>25 pontos</strong>
+            </ExampleBox>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-500 leading-relaxed">
+              📌 <strong>Siglas:</strong> PEC = Proposta de Emenda Constitucional · PL = Projeto de
+              Lei · PLC = Projeto de Lei Complementar · PLP = Projeto de Lei do Plano Plurianual ·
+              PDC = Projeto de Decreto Legislativo · PRC = Projeto de Resolução · MPV = Medida
+              Provisória
+            </div>
+          </Acordeao>
+
+          {/* ── Classificação ── */}
+          <Acordeao
+            title="Classificação do Score"
+            icon={<TrendingUp size={18} className="text-amber-500" />}
+          >
+            <p>Com base no score final, os parlamentares são classificados em quatro faixas:</p>
+            <ClassificacaoCards />
+          </Acordeao>
+
+          {/* ── Limitações ── */}
+          <Acordeao
+            title="Limitações e Considerações"
+            icon={<AlertCircle size={18} className="text-slate-400" />}
+          >
+            <ul className="space-y-3">
+              {[
+                {
+                  titulo: "Dados em desenvolvimento",
+                  texto:
+                    "O banco de dados ainda está sendo ajustado e pode apresentar inconsistências.",
+                },
+                {
+                  titulo: "Contexto político",
+                  texto:
+                    "O score não captura nuances como qualidade das proposições, impacto social ou contexto de ausências justificadas.",
+                },
+                {
+                  titulo: "Atualização periódica",
+                  texto:
+                    "Os dados são atualizados conforme a disponibilidade da API da Câmara.",
+                },
+                {
+                  titulo: "Uso educacional",
+                  texto:
+                    "Esta ferramenta tem fins educacionais e de transparência, não substituindo análises políticas profundas.",
+                },
+              ].map((item) => (
+                <li key={item.titulo} className="flex items-start gap-2.5">
+                  <span className="text-slate-300 mt-0.5 flex-shrink-0">•</span>
+                  <span>
+                    <strong className="text-slate-700">{item.titulo}:</strong> {item.texto}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Acordeao>
+
+          {/* ── CTA final ── */}
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-7 flex flex-col sm:flex-row items-center gap-5">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-slate-800 mb-1">Ficou com dúvidas?</p>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Consulte as perguntas frequentes ou veja o código-fonte da metodologia no GitHub.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
+              <Link
+                to="/faq"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-medium rounded-xl no-underline hover:border-slate-300 transition-colors"
+              >
+                Ver FAQ
+              </Link>
+              <a
+                href="https://github.com/WrongProvider/quemVota"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-xl no-underline transition-colors"
+              >
+                GitHub
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+        {/* ── Rodapé ── */}
+        <div className="border-t border-slate-200 bg-white py-6 text-center mt-6">
+          <p className="text-xs text-slate-400">
+            Dados públicos da{" "}
+            <a
+              href="https://dadosabertos.camara.leg.br"
+              target="_blank"
+              rel="noreferrer"
+              className="text-slate-500 hover:text-blue-600 transition-colors"
+            >
+              Câmara dos Deputados
+            </a>{" "}
+            · quemvota.com.br
+          </p>
+        </div>
+      </div>
+    </>
   )
 }

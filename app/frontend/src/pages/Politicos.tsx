@@ -24,44 +24,25 @@ const UFs = [
 ]
 
 const Partidos = [
-  "REPUBLICANOS",
-  "SOLIDARIEDADE",
-  "UNIÃO",
-  "PCdoB",
-  "PDT",
-  "PL",
-  "PODE",
-  "PP",
-  "PRD",
-  "PSB",
-  "PSD",
-  "PSDB",
-  "PSOL",
-  "PT",
-  "PV",
-  "REDE",
-  "AVANTE",
-  "CIDADANIA",
-  "MDB",
-  "NOVO",
+  "REPUBLICANOS","SOLIDARIEDADE","UNIÃO","PCdoB","PDT","PL","PODE",
+  "PP","PRD","PSB","PSD","PSDB","PSOL","PT","PV","REDE","AVANTE",
+  "CIDADANIA","MDB","NOVO",
 ]
 
-const PATH_FOTOS = "/politicos/" // As fotos devem estar disponíveis neste caminho público
+const PATH_FOTOS = "/politicos/"
 
 export default function Politicos() {
   const [searchParams] = useSearchParams()
   const initialQ = searchParams.get("q") || ""
 
-  const [search, setSearch]       = useState(initialQ)
-  const [selectedUF,  setSelectedUF] = useState("")
+  const [search, setSearch]               = useState(initialQ)
+  const [selectedUF, setSelectedUF]       = useState("")
   const [selectedPartido, setSelectedPartido] = useState("")
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters]     = useState(false)
   const debouncedSearch = useDebounce(search, 400)
 
-  // ── Sentinel ref para o Intersection Observer ──
   const sentinelRef = useRef<HTMLDivElement>(null)
 
-  // ── Dados com infinite scroll ──
   const {
     data,
     isLoading,
@@ -71,36 +52,23 @@ export default function Politicos() {
     isFetchingNextPage,
   } = usePoliticosInfinite({ q: debouncedSearch, uf: selectedUF, partido: selectedPartido })
 
-  // Achata todas as páginas numa lista única
   const allPoliticos = useMemo(() => selectAllPoliticos(data), [data])
-
-  // Total estimado: vem do backend via `total` na primeira página
   const totalBackend = data?.pages[0]?.total
+  const hasActiveFilters = !!(search || selectedUF || selectedPartido)
 
-  const hasActiveFilters = !!(search || selectedUF)
-
-  // ── Intersection Observer ──
-  // Quando o sentinel entra na viewport, carrega a próxima página.
-  // rootMargin de 300px garante que o carregamento começa antes do usuário
-  // chegar literalmente ao fim da lista.
   useEffect(() => {
     const el = sentinelRef.current
     if (!el) return
-
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage()
-        }
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage()
       },
       { rootMargin: "300px" },
     )
-
     observer.observe(el)
     return () => observer.disconnect()
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  // ── Helpers de UI ──
   function clearFilters() {
     setSearch("")
     setSelectedUF("")
@@ -108,223 +76,205 @@ export default function Politicos() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div style={{ fontFamily: "'DM Sans', sans-serif" }} className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="pt-20 pb-16">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+      {/* ── Cabeçalho da página ── */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 py-8 pt-24">
+          <p className="text-xs font-semibold tracking-widest uppercase text-blue-600 mb-2">
+            Câmara dos Deputados
+          </p>
+          <h1
+            style={{ fontFamily: "'Fraunces', serif" }}
+            className="text-3xl font-bold text-slate-900 mb-1"
+          >
+            Parlamentares
+          </h1>
+          <p className="text-slate-500 text-sm">
+            Explore os dados de desempenho, gastos e discursos dos deputados federais.
+          </p>
+        </div>
+      </div>
 
-          {/* ── PAGE HEADER ── */}
-          <div className="py-10 border-b border-slate-100 mb-8">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1 font-mono">
-                  Câmara dos Deputados
-                </p>
-                <h1 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight">
-                  Parlamentares
-                </h1>
-                <p className="text-slate-500 text-sm mt-2 max-w-md leading-relaxed">
-                  Explore os dados de desempenho, gastos e discursos dos deputados federais.
-                </p>
+      <div className="max-w-7xl mx-auto px-6 py-6 pb-16">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+          {/* ── Barra de busca e filtros ── */}
+          <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+            <div className="flex gap-3 items-center">
+              <div className="relative flex-1">
+                <Search
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar por nome..."
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-slate-800 placeholder-slate-400"
+                />
               </div>
 
-              {/* Contador — mostra carregados / total */}
+              <button
+                onClick={() => setShowFilters((v) => !v)}
+                className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium flex-shrink-0 transition-all ${
+                  showFilters
+                    ? "border-blue-400 bg-blue-50 text-blue-600"
+                    : "border-slate-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-500"
+                }`}
+              >
+                <SlidersHorizontal size={14} />
+                Filtrar
+                {(selectedUF || selectedPartido) && (
+                  <span className="flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none">
+                    {[selectedUF, selectedPartido].filter(Boolean).length}
+                  </span>
+                )}
+              </button>
+
+              {/* Contador */}
               {!isLoading && allPoliticos.length > 0 && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm flex-shrink-0">
-                  <Users size={14} className="text-blue-500" />
+                <div className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-lg flex-shrink-0">
+                  <Users size={13} className="text-blue-500" />
                   <span className="font-mono font-semibold text-sm text-slate-700">
                     {allPoliticos.length}
                     {totalBackend && totalBackend > allPoliticos.length && (
-                      <span className="text-slate-400 font-normal">
-                        /{totalBackend}
-                      </span>
+                      <span className="text-slate-400 font-normal">/{totalBackend}</span>
                     )}
                   </span>
-                  <span className="text-xs text-slate-400">parlamentares</span>
+                  <span className="text-xs text-slate-400 hidden sm:inline">parlamentares</span>
                 </div>
               )}
             </div>
-          </div>
 
-          {/* ── SEARCH + FILTER ROW ── */}
-          <div className="flex gap-3 mb-3 items-center">
-            <div className="relative flex-1">
-              <Search
-                size={17}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por nome..."
-                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm bg-white text-slate-800 placeholder-slate-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all"
-              />
-            </div>
-
-            <button
-              onClick={() => setShowFilters((v) => !v)}
-              className={`flex items-center gap-2 px-4 py-3 border rounded-xl text-sm font-medium flex-shrink-0 shadow-sm transition-all ${
-                showFilters
-                  ? "border-blue-500 bg-blue-50 text-blue-600"
-                  : "border-slate-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-500"
-              }`}
-            >
-              <SlidersHorizontal size={15} />
-              <span>Filtrar</span>
-              {selectedUF && selectedPartido && (
-                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none">
-                  2
-                </span>
-              )}
-              {selectedUF && !selectedPartido && (
-                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none">
-                  1
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* ── FILTER PANEL ── */}
-          {showFilters && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <MapPin size={13} className="text-slate-400" />
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                  Filtrar por Estado
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {UFs.map((uf) => (
-                  <button
-                    key={uf}
-                    onClick={() => setSelectedUF(selectedUF === uf ? "" : uf)}
-                    className={`px-3 py-1 rounded-lg border text-xs font-mono transition-all ${
-                      selectedUF === uf
-                        ? "border-blue-500 bg-blue-600 text-white"
-                        : "border-slate-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50"
-                    }`}
-                  >
-                    {uf}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 mb-3">
-                <MapPin size={20} className="text-slate-400" />
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                  Filtrar por Partido
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {Partidos.map((partido) => (
-                  <button
-                    key={partido}
-                    onClick={() => setSelectedPartido(selectedPartido === partido ? "" : partido)}
-                    className={`px-3 py-1 rounded-lg border text-xs font-mono transition-all ${
-                      selectedPartido === partido   
-                        ? "border-blue-500 bg-blue-600 text-white"
-                        : "border-slate-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50"
-                    }`}
-                  >
-                    {partido}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-          )}
-
-          {/* ── ACTIVE FILTERS ── */}
-          {hasActiveFilters && (
-            <div className="flex items-center gap-2 mb-5 flex-wrap">
-              <span className="text-xs text-slate-400">Filtros ativos:</span>
-
-              {search && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100">
-                  "{search}"
-                  <button
-                    onClick={() => setSearch("")}
-                    className="opacity-60 hover:opacity-100 transition-opacity"
-                  >
-                    <X size={11} />
-                  </button>
-                </span>
-              )}
-
-              {selectedUF && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium font-mono rounded-full border border-blue-100">
-                  {selectedUF}
-                  <button
-                    onClick={() => setSelectedUF("")}
-                    className="opacity-60 hover:opacity-100 transition-opacity"
-                  >
-                    <X size={11} />
-                  </button>
-                </span>
-              )}
-
-              {selectedPartido && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium font-mono rounded-full border border-blue-100">
-                  {selectedPartido}
-                  <button
-                    onClick={() => setSelectedPartido("")}
-                    className="opacity-60 hover:opacity-100 transition-opacity"
-                  >
-                    <X size={11} />
-                  </button>
-                </span>
-              )}
-
-              <button
-                onClick={clearFilters}
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-xs hover:bg-red-50 hover:text-red-500 transition-colors"
-              >
-                <X size={10} />
-                Limpar tudo
-              </button>
-            </div>
-          )}
-
-          {/* ── ERROR ── */}
-          {isError && (
-            <div className="text-center py-16">
-              <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">⚠️</span>
-              </div>
-              <p className="font-semibold text-slate-700">Erro ao carregar dados</p>
-              <p className="text-sm text-slate-400 mt-1">Tente novamente em alguns instantes.</p>
-            </div>
-          )}
-
-          {/* ── SKELETON (primeira carga) ── */}
-          {isLoading && (
-            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: POLITICOS_PAGE_SIZE }).map((_, i) => (
-                <li
-                  key={i}
-                  className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-4 animate-pulse"
-                >
-                  <div className="w-[76px] h-[76px] rounded-xl bg-slate-200 flex-shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3.5 bg-slate-200 rounded w-3/4" />
-                    <div className="h-3 bg-slate-200 rounded w-1/2" />
+            {/* ── Painel de filtros ── */}
+            {showFilters && (
+              <div className="mt-4 space-y-4">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <MapPin size={12} className="text-slate-400" />
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+                      Estado (UF)
+                    </span>
                   </div>
-                </li>
-              ))}
-            </ul>
+                  <div className="flex flex-wrap gap-1.5">
+                    {UFs.map((uf) => (
+                      <button
+                        key={uf}
+                        onClick={() => setSelectedUF(selectedUF === uf ? "" : uf)}
+                        className={`px-2.5 py-1 rounded-lg border text-xs font-mono transition-all ${
+                          selectedUF === uf
+                            ? "border-blue-500 bg-blue-600 text-white"
+                            : "border-slate-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50"
+                        }`}
+                      >
+                        {uf}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Users size={12} className="text-slate-400" />
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+                      Partido
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Partidos.map((partido) => (
+                      <button
+                        key={partido}
+                        onClick={() => setSelectedPartido(selectedPartido === partido ? "" : partido)}
+                        className={`px-2.5 py-1 rounded-lg border text-xs font-mono transition-all ${
+                          selectedPartido === partido
+                            ? "border-blue-500 bg-blue-600 text-white"
+                            : "border-slate-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50"
+                        }`}
+                      >
+                        {partido}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Filtros ativos ── */}
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                <span className="text-[11px] text-slate-400">Ativos:</span>
+                {search && (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100">
+                    "{search}"
+                    <button onClick={() => setSearch("")} className="opacity-60 hover:opacity-100">
+                      <X size={10} />
+                    </button>
+                  </span>
+                )}
+                {selectedUF && (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-mono font-medium rounded-full border border-blue-100">
+                    {selectedUF}
+                    <button onClick={() => setSelectedUF("")} className="opacity-60 hover:opacity-100">
+                      <X size={10} />
+                    </button>
+                  </span>
+                )}
+                {selectedPartido && (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-mono font-medium rounded-full border border-blue-100">
+                    {selectedPartido}
+                    <button onClick={() => setSelectedPartido("")} className="opacity-60 hover:opacity-100">
+                      <X size={10} />
+                    </button>
+                  </span>
+                )}
+                <button
+                  onClick={clearFilters}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-xs hover:bg-red-50 hover:text-red-500 transition-colors"
+                >
+                  <X size={9} /> Limpar
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* ── Estado de erro ── */}
+          {isError && (
+            <div className="flex flex-col items-center justify-center py-20 text-center text-slate-400">
+              <span className="text-3xl mb-3">⚠️</span>
+              <p className="text-sm font-semibold text-slate-600">Erro ao carregar dados</p>
+              <p className="text-xs mt-1">Tente novamente em alguns instantes.</p>
+            </div>
           )}
 
-          {/* ── GRID ── */}
+          {/* ── Skeleton ── */}
+          {isLoading && (
+            <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: POLITICOS_PAGE_SIZE }).map((_, i) => (
+                <div
+                  key={i}
+                  className="px-5 py-4 flex items-center gap-4 animate-pulse border-b border-slate-100 last:border-0"
+                >
+                  <div className="w-[60px] h-[60px] rounded-xl bg-slate-200 flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-slate-200 rounded w-3/4" />
+                    <div className="h-2.5 bg-slate-200 rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── Grid de parlamentares ── */}
           {!isLoading && !isError && (
             <>
               {allPoliticos.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                    <Users size={24} className="text-slate-400" />
-                  </div>
-                  <p className="font-semibold text-slate-700">Nenhum parlamentar encontrado</p>
-                  <p className="text-sm text-slate-400 mt-1">Tente ajustar os filtros de busca.</p>
+                <div className="flex flex-col items-center justify-center py-20 text-center text-slate-400">
+                  <Users size={36} className="mb-3 opacity-30" />
+                  <p className="text-sm font-semibold text-slate-600">Nenhum parlamentar encontrado</p>
+                  <p className="text-xs mt-1">Tente ajustar os filtros de busca.</p>
                   <button
                     onClick={clearFilters}
                     className="inline-flex items-center gap-1 mt-4 px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 text-xs hover:bg-red-50 hover:text-red-500 transition-colors"
@@ -333,75 +283,66 @@ export default function Politicos() {
                   </button>
                 </div>
               ) : (
-                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="divide-y divide-slate-100 sm:grid sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-3">
                   {allPoliticos.map((p) => (
-                    <li key={p.id}>
-                      <Link
-                        to={`/politicos_detalhe/${p.id}`}
-                        className="group relative flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10"
-                      >
-                        {/* Accent bar */}
-                        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                        {/* Photo */}
-                        <div className="w-[76px] h-[76px] rounded-[14px] overflow-hidden bg-slate-100 border border-slate-200 group-hover:border-blue-200 flex-shrink-0 transition-colors">
-                          <img
-                            src={`${PATH_FOTOS}${p.id}.jpg`}
-                            alt={p.nome}
-                            loading="lazy"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-[15px] text-slate-800 leading-snug truncate mb-2">
-                            {p.nome}
-                          </p>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-mono text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
-                              {p.partido_sigla}
-                            </span>
-                            <span className="font-mono inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                              <MapPin size={9} />
-                              {p.uf}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Arrow */}
-                        <ChevronRight
-                          size={15}
-                          className="flex-shrink-0 text-slate-300 group-hover:text-blue-400 transition-colors"
+                    <Link
+                      key={p.id}
+                      to={`/politicos_detalhe/${p.id}`}
+                      className="group flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors border-b border-slate-100 sm:border-b sm:border-r last:border-0 no-underline"
+                    >
+                      {/* Foto */}
+                      <div className="w-[56px] h-[56px] rounded-xl overflow-hidden bg-slate-100 border border-slate-200 group-hover:border-blue-200 flex-shrink-0 transition-colors">
+                        <img
+                          src={`${PATH_FOTOS}${p.id}.jpg`}
+                          alt={p.nome}
+                          loading="lazy"
+                          className="w-full h-full object-cover"
                         />
-                      </Link>
-                    </li>
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-slate-800 leading-snug truncate mb-1.5">
+                          {p.nome}
+                        </p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono text-[11px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                            {p.partido_sigla}
+                          </span>
+                          <span className="font-mono inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                            <MapPin size={9} />
+                            {p.uf}
+                          </span>
+                        </div>
+                      </div>
+
+                      <ChevronRight
+                        size={14}
+                        className="flex-shrink-0 text-slate-300 group-hover:text-blue-400 transition-colors"
+                      />
+                    </Link>
                   ))}
-                </ul>
+                </div>
               )}
 
-              {/* ── SENTINEL + ESTADOS DO SCROLL ── */}
-              {/* Este div invisível é observado pelo IntersectionObserver.
-                  Quando entra na viewport, fetchNextPage() é chamado. */}
-              <div ref={sentinelRef} className="mt-8">
+              {/* ── Sentinel + estados do scroll ── */}
+              <div ref={sentinelRef} className="border-t border-slate-100">
                 {isFetchingNextPage && (
-                  <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-400">
-                    <Loader2 size={16} className="animate-spin text-blue-400" />
+                  <div className="flex items-center justify-center gap-2 py-5 text-sm text-slate-400">
+                    <Loader2 size={15} className="animate-spin text-blue-400" />
                     <span>Carregando mais parlamentares...</span>
                   </div>
                 )}
-
                 {!hasNextPage && allPoliticos.length > 0 && (
-                  <p className="text-center text-xs text-slate-300 py-6 font-mono">
+                  <p className="text-center text-xs text-slate-300 py-5 font-mono">
                     ✓ Todos os {allPoliticos.length} parlamentares carregados
                   </p>
                 )}
               </div>
             </>
           )}
-
         </div>
-      </main>
+      </div>
     </div>
   )
 }
