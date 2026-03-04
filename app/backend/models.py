@@ -16,6 +16,17 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from backend.database import Base
 
+# class BuscaPopular(Base):
+#     __tablename__ = "busca_popular"
+
+#     id          = Column(Integer, primary_key=True, index=True)
+#     politico_id = Column(Integer, ForeignKey("politicos.id"), nullable=False, unique=True)
+#     count       = Column(Integer, default=1, nullable=False)
+#     updated_at  = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+#     politico = relationship("Politico", back_populates="busca_popular")
+
+
 class Politico(Base):
     __tablename__ = "politicos"
 

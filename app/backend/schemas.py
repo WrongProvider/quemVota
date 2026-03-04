@@ -7,6 +7,18 @@ class PoliticoBase(BaseModel):
     nome: str
     uf: str | None = None
 
+class MaisPesquisadoSchema(BaseModel):
+    politico_id:   int
+    nome:          str
+    uf:            str
+    partido_sigla: str
+    url_foto:      Optional[str]
+    count:         int
+
+    class Config:
+        from_attributes = True
+
+
 class PoliticoResponse(PoliticoBase):
     id: int
     id_camara: int

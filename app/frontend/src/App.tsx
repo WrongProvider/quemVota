@@ -16,7 +16,6 @@ import GlobalExternalLinkModal from "./components/GlobalExternalLinkModal"
 export default function App() {
   return (
     <BrowserRouter>
-      <DisclaimerBanner />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/politicos" element={<Politicos />} />
