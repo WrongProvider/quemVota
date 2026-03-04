@@ -50,13 +50,23 @@ export default function Politicos() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    fuzzyItems,
+    isFuzzyLoading,
   } = usePoliticosInfinite({ q: debouncedSearch, uf: selectedUF, partido: selectedPartido })
 
-  const allPoliticos = useMemo(() => selectAllPoliticos(data), [data])
-  const totalBackend = data?.pages[0]?.total
+  // Usa fuzzy quando há busca ativa, paginado quando não há
+  const allPoliticos = useMemo(
+    () => selectAllPoliticos(data, fuzzyItems, debouncedSearch),
+    [data, fuzzyItems, debouncedSearch],
+  )
+
   const hasActiveFilters = !!(search || selectedUF || selectedPartido)
 
+  // Infinite scroll só faz sentido sem busca ativa (busca fuzzy já retorna tudo)
+  const shouldInfiniteScroll = !debouncedSearch
+
   useEffect(() => {
+    if (!shouldInfiniteScroll) return
     const el = sentinelRef.current
     if (!el) return
     const observer = new IntersectionObserver(
@@ -67,13 +77,15 @@ export default function Politicos() {
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, shouldInfiniteScroll])
 
   function clearFilters() {
     setSearch("")
     setSelectedUF("")
     setSelectedPartido("")
   }
+
+  const showLoading = debouncedSearch ? isFuzzyLoading : isLoading
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif" }} className="min-h-screen bg-gray-50">
@@ -112,7 +124,7 @@ export default function Politicos() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por nome..."
+                  placeholder="Buscar por nome... (ex: Nic, Joao, Mara)"
                   className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-slate-800 placeholder-slate-400"
                 />
               </div>
@@ -135,14 +147,11 @@ export default function Politicos() {
               </button>
 
               {/* Contador */}
-              {!isLoading && allPoliticos.length > 0 && (
+              {!showLoading && allPoliticos.length > 0 && (
                 <div className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-lg flex-shrink-0">
                   <Users size={13} className="text-blue-500" />
                   <span className="font-mono font-semibold text-sm text-slate-700">
                     {allPoliticos.length}
-                    {totalBackend && totalBackend > allPoliticos.length && (
-                      <span className="text-slate-400 font-normal">/{totalBackend}</span>
-                    )}
                   </span>
                   <span className="text-xs text-slate-400 hidden sm:inline">parlamentares</span>
                 </div>
@@ -250,7 +259,7 @@ export default function Politicos() {
           )}
 
           {/* ── Skeleton ── */}
-          {isLoading && (
+          {showLoading && (
             <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: POLITICOS_PAGE_SIZE }).map((_, i) => (
                 <div
@@ -268,7 +277,7 @@ export default function Politicos() {
           )}
 
           {/* ── Grid de parlamentares ── */}
-          {!isLoading && !isError && (
+          {!showLoading && !isError && (
             <>
               {allPoliticos.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center text-slate-400">
@@ -325,20 +334,22 @@ export default function Politicos() {
                 </div>
               )}
 
-              {/* ── Sentinel + estados do scroll ── */}
-              <div ref={sentinelRef} className="border-t border-slate-100">
-                {isFetchingNextPage && (
-                  <div className="flex items-center justify-center gap-2 py-5 text-sm text-slate-400">
-                    <Loader2 size={15} className="animate-spin text-blue-400" />
-                    <span>Carregando mais parlamentares...</span>
-                  </div>
-                )}
-                {!hasNextPage && allPoliticos.length > 0 && (
-                  <p className="text-center text-xs text-slate-300 py-5 font-mono">
-                    ✓ Todos os {allPoliticos.length} parlamentares carregados
-                  </p>
-                )}
-              </div>
+              {/* ── Sentinel + estados do scroll (apenas sem busca) ── */}
+              {shouldInfiniteScroll && (
+                <div ref={sentinelRef} className="border-t border-slate-100">
+                  {isFetchingNextPage && (
+                    <div className="flex items-center justify-center gap-2 py-5 text-sm text-slate-400">
+                      <Loader2 size={15} className="animate-spin text-blue-400" />
+                      <span>Carregando mais parlamentares...</span>
+                    </div>
+                  )}
+                  {!hasNextPage && allPoliticos.length > 0 && (
+                    <p className="text-center text-xs text-slate-300 py-5 font-mono">
+                      ✓ Todos os {allPoliticos.length} parlamentares carregados
+                    </p>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
