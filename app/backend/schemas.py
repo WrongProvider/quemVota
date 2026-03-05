@@ -1,11 +1,12 @@
 from pydantic import BaseModel
-from datetime import date
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional, List
+
 
 class PoliticoBase(BaseModel):
     nome: str
-    uf: str | None = None
+    sigla_uf: str | None = None
+
 
 class MaisPesquisadoSchema(BaseModel):
     politico_id:   int
@@ -23,71 +24,114 @@ class PoliticoResponse(PoliticoBase):
     id: int
     id_camara: int
     nome: str
-    partido_sigla: str | None
-    nome_civil: str | None
-    escolaridade: str | None
-    situacao: str | None
-    condicao_eleitoral: str | None
-    sexo: str | None
-    data_nascimento: date | None
-    url_foto: str | None
-    uf: str | None
-    
-    email_gabinete: str | None
-    telefone_gabinete: str | None
-    
+    sigla_uf: str | None = None
+    sigla_partido: str | None = None
+    nome_civil: str | None = None
+    escolaridade: str | None = None
+    situacao: str | None = None
+    condicao_eleitoral: str | None = None
+    sigla_sexo: str | None = None
+    data_nascimento: date | None = None
+    url_foto: str | None = None
+
+    email_gabinete: str | None = None
+    telefone_gabinete: str | None = None
+
     class Config:
         from_attributes = True
+        # Mapeia os nomes camelCase do ORM para os nomes snake_case do schema
+        populate_by_name = True
+        alias_generator = None
+
+    @classmethod
+    def model_validate(cls, obj, *args, **kwargs):
+        # Suporte a ORM com campos camelCase (Deputado)
+        if hasattr(obj, "__dict__") and not isinstance(obj, dict):
+            data = {
+                "id":                 obj.id,
+                "id_camara":          obj.idCamara,
+                "nome":               obj.nome,
+                "sigla_uf":           obj.siglaUF,
+                "sigla_partido":      obj.siglaPartido,
+                "nome_civil":         obj.nomeCivil,
+                "escolaridade":       obj.escolaridade,
+                "situacao":           obj.situacao,
+                "condicao_eleitoral": obj.condicaoEleitoral,
+                "sigla_sexo":         obj.siglaSexo,
+                "data_nascimento":    obj.dataNascimento,
+                "url_foto":           obj.urlFoto,
+                "email_gabinete":     obj.emailGabinete,
+                "telefone_gabinete":  obj.telefoneGabinete,
+            }
+            return cls(**data)
+        return super().model_validate(obj, *args, **kwargs)
+
 
 class PoliticoVoto(BaseModel):
     id_votacao: int
     data: date
-    proposicao_sigla: str | None
-    proposicao_numero: int | None
-    proposicao_ano: int | None
-    ementa: str | None
-    voto: str  # Sim, Não, Obstrução, etc.
-    resultado_da_votacao: Optional[str] | None
-    tipo_votacao: Optional[str] | None
-    uri: str | None
+    proposicao_sigla: str | None = None
+    proposicao_numero: int | None = None
+    proposicao_ano: int | None = None
+    ementa: str | None = None
+    voto: str                              # Sim, Não, Obstrução, etc.
+    resultado_da_votacao: Optional[str] = None
+    tipo_votacao: Optional[str] = None
+    uri: str | None = None
 
     class Config:
         from_attributes = True
 
+
 class ItemRanking(BaseModel):
     nome: str
     total: float
+
 
 class ItemRankingFornecedor(BaseModel):
     nome: str
     total: float
     categoria_principal: str | None = None
 
+
 class PoliticoDespesaResumo(BaseModel):
     ano: int
     mes: int
     total_gasto: float
     qtd_despesas: int
+
     class Config:
         from_attributes = True
+
 
 class PoliticoDespesaResumoCompleto(BaseModel):
     historico_mensal: List[PoliticoDespesaResumo]
     top_fornecedores: List[ItemRankingFornecedor]
     top_categorias: List[ItemRanking]
+
     class Config:
         from_attributes = True
+
 
 class PoliticoDespesaDetalhe(BaseModel):
     id: int
-    data_documento: datetime | None
+    data_documento: datetime | None = None
     tipo_despesa: str
     nome_fornecedor: str
     valor_liquido: float
-    url_documento: str | None
+    url_documento: str | None = None
 
     class Config:
         from_attributes = True
+        # Mapeamento de nomes camelCase do ORM Despesa para snake_case do schema
+        fields = {
+            "data_documento":  "dataDocumento",
+            "tipo_despesa":    "tipoDespesa",
+            "nome_fornecedor": "nomeFornecedor",
+            "valor_liquido":   "valorLiquido",
+            "url_documento":   "urlDocumento",
+        }
+
 
 class PoliticoFornecedor(BaseModel):
     nome_fornecedor: str
@@ -103,8 +147,8 @@ class PoliticoEstatisticasResponse(BaseModel):
     total_despesas: int
     total_gasto: float
     media_mensal: float
-    primeiro_ano: int | None
-    ultimo_ano: int | None
+    primeiro_ano: int | None = None
+    ultimo_ano: int | None = None
 
 
 class SerieDespesaItem(BaseModel):
@@ -123,14 +167,17 @@ class RankingDespesaPolitico(BaseModel):
     nome: str
     total_gasto: float
 
+
 class RankingEmpresaLucro(BaseModel):
     cnpj: str
     nome_fornecedor: str
     total_recebido: float
 
+
 class KeywordInfo(BaseModel):
     keyword: str
     frequencia: int
+
 
 class RankingDiscursoPolitico(BaseModel):
     politico_id: int
@@ -144,16 +191,6 @@ class RankingDiscursoPolitico(BaseModel):
 # =============================================================================
 # SCHEMAS — Proposições e Votações
 # =============================================================================
-# Adicionar ao final de schemas.py
-#
-# Modelos cobertos:
-#   Proposicao, ProposicaoAutor, Tema, Tramitacao
-#   Votacao, OrientacaoVotacao
-#
-# Convenção do projeto:
-#   - from_attributes = True  → permite usar instâncias ORM diretamente
-#   - Optional[X] | None      → campos que podem não vir preenchidos do banco
-# =============================================================================
 
 # -----------------------------------------------------------------------------
 # Blocos reutilizáveis (sub-schemas)
@@ -162,13 +199,13 @@ class RankingDiscursoPolitico(BaseModel):
 class AutorResumo(BaseModel):
     """
     Representação enxuta de um autor de proposição.
-    Usado dentro de ProposicaoResponse e ProposicaoDetalhe.
 
     Campos:
-      - politico_id: ID interno do político (None se o autor não for um deputado,
+      - politico_id: ID interno do deputado (None se autor não for deputado,
                      ex: comissão, Senado, Executivo)
-      - nome:        Nome completo do autor
+      - nome:        Nome completo do autor  (campo nomeAutor no ORM)
       - tipo:        Tipo de autoria (ex: "Deputado", "Comissão", "Senado")
+                     (campo tipoAutor no ORM)
       - proponente:  True se for o autor principal / proponente da matéria
     """
     politico_id: Optional[int] = None
@@ -183,10 +220,10 @@ class AutorResumo(BaseModel):
 class TemaResumo(BaseModel):
     """
     Tema legislativo associado a uma proposição.
-    Vem da tabela `temas` via relação many-to-many `proposicoes_temas`.
+    Vem da tabela `temas` via relação many-to-many `proposicoesTemas`.
     """
     id: int
-    cod_tema: Optional[int] = None
+    cod_tema: Optional[int] = None          # campo codTema no ORM
     tema: str
 
     class Config:
@@ -196,17 +233,13 @@ class TemaResumo(BaseModel):
 class TramitacaoItem(BaseModel):
     """
     Registro de tramitação de uma proposição.
-    Representa uma etapa no histórico de movimentação da matéria
-    entre órgãos e situações (ex: "Pronta para Pauta", "Aprovada").
+    Representa uma etapa no histórico de movimentação da matéria.
 
-    Campos relevantes para o frontend:
-      - data_hora:              Momento do registro
-      - sigla_orgao:            Órgão responsável naquela etapa (ex: "PLEN", "CCJ")
-      - descricao_situacao:     Situação da proposição naquele ponto
-      - descricao_tramitacao:   Ação realizada (ex: "Votação em Plenário")
-      - despacho:               Texto do despacho (pode ser longo)
-      - regime:                 Regime de tramitação (ex: "Urgência", "Ordinário")
-      - ambito:                 Onde ocorre (ex: "Câmara", "Senado")
+    Mapeamento ORM → schema:
+      dataHora              → data_hora
+      siglaOrgao            → sigla_orgao
+      descricaoTramitacao   → descricao_tramitacao
+      descricaoSituacao     → descricao_situacao
     """
     id: int
     data_hora: Optional[datetime] = None
@@ -232,13 +265,17 @@ class ProposicaoResponse(BaseModel):
     Schema de listagem de proposições.
     Retornado por GET /proposicoes/ — sem tramitação para manter a resposta leve.
 
-    Inclui os autores (ProposicaoAutor) para que o frontend consiga exibir
-    o nome do autor diretamente na listagem sem precisar de um segundo request.
+    Mapeamento ORM → schema:
+      idCamara          → id_camara
+      siglaTipo         → sigla_tipo
+      descricaoTipo     → descricao_tipo
+      dataApresentacao  → data_apresentacao
+      urlInteiroTeor    → url_inteiro_teor
     """
     id: int
     id_camara: int
 
-    sigla_tipo: Optional[str] = None          # Ex: "PL", "PEC", "MPV"
+    sigla_tipo: Optional[str] = None
     numero: Optional[int] = None
     ano: Optional[int] = None
     descricao_tipo: Optional[str] = None
@@ -261,10 +298,9 @@ class ProposicaoDetalhe(ProposicaoResponse):
     Schema de detalhe completo de uma proposição.
     Retornado por GET /proposicoes/{id} — inclui tramitação completa.
 
-    Herda todos os campos de ProposicaoResponse e adiciona:
-      - ementa_detalhada: versão longa da ementa
-      - justificativa:    texto de justificativa (pode ser muito longo)
-      - tramitacoes:      histórico completo de tramitação, ordenado por data_hora
+    Mapeamento ORM → schema adicional:
+      ementaDetalhada → ementa_detalhada
+      urnFinal        → urn_final
     """
     ementa_detalhada: Optional[str] = None
     justificativa: Optional[str] = None
@@ -283,15 +319,14 @@ class ProposicaoDetalhe(ProposicaoResponse):
 class OrientacaoPartido(BaseModel):
     """
     Orientação de voto de um partido/bloco em uma votação específica.
-    Vem da tabela `orientacoes_votacao`.
+    Vem da tabela `votacoesOrientacoes`.
 
-    Campos:
-      - sigla_partido_bloco: Sigla do partido ou bloco (ex: "PT", "PL", "UNIÃO")
-      - orientacao_voto:     Voto orientado (ex: "Sim", "Não", "Libera", "Obstrução")
-      - cod_tipo_lideranca:  Tipo de liderança que emitiu a orientação
+    Mapeamento ORM → schema:
+      siglaBancada → sigla_partido_bloco
+      orientacao   → orientacao_voto
+      (cod_tipo_lideranca removido — não existe no novo modelo)
     """
     sigla_partido_bloco: Optional[str] = None
-    cod_tipo_lideranca: Optional[str] = None
     orientacao_voto: Optional[str] = None
 
     class Config:
@@ -303,10 +338,12 @@ class VotacaoResponse(BaseModel):
     Schema de listagem de votações.
     Retornado por GET /votacoes/ — sem orientações para manter a resposta leve.
 
-    Campos:
-      - aprovacao:    1 = aprovada, 0 = rejeitada, -1 = indefinido
-      - sigla_orgao:  Órgão que realizou a votação (ex: "PLEN")
-      - proposicao_*: Dados da proposição vinculada (desnormalizados para evitar join extra)
+    Mapeamento ORM → schema:
+      idCamara          → id_camara
+      dataHoraRegistro  → data_hora_registro
+      tipoVotacao       → tipo_votacao
+      siglaOrgao        → sigla_orgao
+      idProposicao      → proposicao_id
     """
     id: int
     id_camara: str
@@ -314,14 +351,13 @@ class VotacaoResponse(BaseModel):
     data: Optional[date] = None
     data_hora_registro: Optional[datetime] = None
 
-    tipo_votacao: Optional[str] = None        # "Nominal" ou "Simbólica"
+    tipo_votacao: Optional[str] = None
     descricao: Optional[str] = None
-    aprovacao: Optional[int] = None           # 1, 0, -1
+    aprovacao: Optional[int] = None           # 1 aprovada, 0 rejeitada, -1 indefinido
     sigla_orgao: Optional[str] = None
 
-    # Campos da proposição vinculada (JOIN feito no repositório)
     proposicao_id: Optional[int] = None
-    proposicao_sigla: Optional[str] = None    # Ex: "PL"
+    proposicao_sigla: Optional[str] = None
     proposicao_numero: Optional[int] = None
     proposicao_ano: Optional[int] = None
     proposicao_ementa: Optional[str] = None
@@ -334,16 +370,24 @@ class VotacaoDetalhe(VotacaoResponse):
     """
     Schema de detalhe de uma votação.
     Retornado por GET /votacoes/{id} — inclui orientações por partido.
-
-    Herda todos os campos de VotacaoResponse e adiciona:
-      - orientacoes: como cada partido/bloco orientou o voto dos seus membros
     """
     orientacoes: List[OrientacaoPartido] = []
 
     class Config:
         from_attributes = True
 
+
+# -----------------------------------------------------------------------------
+# Proposições vinculadas a um deputado
+# -----------------------------------------------------------------------------
+
 class ProposicaoAutorResumo(BaseModel):
+    """
+    Mapeamento ORM → schema:
+      idDeputadoAutor → politico_id
+      nomeAutor       → nome
+      tipoAutor       → tipo
+    """
     politico_id: Optional[int] = None
     nome: str
     tipo: Optional[str] = None
@@ -362,9 +406,13 @@ class TemaResumoSimples(BaseModel):
 
 
 class ProposicaoParaPolitico(BaseModel):
-    # Proposição retornada no endpoint /politicos/{id}/proposicoes.
-    # Inclui lista de autores e temas para o frontend poder distinguir
-    # autor principal (proponente=True) de coautores.
+    """
+    Proposição retornada no endpoint /politicos/{id}/proposicoes.
+    Inclui lista de autores e temas para o frontend poder distinguir
+    autor principal (proponente=True) de coautores.
+
+    Mapeamento ORM → schema: igual a ProposicaoResponse.
+    """
     id: int
     id_camara: int
     sigla_tipo: Optional[str] = None
@@ -382,43 +430,31 @@ class ProposicaoParaPolitico(BaseModel):
         from_attributes = True
 
 
-# Schemas para o endpoint GET /politicos/{id}/atividade-legislativa
-#
-# Retorna em uma única chamada todas as votações nominais e as proposições
-# em que o político é autor (principal ou coautor), agrupadas por tipo
-# e com suporte a filtros de ano e paginação independente por seção.
 # =============================================================================
-
-from typing import Optional, List
-from datetime import date, datetime
-from pydantic import BaseModel
-
+# SCHEMAS — Atividade Legislativa (endpoint consolidado)
+# =============================================================================
 
 class VotacaoResumida(BaseModel):
     """
-    Votação na qual o político participou com voto nominal.
+    Votação na qual o deputado participou com voto nominal.
 
-    Campos relevantes para o frontend:
-      - id_votacao:      ID interno da votação (útil para deep-link)
-      - data:            Data da sessão
-      - proposicao_*:    Dados da proposição votada (desnormalizados)
-      - voto:            Como o parlamentar votou ("Sim", "Não", "Obstrução"…)
-      - aprovacao:       Resultado final: 1 aprovada, 0 rejeitada, -1 indefinido
-      - tipo_votacao:    "Nominal" ou "Simbólica"
-      - sigla_orgao:     Órgão que realizou a votação (ex: "PLEN", "CCJ")
+    Mapeamento ORM → schema:
+      Voto.voto           → voto
+      Votacao.tipoVotacao → tipo_votacao
+      Votacao.siglaOrgao  → sigla_orgao
+      Votacao.idProposicao → proposicao_id
     """
-
     id_votacao: int
     data: Optional[date] = None
 
     proposicao_id: Optional[int] = None
-    proposicao_sigla: Optional[str] = None   # Ex: "PL", "PEC"
+    proposicao_sigla: Optional[str] = None
     proposicao_numero: Optional[int] = None
     proposicao_ano: Optional[int] = None
     proposicao_ementa: Optional[str] = None
 
-    voto: str                                # Como o político votou
-    aprovacao: Optional[int] = None          # 1 | 0 | -1
+    voto: str
+    aprovacao: Optional[int] = None
     tipo_votacao: Optional[str] = None
     sigla_orgao: Optional[str] = None
 
@@ -428,18 +464,17 @@ class VotacaoResumida(BaseModel):
 
 class ProposicaoResumida(BaseModel):
     """
-    Proposição em que o político é autor ou coautor.
+    Proposição em que o deputado é autor ou coautor.
 
-    Campos relevantes para o frontend:
+    Campos:
       - proponente:   True se for o autor principal/proponente da matéria
-      - tipo_autoria: Tipo de autoria registrada (ex: "Deputado", "Comissão")
-      - temas:        Temas legislativos para categorização visual
+      - tipo_autoria: Tipo de autoria registrada (campo tipoAutor no ORM)
+      - temas:        Lista de strings para leveza
     """
-
     id: int
     id_camara: int
 
-    sigla_tipo: Optional[str] = None         # Ex: "PL", "PEC", "MPV"
+    sigla_tipo: Optional[str] = None
     numero: Optional[int] = None
     ano: Optional[int] = None
     descricao_tipo: Optional[str] = None
@@ -449,10 +484,10 @@ class ProposicaoResumida(BaseModel):
     data_apresentacao: Optional[datetime] = None
     url_inteiro_teor: Optional[str] = None
 
-    proponente: bool = False                 # True = autor principal
-    tipo_autoria: Optional[str] = None       # Tipo registrado em ProposicaoAutor
+    proponente: bool = False
+    tipo_autoria: Optional[str] = None
 
-    temas: List[str] = []                    # Lista de strings para leveza
+    temas: List[str] = []
 
     class Config:
         from_attributes = True
@@ -461,23 +496,11 @@ class ProposicaoResumida(BaseModel):
 class AtividadeLegislativaResponse(BaseModel):
     """
     Resposta consolidada do endpoint GET /politicos/{id}/atividade-legislativa.
-
-    Retorna votações + proposições do parlamentar em um único request,
-    evitando waterfalls no frontend.
-
-    Campos de paginação:
-      - total_votacoes:    total de registros de voto do parlamentar (com filtros)
-      - total_proposicoes: total de proposições em que é autor (com filtros)
-      - limit / offset:    espelham os parâmetros da requisição
-
-    Filtros aplicados (quando fornecidos):
-      - ano:  filtra votações por ano da votação e proposições por ano
+    Retorna votações + proposições do parlamentar em um único request.
     """
-
     votacoes: List[VotacaoResumida]
     proposicoes: List[ProposicaoResumida]
 
-    # Metadados de paginação
     total_votacoes: int
     total_proposicoes: int
     limit_votacoes: int
@@ -485,7 +508,6 @@ class AtividadeLegislativaResponse(BaseModel):
     offset_votacoes: int
     offset_proposicoes: int
 
-    # Filtros aplicados (espelhados para o cliente saber o que foi usado)
     ano: Optional[int] = None
 
     class Config:

@@ -71,7 +71,6 @@ export interface ProposicaoDetalhe extends ProposicaoResponse {
 /** Orientação de voto de um partido/bloco em uma votação */
 export interface OrientacaoPartido {
   readonly sigla_partido_bloco: string | null
-  readonly cod_tipo_lideranca: string | null
   readonly orientacao_voto: string | null   // "Sim", "Não", "Libera", "Obstrução"
 }
 

@@ -1,15 +1,15 @@
 """
 performance_calc.py — Fonte única da verdade para o cálculo de score parlamentar.
 
-Importado por PoliticoService e RankingService para garantir que ambos
+Importado por DeputadoService e RankingService para garantir que ambos
 produzam resultados 100% idênticos a partir dos mesmos dados brutos.
 
 Dados brutos esperados (dict ou Mapping):
   - id               int
   - nome             str
-  - uf               str | None
-  - partido_sigla    str
-  - url_foto         str | None
+  - siglaUF          str | None
+  - siglaPartido     str
+  - urlFoto          str | None
   - nota_assiduidade float   — (presencas / total_sessoes) * 100, calculado no SQL
   - pontos_producao  float   — soma ponderada de proposições (calculada no SQL/repo)
   - total_gasto      float
@@ -39,10 +39,10 @@ _PESO_PRODUCAO    = 0.45
 _META_PRODUCAO_MES = 2.0
 
 
-def resolve_cota_mensal(uf: str | None) -> float:
+def resolve_cota_mensal(siglaUF: str | None) -> float:
     """Retorna a cota mensal para a UF informada, com fallback seguro."""
-    if uf and uf.upper() in _COTAS_POR_UF:
-        return _COTAS_POR_UF[uf.upper()]
+    if siglaUF and siglaUF.upper() in _COTAS_POR_UF:
+        return _COTAS_POR_UF[siglaUF.upper()]
     return _COTA_PADRAO
 
 
@@ -77,7 +77,9 @@ def calcular_score(p: dict, meses_override: int | None = None) -> dict:
     )
 
     # --- 3. Economia (0–100): quanto da cota não foi gasto ---
-    cota_mensal   = resolve_cota_mensal(p.get("uf"))
+    # Aceita tanto "siglaUF" (novo modelo) quanto "uf" (legado) para compatibilidade
+    uf = p.get("siglaUF") or p.get("uf")
+    cota_mensal   = resolve_cota_mensal(uf)
     cota_total    = cota_mensal * meses
     gasto         = float(p["total_gasto"])
     nota_economia = (
@@ -95,9 +97,9 @@ def calcular_score(p: dict, meses_override: int | None = None) -> dict:
     return {
         "id":      p["id"],
         "nome":    p["nome"],
-        "uf":      p.get("uf"),
-        "partido": p["partido_sigla"],
-        "foto":    p.get("url_foto"),
+        "uf":      uf,
+        "partido": p.get("siglaPartido") or p.get("partido_sigla"),
+        "foto":    p.get("urlFoto") or p.get("url_foto"),
         "score":   round(score_final, 2),
         "notas": {
             "assiduidade": round(nota_assiduidade, 2),

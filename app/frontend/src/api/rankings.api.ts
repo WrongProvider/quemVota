@@ -39,9 +39,9 @@ export interface NotasPerformance {
 export interface RankingPerformancePolitico {
   id: number
   nome: string
-  uf: string
-  partido: string
-  foto: string
+  sigla_uf: string        // era: uf
+  sigla_partido: string   // era: partido
+  url_foto: string        // era: foto
   score: number
   notas: NotasPerformance
 }

@@ -1,5 +1,5 @@
 """
-Serviço de Políticos — Camada de lógica de negócio.
+Serviço de Deputados — Camada de lógica de negócio.
 
 Segurança (OWASP):
   - A01 / Broken Access Control: IDs são validados antes de qualquer operação.
@@ -21,19 +21,20 @@ from backend.schemas import PoliticoResponse, AtividadeLegislativaResponse
 from backend.services.performance_calc import calcular_score, resolve_cota_mensal
 from .ranking_service import RankingService
 import asyncio
+
 logger = logging.getLogger(__name__)
 
 # Limites de paginação (segunda linha de defesa)
-_MAX_LIMIT_POLITICOS = 600
-_MAX_LIMIT_VOTACOES  = 20
-_MAX_LIMIT_DESPESAS  = 20
-_MAX_LIMIT_RESUMO    = 60
-_MAX_LIMIT_ATIVIDADE = 100
+_MAX_LIMIT_DEPUTADOS   = 600
+_MAX_LIMIT_VOTACOES    = 20
+_MAX_LIMIT_DESPESAS    = 20
+_MAX_LIMIT_RESUMO      = 60
+_MAX_LIMIT_ATIVIDADE   = 100
 
 
 class PoliticoService:
     """
-    Orquestra as regras de negócio de políticos.
+    Orquestra as regras de negócio de deputados.
     Não expõe detalhes de infraestrutura (SQL, ORM) para a camada HTTP.
     """
 
@@ -55,25 +56,25 @@ class PoliticoService:
         partido: str | None = None,
         offset: int = 0,
     ) -> list[PoliticoResponse]:
-        safe_limit  = min(abs(limit), _MAX_LIMIT_POLITICOS)
+        safe_limit  = min(abs(limit), _MAX_LIMIT_DEPUTADOS)
         safe_offset = max(offset, 0)
-        politicos   = await self._repo.get_politicos_repo(
+        deputados   = await self._repo.get_politicos_repo(
             q=q, uf=uf, partido=partido, limit=safe_limit, offset=safe_offset
         )
-        return [PoliticoResponse.model_validate(p) for p in politicos]
+        return [PoliticoResponse.model_validate(p) for p in deputados]
 
     # ------------------------------------------------------------------
     # Detalhe
     # ------------------------------------------------------------------
 
-    async def get_politicos_detalhe_service(self, politico_id: int) -> PoliticoResponse:
-        politico = await self._repo.get_politico_repo(politico_id)
-        if not politico:
+    async def get_politicos_detalhe_service(self, deputado_id: int) -> PoliticoResponse:
+        deputado = await self._repo.get_politico_repo(deputado_id)
+        if not deputado:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Político não encontrado.",
+                detail="Deputado não encontrado.",
             )
-        return PoliticoResponse.model_validate(politico)
+        return PoliticoResponse.model_validate(deputado)
 
     # ------------------------------------------------------------------
     # Votações
@@ -81,14 +82,14 @@ class PoliticoService:
 
     async def get_politicos_votacoes_service(
         self,
-        politico_id: int,
+        deputado_id: int,
         *,
         limit: int = 20,
         ano: int | None = None,
     ):
         safe_limit = min(abs(limit), _MAX_LIMIT_VOTACOES)
         return await self._repo.get_politicos_votacoes_repo(
-            politico_id=politico_id, limit=safe_limit, ano=ano
+            politico_id=deputado_id, limit=safe_limit, ano=ano
         )
 
     # ------------------------------------------------------------------
@@ -97,7 +98,7 @@ class PoliticoService:
 
     async def get_politicos_despesas_services(
         self,
-        politico_id: int,
+        deputado_id: int,
         *,
         ano: int | None = None,
         mes: int | None = None,
@@ -105,40 +106,40 @@ class PoliticoService:
     ):
         safe_limit = min(abs(limit), _MAX_LIMIT_DESPESAS)
         return await self._repo.get_politicos_despesas_repo(
-            politico_id=politico_id, ano=ano, mes=mes, limit=safe_limit
+            politico_id=deputado_id, ano=ano, mes=mes, limit=safe_limit
         )
 
     async def get_politicos_despesas_resumo_services(
         self,
-        politico_id: int,
+        deputado_id: int,
         *,
         ano: int | None = None,
         limit: int = 60,
     ):
         safe_limit = min(abs(limit), _MAX_LIMIT_RESUMO)
         return await self._repo.get_politicos_despesas_resumo_repo(
-            politico_id=politico_id, ano=ano, limit=safe_limit
+            politico_id=deputado_id, ano=ano, limit=safe_limit
         )
 
     async def get_politicos_despesas_resumo_completo_services(
         self,
-        politico_id: int,
+        deputado_id: int,
         *,
         ano: int | None = None,
         limit_meses: int = 60,
     ):
         safe_limit = min(abs(limit_meses), _MAX_LIMIT_RESUMO)
         return await self._repo.get_politicos_despesas_resumo_completo_repo(
-            politico_id=politico_id, ano=ano, limit_meses=safe_limit
+            politico_id=deputado_id, ano=ano, limit_meses=safe_limit
         )
 
     # ------------------------------------------------------------------
-    # Estatísticas — agora com filtro de ano
+    # Estatísticas — com filtro de ano
     # ------------------------------------------------------------------
 
     async def get_politico_estatisticas_service(
         self,
-        politico_id: int,
+        deputado_id: int,
         *,
         ano: int | None = None,
     ):
@@ -146,21 +147,21 @@ class PoliticoService:
         Retorna estatísticas gerais do parlamentar.
 
         Args:
-            politico_id: ID do parlamentar.
+            deputado_id: ID do parlamentar.
             ano: quando fornecido, filtra votações e despesas pelo ano,
                  permitindo comparação justa na linha do tempo.
         """
         return await self._repo.get_politicos_estatisticas_repo(
-            politico_id, ano=ano
+            deputado_id, ano=ano
         )
 
     # ------------------------------------------------------------------
-    # Performance — agora com filtro de ano
+    # Performance — com filtro de ano
     # ------------------------------------------------------------------
 
     async def get_politico_performance_service(
         self,
-        politico_id: int,
+        deputado_id: int,
         *,
         ano: int | None = None,
     ) -> dict:
@@ -172,29 +173,29 @@ class PoliticoService:
         quando ano=None.
 
         Args:
-            politico_id: ID do parlamentar.
+            deputado_id: ID do parlamentar.
             ano: quando fornecido, o score reflete apenas aquele ano,
                  possibilitando comparação justa na linha do tempo.
 
         Fórmula:
             score = assiduidade × 15% + economia × 40% + produção × 45%
 
-        Lança HTTP 404 se o político não existir.
+        Lança HTTP 404 se o deputado não existir.
         """
-        politico = await self._repo.get_politico_repo(politico_id)
-        if not politico:
+        deputado = await self._repo.get_politico_repo(deputado_id)
+        if not deputado:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Político não encontrado.",
+                detail="Deputado não encontrado.",
             )
 
         raw_row = await self._ranking_repo.get_performance_data_by_id(
-            politico_id, ano=ano
+            deputado_id, ano=ano
         )
         if not raw_row:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Dados de performance não encontrados para este político.",
+                detail="Dados de performance não encontrados para este deputado.",
             )
 
         result = calcular_score(raw_row)
@@ -203,8 +204,8 @@ class PoliticoService:
         media_global = await RankingService(self._db).get_media_global_cached()
 
         return {
-            "politico_id":  politico_id,
-            "ano":          ano,           # None = mandato inteiro
+            "politico_id":  deputado_id,
+            "ano":          ano,
             "score_final":  result["score"],
             "media_global": round(media_global, 2),
             "detalhes": {
@@ -224,49 +225,21 @@ class PoliticoService:
     # Timeline — série histórica anual
     # ------------------------------------------------------------------
 
-    async def get_politico_timeline_service(self, politico_id: int) -> list[dict]:
+    async def get_politico_timeline_service(self, deputado_id: int) -> list[dict]:
         """
         Retorna a evolução anual de performance, estatísticas e gastos do
         parlamentar — uma entrada por ano com dados registrados no banco.
 
-        Cada item da lista contém:
-          - ano
-          - score e notas detalhadas (assiduidade, economia, produção)
-          - estatísticas do ano (votações, despesas, total gasto, média mensal)
-          - info de cota (valor, % utilizada)
-
-        Exemplo de resposta:
-        [
-          {
-            "ano": 2023,
-            "score": 61.4,
-            "notas": { "assiduidade": 87.0, "economia": 74.2, "producao": 38.5 },
-            "estatisticas": {
-              "total_votacoes": 142,
-              "total_despesas": 89,
-              "total_gasto": 312400.0,
-              "media_mensal": 26033.33
-            },
-            "info": {
-              "valor_cota_mensal": 42837.33,
-              "meses_ativos": 12,
-              "cota_total": 514047.96,
-              "cota_utilizada_pct": 60.73
-            }
-          },
-          ...
-        ]
-
-        Lança HTTP 404 se o político não existir.
+        Lança HTTP 404 se o deputado não existir.
         """
-        politico = await self._repo.get_politico_repo(politico_id)
-        if not politico:
+        deputado = await self._repo.get_politico_repo(deputado_id)
+        if not deputado:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Político não encontrado.",
+                detail="Deputado não encontrado.",
             )
 
-        timeline_raw = await self._ranking_repo.get_timeline_data_by_id(politico_id)
+        timeline_raw = await self._ranking_repo.get_timeline_data_by_id(deputado_id)
         if not timeline_raw:
             return []
 
@@ -298,21 +271,21 @@ class PoliticoService:
             })
 
         return resultado
-    
+
     async def get_politico_proposicoes_service(
         self,
-        politico_id: int,
+        deputado_id: int,
         *,
         limit: int = 100,
     ):
         safe_limit = min(abs(limit), 100)
         return await self._repo.get_politico_proposicoes_repo(
-            politico_id=politico_id, limit=safe_limit
+            politico_id=deputado_id, limit=safe_limit
         )
-    
+
     async def get_politico_atividade_legislativa_service(
         self,
-        politico_id: int,
+        deputado_id: int,
         *,
         ano: int | None = None,
         limit_votacoes: int = 20,
@@ -327,23 +300,13 @@ class PoliticoService:
         As duas queries ao banco são disparadas em paralelo via asyncio.gather,
         reduzindo a latência total ao tempo da query mais lenta (não à soma).
 
-        Args:
-            politico_id:        ID interno do parlamentar.
-            ano:                Filtra votações e proposições pelo ano.
-            limit_votacoes:     Itens de votação por página (máx. 100).
-            limit_proposicoes:  Itens de proposição por página (máx. 100).
-            offset_votacoes:    Deslocamento para paginação de votações.
-            offset_proposicoes: Deslocamento para paginação de proposições.
-
-        Lança HTTP 404 se o político não existir.
+        Lança HTTP 404 se o deputado não existir.
         """
-
-        # ── Valida existência do político ─────────────────────────────────
-        politico = await self._repo.get_politico_repo(politico_id)
-        if not politico:
+        deputado = await self._repo.get_politico_repo(deputado_id)
+        if not deputado:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Político não encontrado.",
+                detail="Deputado não encontrado.",
             )
 
         safe_lv  = min(abs(limit_votacoes),    100)
@@ -351,16 +314,16 @@ class PoliticoService:
         safe_ov  = max(offset_votacoes, 0)
         safe_op  = max(offset_proposicoes, 0)
 
-        # ── Queries paralelas — reduz latência ────────────────────────────
+        # Queries paralelas — reduz latência
         (votacoes, total_v), (proposicoes, total_p) = await asyncio.gather(
             self._repo.get_atividade_votacoes_repo(
-                politico_id,
+                deputado_id,
                 ano=ano,
                 limit=safe_lv,
                 offset=safe_ov,
             ),
             self._repo.get_atividade_proposicoes_repo(
-                politico_id,
+                deputado_id,
                 ano=ano,
                 limit=safe_lp,
                 offset=safe_op,

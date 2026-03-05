@@ -14,7 +14,7 @@ from sqlalchemy import Float, Integer, Numeric, String, case, cast, desc, extrac
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models import Despesa, Discurso, Politico, Presenca, Proposicao, ProposicaoAutor, Voto, Votacao
+from backend.models import Despesa, Discurso, Deputado, PresencaDeputado, Proposicao, ProposicaoAutor, Voto, Votacao
 from backend.schemas import KeywordInfo, RankingDespesaPolitico, RankingDiscursoPolitico, RankingEmpresaLucro
 
 logger = logging.getLogger(__name__)
@@ -57,19 +57,18 @@ _FORNECEDOR_DATA_FIX: dict = {
 # Helpers internos — subqueries reutilizáveis
 # ---------------------------------------------------------------------------
 
-def _sub_presenca(politico_id: int, ano: int | None = None):
-    """Subquery de assiduidade, filtrável por ano."""
+def _sub_presenca(deputado_id: int, ano: int | None = None):
+    """Subquery de assiduidade via eventosPresencaDeputados, filtrável por ano."""
     q = (
         select(
-            Presenca.politico_id,
+            PresencaDeputado.idDeputado,
             func.coalesce(
                 func.round(
                     cast(
                         (
-                            func.count(Presenca.id)
-                            .filter(Presenca.frequencia_sessao == "Presença")
+                            func.count(PresencaDeputado.id)
                             .cast(Float)
-                            / func.nullif(func.count(Presenca.id), 0)
+                            / func.nullif(func.count(PresencaDeputado.id), 0)
                         )
                         * 100,
                         Numeric,
@@ -79,55 +78,55 @@ def _sub_presenca(politico_id: int, ano: int | None = None):
                 0,
             ).label("nota_assiduidade"),
         )
-        .where(Presenca.politico_id == politico_id)
+        .where(PresencaDeputado.idDeputado == deputado_id)
     )
     if ano is not None:
-        q = q.where(extract("year", Presenca.data) == ano)
-    return q.group_by(Presenca.politico_id).subquery()
+        q = q.where(extract("year", PresencaDeputado.dataHoraInicio) == ano)
+    return q.group_by(PresencaDeputado.idDeputado).subquery()
 
 
-def _sub_producao(politico_id: int, ano: int | None = None):
+def _sub_producao(deputado_id: int, ano: int | None = None):
     """Subquery de produção legislativa ponderada, filtrável por ano."""
     q = (
         select(
-            ProposicaoAutor.politico_id,
+            ProposicaoAutor.idDeputadoAutor,
             func.sum(
                 case(
                     (
-                        Proposicao.sigla_tipo.in_(["PEC", "PL", "PLC", "PLP"]),
+                        Proposicao.siglaTipo.in_(["PEC", "PL", "PLC", "PLP"]),
                         case((ProposicaoAutor.proponente == True, 1.0), else_=0.2),
                     ),
                     (
-                        Proposicao.sigla_tipo.in_(["PDC", "PRC", "MPV"]),
+                        Proposicao.siglaTipo.in_(["PDC", "PRC", "MPV"]),
                         case((ProposicaoAutor.proponente == True, 0.5), else_=0.1),
                     ),
                     else_=case((ProposicaoAutor.proponente == True, 0.05), else_=0.01),
                 )
             ).label("pontos_producao"),
         )
-        .join(Proposicao, Proposicao.id == ProposicaoAutor.proposicao_id)
-        .where(ProposicaoAutor.politico_id == politico_id)
+        .join(Proposicao, Proposicao.id == ProposicaoAutor.idProposicao)
+        .where(ProposicaoAutor.idDeputadoAutor == deputado_id)
     )
     if ano is not None:
         q = q.where(Proposicao.ano == ano)
-    return q.group_by(ProposicaoAutor.politico_id).subquery()
+    return q.group_by(ProposicaoAutor.idDeputadoAutor).subquery()
 
 
-def _sub_gastos(politico_id: int, ano: int | None = None):
+def _sub_gastos(deputado_id: int, ano: int | None = None):
     """Subquery de gastos e meses ativos, filtrável por ano."""
     q = (
         select(
-            Despesa.politico_id,
-            func.sum(Despesa.valor_liquido).label("total_gasto"),
+            Despesa.idDeputado,
+            func.sum(Despesa.valorLiquido).label("total_gasto"),
             func.count(
                 func.distinct(Despesa.ano.cast(String) + "-" + Despesa.mes.cast(String))
             ).label("meses_mandato"),
         )
-        .where(Despesa.politico_id == politico_id)
+        .where(Despesa.idDeputado == deputado_id)
     )
     if ano is not None:
         q = q.where(Despesa.ano == ano)
-    return q.group_by(Despesa.politico_id).subquery()
+    return q.group_by(Despesa.idDeputado).subquery()
 
 
 class RankingRepository:
@@ -153,20 +152,20 @@ class RankingRepository:
 
         stmt = (
             select(
-                Politico.id.label("politico_id"),
-                Politico.nome,
-                func.coalesce(func.sum(Despesa.valor_liquido), 0).label("total_gasto"),
+                Deputado.id.label("politico_id"),
+                Deputado.nome,
+                func.coalesce(func.sum(Despesa.valorLiquido), 0).label("total_gasto"),
             )
-            .join(Despesa, Despesa.politico_id == Politico.id)
+            .join(Despesa, Despesa.idDeputado == Deputado.id)
         )
 
         if uf:
-            stmt = stmt.where(Politico.uf == uf.upper()[:2])
+            stmt = stmt.where(Deputado.siglaUF == uf.upper()[:2])
         if q:
-            stmt = stmt.where(Politico.nome.ilike(f"%{q}%"))
+            stmt = stmt.where(Deputado.nome.ilike(f"%{q}%"))
 
         stmt = (
-            stmt.group_by(Politico.id, Politico.nome)
+            stmt.group_by(Deputado.id, Deputado.nome)
             .order_by(desc("total_gasto"))
             .limit(safe_limit)
             .offset(safe_offset)
@@ -183,7 +182,7 @@ class RankingRepository:
                 for r in result.mappings()
             ]
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar ranking de despesas por politico")
+            logger.exception("Erro ao buscar ranking de despesas por deputado")
             raise
 
     # ------------------------------------------------------------------
@@ -201,32 +200,32 @@ class RankingRepository:
 
         stmt = (
             select(
-                Politico.id.label("politico_id"),
-                Politico.nome.label("nome_politico"),
-                Politico.partido_sigla.label("sigla_partido"),
-                Politico.uf.label("sigla_uf"),
+                Deputado.id.label("politico_id"),
+                Deputado.nome.label("nome_politico"),
+                Deputado.siglaPartido.label("sigla_partido"),
+                Deputado.siglaUF.label("sigla_uf"),
                 func.count(Discurso.id).label("total_discursos"),
             )
-            .join(Discurso, Discurso.politico_id == Politico.id)
-            .group_by(Politico.id, Politico.nome, Politico.partido_sigla, Politico.uf)
+            .join(Discurso, Discurso.idDeputado == Deputado.id)
+            .group_by(Deputado.id, Deputado.nome, Deputado.siglaPartido, Deputado.siglaUF)
             .order_by(desc("total_discursos"))
             .limit(safe_limit)
             .offset(safe_offset)
         )
 
         try:
-            result        = await self.db.execute(stmt)
-            politicos_ranking = result.mappings().all()
+            result            = await self.db.execute(stmt)
+            deputados_ranking = result.mappings().all()
         except SQLAlchemyError:
             logger.exception("Erro ao buscar ranking de discursos")
             raise
 
-        if not politicos_ranking:
+        if not deputados_ranking:
             return []
 
-        politico_ids = [r["politico_id"] for r in politicos_ranking]
-        stmt_kw = select(Discurso.politico_id, Discurso.keywords).where(
-            Discurso.politico_id.in_(politico_ids),
+        deputado_ids = [r["politico_id"] for r in deputados_ranking]
+        stmt_kw = select(Discurso.idDeputado, Discurso.keywords).where(
+            Discurso.idDeputado.in_(deputado_ids),
             Discurso.keywords.is_not(None),
         )
 
@@ -236,7 +235,7 @@ class RankingRepository:
             logger.exception("Erro ao buscar keywords dos discursos")
             raise
 
-        keywords_por_politico: dict[int, Counter] = {pid: Counter() for pid in politico_ids}
+        keywords_por_deputado: dict[int, Counter] = {pid: Counter() for pid in deputado_ids}
         for row in kw_result:
             tags = [
                 t.strip().upper()
@@ -244,7 +243,7 @@ class RankingRepository:
                 if t.strip()
             ]
             tags_limpas = [t for t in tags if t not in _BLACKLIST_KEYWORDS and len(t) > 3]
-            keywords_por_politico[row.politico_id].update(tags_limpas)
+            keywords_por_deputado[row.idDeputado].update(tags_limpas)
 
         return [
             RankingDiscursoPolitico(
@@ -255,10 +254,10 @@ class RankingRepository:
                 total_discursos=r["total_discursos"],
                 temas_mais_discutidos=[
                     KeywordInfo(keyword=kw, frequencia=count)
-                    for kw, count in keywords_por_politico[r["politico_id"]].most_common(20)
+                    for kw, count in keywords_por_deputado[r["politico_id"]].most_common(20)
                 ],
             )
-            for r in politicos_ranking
+            for r in deputados_ranking
         ]
 
     # ------------------------------------------------------------------
@@ -273,15 +272,14 @@ class RankingRepository:
         """
         sub_presenca = (
             select(
-                Presenca.politico_id,
+                PresencaDeputado.idDeputado,
                 func.coalesce(
                     func.round(
                         cast(
                             (
-                                func.count(Presenca.id)
-                                .filter(Presenca.frequencia_sessao == "Presença")
+                                func.count(PresencaDeputado.id)
                                 .cast(Float)
-                                / func.nullif(func.count(Presenca.id), 0)
+                                / func.nullif(func.count(PresencaDeputado.id), 0)
                             )
                             * 100,
                             Numeric,
@@ -291,63 +289,63 @@ class RankingRepository:
                     0,
                 ).label("nota_assiduidade"),
             )
-            .group_by(Presenca.politico_id)
+            .group_by(PresencaDeputado.idDeputado)
         ).subquery()
 
         sub_producao = (
             select(
-                ProposicaoAutor.politico_id,
+                ProposicaoAutor.idDeputadoAutor,
                 func.sum(
                     case(
                         (
-                            Proposicao.sigla_tipo.in_(["PEC", "PL", "PLC", "PLP"]),
+                            Proposicao.siglaTipo.in_(["PEC", "PL", "PLC", "PLP"]),
                             case((ProposicaoAutor.proponente == True, 1.0), else_=0.2),
                         ),
                         (
-                            Proposicao.sigla_tipo.in_(["PDC", "PRC", "MPV"]),
+                            Proposicao.siglaTipo.in_(["PDC", "PRC", "MPV"]),
                             case((ProposicaoAutor.proponente == True, 0.5), else_=0.1),
                         ),
                         else_=case((ProposicaoAutor.proponente == True, 0.05), else_=0.01),
                     )
                 ).label("pontos_producao"),
             )
-            .join(Proposicao, Proposicao.id == ProposicaoAutor.proposicao_id)
-            .group_by(ProposicaoAutor.politico_id)
+            .join(Proposicao, Proposicao.id == ProposicaoAutor.idProposicao)
+            .group_by(ProposicaoAutor.idDeputadoAutor)
         ).subquery()
 
         sub_gastos = (
             select(
-                Despesa.politico_id,
-                func.sum(Despesa.valor_liquido).label("total_gasto"),
+                Despesa.idDeputado,
+                func.sum(Despesa.valorLiquido).label("total_gasto"),
                 func.count(
                     func.distinct(Despesa.ano.cast(String) + "-" + Despesa.mes.cast(String))
                 ).label("meses_mandato"),
             )
-            .group_by(Despesa.politico_id)
+            .group_by(Despesa.idDeputado)
         ).subquery()
 
         stmt = (
             select(
-                Politico.id,
-                Politico.nome,
-                Politico.uf,
-                Politico.partido_sigla,
-                Politico.url_foto,
+                Deputado.id,
+                Deputado.nome,
+                Deputado.siglaUF.label("siglaUF"),
+                Deputado.siglaPartido.label("siglaPartido"),
+                Deputado.urlFoto.label("urlFoto"),
                 func.coalesce(sub_presenca.c.nota_assiduidade, 0).label("nota_assiduidade"),
                 func.coalesce(sub_producao.c.pontos_producao,  0).label("pontos_producao"),
                 func.coalesce(sub_gastos.c.total_gasto,        0).label("total_gasto"),
                 func.coalesce(sub_gastos.c.meses_mandato,      1).label("meses_mandato"),
             )
-            .outerjoin(sub_presenca, Politico.id == sub_presenca.c.politico_id)
-            .outerjoin(sub_producao, Politico.id == sub_producao.c.politico_id)
-            .outerjoin(sub_gastos,   Politico.id == sub_gastos.c.politico_id)
+            .outerjoin(sub_presenca, Deputado.id == sub_presenca.c.idDeputado)
+            .outerjoin(sub_producao, Deputado.id == sub_producao.c.idDeputadoAutor)
+            .outerjoin(sub_gastos,   Deputado.id == sub_gastos.c.idDeputado)
         )
 
         try:
             result = await self.db.execute(stmt)
             return result.mappings().all()
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar dados de performance dos politicos")
+            logger.exception("Erro ao buscar dados de performance dos deputados")
             raise
 
     # ------------------------------------------------------------------
@@ -356,45 +354,30 @@ class RankingRepository:
 
     async def get_performance_data_by_id(
         self,
-        politico_id: int,
+        deputado_id: int,
         *,
         ano: int | None = None,
     ) -> dict | None:
-        """
-        Retorna os dados brutos de performance para um único parlamentar.
-
-        Usa as mesmas subqueries de get_ranking_performance_politicos(),
-        garantindo resultados idênticos ao ranking geral quando ano=None.
-
-        Args:
-            politico_id: ID do parlamentar.
-            ano: se fornecido, filtra presença, produção e gastos pelo ano,
-                 tornando o cálculo comparável entre anos.
-
-        Returns:
-            dict com os campos esperados por performance_calc.calcular_score(),
-            ou None se o parlamentar não existir.
-        """
-        sub_p = _sub_presenca(politico_id, ano)
-        sub_r = _sub_producao(politico_id, ano)
-        sub_g = _sub_gastos(politico_id, ano)
+        sub_p = _sub_presenca(deputado_id, ano)
+        sub_r = _sub_producao(deputado_id, ano)
+        sub_g = _sub_gastos(deputado_id, ano)
 
         stmt = (
             select(
-                Politico.id,
-                Politico.nome,
-                Politico.uf,
-                Politico.partido_sigla,
-                Politico.url_foto,
+                Deputado.id,
+                Deputado.nome,
+                Deputado.siglaUF.label("siglaUF"),
+                Deputado.siglaPartido.label("siglaPartido"),
+                Deputado.urlFoto.label("urlFoto"),
                 func.coalesce(sub_p.c.nota_assiduidade, 0).label("nota_assiduidade"),
                 func.coalesce(sub_r.c.pontos_producao,  0).label("pontos_producao"),
                 func.coalesce(sub_g.c.total_gasto,      0).label("total_gasto"),
                 func.coalesce(sub_g.c.meses_mandato,    1).label("meses_mandato"),
             )
-            .where(Politico.id == politico_id)
-            .outerjoin(sub_p, Politico.id == sub_p.c.politico_id)
-            .outerjoin(sub_r, Politico.id == sub_r.c.politico_id)
-            .outerjoin(sub_g, Politico.id == sub_g.c.politico_id)
+            .where(Deputado.id == deputado_id)
+            .outerjoin(sub_p, Deputado.id == sub_p.c.idDeputado)
+            .outerjoin(sub_r, Deputado.id == sub_r.c.idDeputadoAutor)
+            .outerjoin(sub_g, Deputado.id == sub_g.c.idDeputado)
         )
 
         try:
@@ -402,38 +385,24 @@ class RankingRepository:
             row = result.mappings().first()
             return dict(row) if row else None
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar dados de performance do político id=%s", politico_id)
+            logger.exception("Erro ao buscar dados de performance do deputado id=%s", deputado_id)
             raise
 
     # ------------------------------------------------------------------
     # Timeline — série histórica anual de um parlamentar
     # ------------------------------------------------------------------
 
-    async def get_timeline_data_by_id(self, politico_id: int) -> list[dict]:
-        """
-        Retorna os dados brutos de performance agrupados por ano para um parlamentar.
-
-        Cada linha da lista corresponde a um ano e contém os mesmos campos
-        que get_performance_data_by_id(), com o acréscimo de:
-          - ano           int
-          - total_votacoes int  — votações participadas naquele ano
-          - total_despesas int  — número de registros de despesa naquele ano
-
-        A query é feita em uma única passagem ao banco por dimensão
-        (presença, produção, gastos, votações) — sem N+1.
-        """
-        # --- Anos disponíveis (âncora da timeline) ---
-        # Usa despesas como fonte principal de anos ativos; complementa com
-        # anos de presença para parlamentares sem despesas em algum período.
+    async def get_timeline_data_by_id(self, deputado_id: int) -> list[dict]:
+        # --- Anos disponíveis ---
         stmt_anos = (
             select(Despesa.ano.label("ano"))
-            .where(Despesa.politico_id == politico_id)
+            .where(Despesa.idDeputado == deputado_id)
             .distinct()
             .order_by(Despesa.ano)
         )
 
         # --- Assiduidade por ano ---
-        _ano_presenca = extract("year", Presenca.data).cast(Integer).label("ano")
+        _ano_presenca = extract("year", PresencaDeputado.dataHoraInicio).cast(Integer).label("ano")
         stmt_presenca = (
             select(
                 _ano_presenca,
@@ -441,10 +410,9 @@ class RankingRepository:
                     func.round(
                         cast(
                             (
-                                func.count(Presenca.id)
-                                .filter(Presenca.frequencia_sessao == "Presença")
+                                func.count(PresencaDeputado.id)
                                 .cast(Float)
-                                / func.nullif(func.count(Presenca.id), 0)
+                                / func.nullif(func.count(PresencaDeputado.id), 0)
                             )
                             * 100,
                             Numeric,
@@ -454,24 +422,22 @@ class RankingRepository:
                     0,
                 ).label("nota_assiduidade"),
             )
-            .where(Presenca.politico_id == politico_id)
+            .where(PresencaDeputado.idDeputado == deputado_id)
             .group_by(_ano_presenca)
         )
 
         # --- Produção ponderada por ano ---
-        # select_from(ProposicaoAutor) é obrigatório: o lado esquerdo do JOIN
-        # é ProposicaoAutor, mas o SELECT começa com Proposicao.ano.
         stmt_producao = (
             select(
                 Proposicao.ano.label("ano"),
                 func.sum(
                     case(
                         (
-                            Proposicao.sigla_tipo.in_(["PEC", "PL", "PLC", "PLP"]),
+                            Proposicao.siglaTipo.in_(["PEC", "PL", "PLC", "PLP"]),
                             case((ProposicaoAutor.proponente == True, 1.0), else_=0.2),
                         ),
                         (
-                            Proposicao.sigla_tipo.in_(["PDC", "PRC", "MPV"]),
+                            Proposicao.siglaTipo.in_(["PDC", "PRC", "MPV"]),
                             case((ProposicaoAutor.proponente == True, 0.5), else_=0.1),
                         ),
                         else_=case((ProposicaoAutor.proponente == True, 0.05), else_=0.01),
@@ -479,8 +445,8 @@ class RankingRepository:
                 ).label("pontos_producao"),
             )
             .select_from(ProposicaoAutor)
-            .join(Proposicao, Proposicao.id == ProposicaoAutor.proposicao_id)
-            .where(ProposicaoAutor.politico_id == politico_id)
+            .join(Proposicao, Proposicao.id == ProposicaoAutor.idProposicao)
+            .where(ProposicaoAutor.idDeputadoAutor == deputado_id)
             .group_by(Proposicao.ano)
         )
 
@@ -488,16 +454,15 @@ class RankingRepository:
         stmt_gastos = (
             select(
                 Despesa.ano.label("ano"),
-                func.sum(Despesa.valor_liquido).label("total_gasto"),
+                func.sum(Despesa.valorLiquido).label("total_gasto"),
                 func.count(func.distinct(Despesa.mes)).label("meses_ativos"),
                 func.count(Despesa.id).label("total_despesas"),
             )
-            .where(Despesa.politico_id == politico_id)
+            .where(Despesa.idDeputado == deputado_id)
             .group_by(Despesa.ano)
         )
 
         # --- Votações por ano ---
-        # select_from(Voto) garante que o JOIN parte da tabela correta.
         _ano_voto = extract("year", Votacao.data).cast(Integer).label("ano")
         stmt_votos = (
             select(
@@ -505,8 +470,8 @@ class RankingRepository:
                 func.count(Voto.id).label("total_votacoes"),
             )
             .select_from(Voto)
-            .join(Votacao, Votacao.id == Voto.votacao_id)
-            .where(Voto.politico_id == politico_id)
+            .join(Votacao, Votacao.id == Voto.idVotacao)
+            .where(Voto.idDeputado == deputado_id)
             .group_by(_ano_voto)
         )
 
@@ -517,18 +482,16 @@ class RankingRepository:
             res_gastos   = await self.db.execute(stmt_gastos)
             res_votos    = await self.db.execute(stmt_votos)
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar timeline do político id=%s", politico_id)
+            logger.exception("Erro ao buscar timeline do deputado id=%s", deputado_id)
             raise
 
-        # Busca metadados do parlamentar (uf, partido, foto) — necessários para calcular_score
-        politico = await self.db.get(Politico, politico_id)
-        if not politico:
+        deputado = await self.db.get(Deputado, deputado_id)
+        if not deputado:
             return []
 
-        # Indexa por ano para merge O(1)
-        presenca_por_ano  = {int(r.ano): float(r.nota_assiduidade) for r in res_presenca}
-        producao_por_ano  = {int(r.ano): float(r.pontos_producao)  for r in res_producao}
-        gastos_por_ano    = {
+        presenca_por_ano = {int(r.ano): float(r.nota_assiduidade) for r in res_presenca}
+        producao_por_ano = {int(r.ano): float(r.pontos_producao)  for r in res_producao}
+        gastos_por_ano   = {
             int(r.ano): {
                 "total_gasto":    float(r.total_gasto or 0),
                 "meses_ativos":   int(r.meses_ativos or 1),
@@ -544,22 +507,21 @@ class RankingRepository:
         for ano in anos:
             gastos    = gastos_por_ano.get(ano, {"total_gasto": 0.0, "meses_ativos": 1, "total_despesas": 0})
             raw_entry = {
-                "id":              politico.id,
-                "nome":            politico.nome,
-                "uf":              politico.uf,
-                "partido_sigla":   politico.partido_sigla,
-                "url_foto":        politico.url_foto,
+                "id":               deputado.id,
+                "nome":             deputado.nome,
+                "siglaUF":          deputado.siglaUF,
+                "siglaPartido":     deputado.siglaPartido,
+                "urlFoto":          deputado.urlFoto,
                 "nota_assiduidade": presenca_por_ano.get(ano, 0.0),
                 "pontos_producao":  producao_por_ano.get(ano, 0.0),
                 "total_gasto":      gastos["total_gasto"],
-                # meses_mandato aqui = meses com despesa naquele ano (1–12)
                 "meses_mandato":    gastos["meses_ativos"],
             }
             resultado.append({
-                "ano":             ano,
-                "raw":             raw_entry,
-                "total_votacoes":  votos_por_ano.get(ano, 0),
-                "total_despesas":  gastos["total_despesas"],
+                "ano":            ano,
+                "raw":            raw_entry,
+                "total_votacoes": votos_por_ano.get(ano, 0),
+                "total_despesas": gastos["total_despesas"],
             })
 
         return resultado
@@ -579,9 +541,9 @@ class RankingRepository:
 
         stmt = (
             select(
-                func.coalesce(Despesa.cnpj_cpf_fornecedor, "").label("cnpj"),
-                func.upper(func.trim(Despesa.nome_fornecedor)).label("nome_bruto"),
-                func.sum(Despesa.valor_liquido).label("total"),
+                func.coalesce(Despesa.cnpjCpfFornecedor, "").label("cnpj"),
+                func.upper(func.trim(Despesa.nomeFornecedor)).label("nome_bruto"),
+                func.sum(Despesa.valorLiquido).label("total"),
             )
             .group_by(text("cnpj"), text("nome_bruto"))
             .order_by(desc("total"))

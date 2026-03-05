@@ -17,7 +17,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 
 from backend.models import (
-    OrientacaoVotacao,
+    VotacaoOrientacao,
     Proposicao,
     ProposicaoAutor,
     Tema,
@@ -37,7 +37,6 @@ from backend.schemas import (
 
 logger = logging.getLogger(__name__)
 
-# Limites máximos — defesa em profundidade (serviço também limita)
 _MAX_LIMIT_PROPOSICOES = 100
 _MAX_LIMIT_VOTACOES    = 100
 
@@ -49,49 +48,39 @@ class ProposicaoRepository:
         self.db = db
 
     # ------------------------------------------------------------------
-    # Helpers privados — constroem schemas a partir de ORM objects
+    # Helpers privados
     # ------------------------------------------------------------------
 
     @staticmethod
     def _build_proposicao_response(p: Proposicao) -> ProposicaoResponse:
-        """
-        Constrói ProposicaoResponse a partir de um ORM Proposicao.
-        Os relacionamentos `autores` e `temas` já devem estar carregados
-        via selectinload antes de chamar este método.
-        """
         return ProposicaoResponse(
             id=p.id,
-            id_camara=p.id_camara,
-            sigla_tipo=p.sigla_tipo,
+            id_camara=p.idCamara,
+            sigla_tipo=p.siglaTipo,
             numero=p.numero,
             ano=p.ano,
-            descricao_tipo=p.descricao_tipo,
+            descricao_tipo=p.descricaoTipo,
             ementa=p.ementa,
             keywords=p.keywords,
-            data_apresentacao=p.data_apresentacao,
-            url_inteiro_teor=p.url_inteiro_teor,
+            data_apresentacao=p.dataApresentacao,
+            url_inteiro_teor=p.urlInteiroTeor,
             autores=[
                 AutorResumo(
-                    politico_id=a.politico_id,
-                    nome=a.nome,
-                    tipo=a.tipo,
+                    politico_id=a.idDeputadoAutor,
+                    nome=a.nomeAutor,
+                    tipo=a.tipoAutor,
                     proponente=a.proponente,
                 )
                 for a in p.autores
             ],
             temas=[
-                TemaResumo(id=t.id, cod_tema=t.cod_tema, tema=t.tema)
+                TemaResumo(id=t.id, cod_tema=t.codTema, tema=t.tema)
                 for t in p.temas
             ],
         )
 
     @staticmethod
     def _build_votacao_response(row) -> VotacaoResponse:
-        """
-        Constrói VotacaoResponse a partir de uma linha de resultado de query.
-        Recebe um mapping com os campos da votação + campos desnormalizados
-        da proposição (proposicao_sigla, proposicao_numero, etc.).
-        """
         return VotacaoResponse(
             id=row.id,
             id_camara=row.id_camara,
@@ -122,19 +111,6 @@ class ProposicaoRepository:
         limit: int = 20,
         offset: int = 0,
     ) -> list[ProposicaoResponse]:
-        """
-        Lista proposições com filtros opcionais e paginação.
-
-        Filtros:
-          q          — busca na ementa (ilike)
-          sigla_tipo — tipo da proposição: "PL", "PEC", "MPV", etc.
-          ano        — ano de apresentação
-          tema_id    — ID de um tema legislativo (join many-to-many)
-
-        Os relacionamentos autores e temas são carregados em queries
-        separadas pelo SQLAlchemy (selectinload), evitando o problema
-        de N+1 queries sem gerar um produto cartesiano gigante com JOIN.
-        """
         safe_limit  = min(abs(limit), _MAX_LIMIT_PROPOSICOES)
         safe_offset = max(offset, 0)
 
@@ -144,20 +120,18 @@ class ProposicaoRepository:
                 selectinload(Proposicao.autores),
                 selectinload(Proposicao.temas),
             )
-            .order_by(desc(Proposicao.data_apresentacao))
+            .order_by(desc(Proposicao.dataApresentacao))
             .limit(safe_limit)
             .offset(safe_offset)
         )
 
-        # Filtros opcionais — todos usam bind parameters internamente
         if q:
             stmt = stmt.where(Proposicao.ementa.ilike(f"%{q}%"))
         if sigla_tipo:
-            stmt = stmt.where(Proposicao.sigla_tipo == sigla_tipo.upper()[:10])
+            stmt = stmt.where(Proposicao.siglaTipo == sigla_tipo.upper()[:10])
         if ano:
             stmt = stmt.where(Proposicao.ano == ano)
         if tema_id:
-            # Filtra por tema via relação many-to-many
             stmt = stmt.where(Proposicao.temas.any(Tema.id == tema_id))
 
         try:
@@ -176,16 +150,6 @@ class ProposicaoRepository:
     # ------------------------------------------------------------------
 
     async def get_proposicao_repo(self, proposicao_id: int) -> ProposicaoDetalhe | None:
-        """
-        Retorna o detalhe completo de uma proposição pelo ID interno.
-
-        Carrega via selectinload:
-          - autores     → ProposicaoAutor
-          - temas       → Tema (many-to-many)
-          - tramitacoes → Tramitacao (ordenadas por data_hora ASC pelo modelo)
-
-        Retorna None se não encontrado (o serviço lança 404).
-        """
         stmt = (
             select(Proposicao)
             .options(
@@ -207,48 +171,46 @@ class ProposicaoRepository:
             return None
 
         return ProposicaoDetalhe(
-            # Campos base (herda ProposicaoResponse)
             id=p.id,
-            id_camara=p.id_camara,
-            sigla_tipo=p.sigla_tipo,
+            id_camara=p.idCamara,
+            sigla_tipo=p.siglaTipo,
             numero=p.numero,
             ano=p.ano,
-            descricao_tipo=p.descricao_tipo,
+            descricao_tipo=p.descricaoTipo,
             ementa=p.ementa,
             keywords=p.keywords,
-            data_apresentacao=p.data_apresentacao,
-            url_inteiro_teor=p.url_inteiro_teor,
+            data_apresentacao=p.dataApresentacao,
+            url_inteiro_teor=p.urlInteiroTeor,
             autores=[
                 AutorResumo(
-                    politico_id=a.politico_id,
-                    nome=a.nome,
-                    tipo=a.tipo,
+                    politico_id=a.idDeputadoAutor,
+                    nome=a.nomeAutor,
+                    tipo=a.tipoAutor,
                     proponente=a.proponente,
                 )
                 for a in p.autores
             ],
             temas=[
-                TemaResumo(id=t.id, cod_tema=t.cod_tema, tema=t.tema)
+                TemaResumo(id=t.id, cod_tema=t.codTema, tema=t.tema)
                 for t in p.temas
             ],
-            # Campos exclusivos do detalhe
-            ementa_detalhada=p.ementa_detalhada,
+            ementa_detalhada=p.ementaDetalhada,
             justificativa=p.justificativa,
-            urn_final=p.urn_final,
+            urn_final=p.urnFinal,
             tramitacoes=[
                 TramitacaoItem(
                     id=t.id,
-                    data_hora=t.data_hora,
+                    data_hora=t.dataHora,
                     sequencia=t.sequencia,
-                    sigla_orgao=t.sigla_orgao,
+                    sigla_orgao=t.siglaOrgao,
                     regime=t.regime,
-                    descricao_tramitacao=t.descricao_tramitacao,
-                    descricao_situacao=t.descricao_situacao,
+                    descricao_tramitacao=t.descricaoTramitacao,
+                    descricao_situacao=t.descricaoSituacao,
                     despacho=t.despacho,
                     ambito=t.ambito,
                     apreciacao=t.apreciacao,
                 )
-                for t in p.tramitacoes  # já ordenadas por data_hora (order_by no modelo)
+                for t in p.tramitacoes
             ],
         )
 
@@ -260,31 +222,24 @@ class ProposicaoRepository:
         self,
         proposicao_id: int,
     ) -> list[VotacaoResponse]:
-        """
-        Retorna todas as votações vinculadas a uma proposição específica.
-
-        Caso a proposição não exista ou não tenha votações, retorna lista vazia.
-        O serviço é responsável por verificar se a proposição existe (404).
-        """
         stmt = (
             select(
                 Votacao.id,
-                Votacao.id_camara,
+                Votacao.idCamara.label("id_camara"),
                 Votacao.data,
-                Votacao.data_hora_registro,
-                Votacao.tipo_votacao,
+                Votacao.dataHoraRegistro.label("data_hora_registro"),
+                Votacao.tipoVotacao.label("tipo_votacao"),
                 Votacao.descricao,
                 Votacao.aprovacao,
-                Votacao.sigla_orgao,
-                # Campos da proposição (desnormalizados para o response)
+                Votacao.siglaOrgao.label("sigla_orgao"),
                 Proposicao.id.label("proposicao_id"),
-                Proposicao.sigla_tipo.label("proposicao_sigla"),
+                Proposicao.siglaTipo.label("proposicao_sigla"),
                 Proposicao.numero.label("proposicao_numero"),
                 Proposicao.ano.label("proposicao_ano"),
                 Proposicao.ementa.label("proposicao_ementa"),
             )
-            .join(Proposicao, Votacao.proposicao_id == Proposicao.id)
-            .where(Votacao.proposicao_id == proposicao_id)
+            .join(Proposicao, Votacao.idProposicao == Proposicao.id)
+            .where(Votacao.idProposicao == proposicao_id)
             .order_by(desc(Votacao.data))
         )
 
@@ -308,40 +263,26 @@ class ProposicaoRepository:
         limit: int = 20,
         offset: int = 0,
     ) -> list[VotacaoResponse]:
-        """
-        Lista votações com filtros opcionais e paginação.
-
-        Filtros:
-          ano        — ano da votação
-          aprovacao  — resultado: 1 (aprovada), 0 (rejeitada), -1 (indefinido)
-          sigla_tipo — filtra pelo tipo da proposição vinculada ("PL", "PEC"...)
-
-        Faz JOIN com Proposicao para desnormalizar os campos da proposição
-        no response, evitando um segundo request do frontend.
-
-        O JOIN é LEFT OUTER para não excluir votações sem proposição vinculada
-        (casos onde proposicao_id é NULL no banco).
-        """
         safe_limit  = min(abs(limit), _MAX_LIMIT_VOTACOES)
         safe_offset = max(offset, 0)
 
         stmt = (
             select(
                 Votacao.id,
-                Votacao.id_camara,
+                Votacao.idCamara.label("id_camara"),
                 Votacao.data,
-                Votacao.data_hora_registro,
-                Votacao.tipo_votacao,
+                Votacao.dataHoraRegistro.label("data_hora_registro"),
+                Votacao.tipoVotacao.label("tipo_votacao"),
                 Votacao.descricao,
                 Votacao.aprovacao,
-                Votacao.sigla_orgao,
+                Votacao.siglaOrgao.label("sigla_orgao"),
                 Proposicao.id.label("proposicao_id"),
-                Proposicao.sigla_tipo.label("proposicao_sigla"),
+                Proposicao.siglaTipo.label("proposicao_sigla"),
                 Proposicao.numero.label("proposicao_numero"),
                 Proposicao.ano.label("proposicao_ano"),
                 Proposicao.ementa.label("proposicao_ementa"),
             )
-            .outerjoin(Proposicao, Votacao.proposicao_id == Proposicao.id)
+            .outerjoin(Proposicao, Votacao.idProposicao == Proposicao.id)
             .order_by(desc(Votacao.data))
             .limit(safe_limit)
             .offset(safe_offset)
@@ -352,8 +293,7 @@ class ProposicaoRepository:
         if aprovacao is not None:
             stmt = stmt.where(Votacao.aprovacao == aprovacao)
         if sigla_tipo:
-            # Filtra pelo tipo da proposição vinculada
-            stmt = stmt.where(Proposicao.sigla_tipo == sigla_tipo.upper()[:10])
+            stmt = stmt.where(Proposicao.siglaTipo == sigla_tipo.upper()[:10])
 
         try:
             result = await self.db.execute(stmt)
@@ -370,49 +310,33 @@ class ProposicaoRepository:
     # ------------------------------------------------------------------
 
     async def get_votacao_repo(self, votacao_id: int) -> VotacaoDetalhe | None:
-        """
-        Retorna o detalhe completo de uma votação pelo ID interno.
-
-        Inclui:
-          - Todos os campos de VotacaoResponse
-          - orientacoes: como cada partido/bloco orientou o voto
-
-        Usa duas queries separadas:
-          1. SELECT na votacao + JOIN proposicao (para os campos desnormalizados)
-          2. SELECT nas orientacoes_votacao (para não gerar produto cartesiano)
-
-        Retorna None se não encontrado (o serviço lança 404).
-        """
-        # ── Query 1: dados da votação + proposição ──────────────────────
         stmt_votacao = (
             select(
                 Votacao.id,
-                Votacao.id_camara,
+                Votacao.idCamara.label("id_camara"),
                 Votacao.data,
-                Votacao.data_hora_registro,
-                Votacao.tipo_votacao,
+                Votacao.dataHoraRegistro.label("data_hora_registro"),
+                Votacao.tipoVotacao.label("tipo_votacao"),
                 Votacao.descricao,
                 Votacao.aprovacao,
-                Votacao.sigla_orgao,
+                Votacao.siglaOrgao.label("sigla_orgao"),
                 Proposicao.id.label("proposicao_id"),
-                Proposicao.sigla_tipo.label("proposicao_sigla"),
+                Proposicao.siglaTipo.label("proposicao_sigla"),
                 Proposicao.numero.label("proposicao_numero"),
                 Proposicao.ano.label("proposicao_ano"),
                 Proposicao.ementa.label("proposicao_ementa"),
             )
-            .outerjoin(Proposicao, Votacao.proposicao_id == Proposicao.id)
+            .outerjoin(Proposicao, Votacao.idProposicao == Proposicao.id)
             .where(Votacao.id == votacao_id)
         )
 
-        # ── Query 2: orientações por partido ────────────────────────────
         stmt_orientacoes = (
             select(
-                OrientacaoVotacao.sigla_partido_bloco,
-                OrientacaoVotacao.cod_tipo_lideranca,
-                OrientacaoVotacao.orientacao_voto,
+                VotacaoOrientacao.siglaBancada.label("sigla_partido_bloco"),
+                VotacaoOrientacao.orientacao.label("orientacao_voto"),
             )
-            .where(OrientacaoVotacao.votacao_id == votacao_id)
-            .order_by(OrientacaoVotacao.sigla_partido_bloco)
+            .where(VotacaoOrientacao.idVotacao == votacao_id)
+            .order_by(VotacaoOrientacao.siglaBancada)
         )
 
         try:
@@ -429,7 +353,6 @@ class ProposicaoRepository:
         orientacoes = [
             OrientacaoPartido(
                 sigla_partido_bloco=o.sigla_partido_bloco,
-                cod_tipo_lideranca=o.cod_tipo_lideranca,
                 orientacao_voto=o.orientacao_voto,
             )
             for o in res_o.mappings()

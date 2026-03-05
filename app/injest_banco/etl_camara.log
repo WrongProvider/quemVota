@@ -1,0 +1,39 @@
+2026-03-05 01:36:45,197 [INFO] etl_camara — Banco: localhost:5432/quemvota_teste
+2026-03-05 01:36:45,210 [INFO] etl_camara — Iniciando ETL: 207 datasets | anos=[2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026] | legislaturas=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
+2026-03-05 01:36:45,450 [INFO] etl_camara — ✔ legislaturas.csv (57 linhas)
+2026-03-05 01:36:45,502 [INFO] etl_camara —   upsert legislaturas → 57 registros
+2026-03-05 01:36:45,966 [INFO] etl_camara — ✔ orgaos.csv (3804 linhas)
+2026-03-05 01:36:46,991 [INFO] etl_camara —   upsert orgaos → 3804 registros
+2026-03-05 01:36:47,513 [INFO] etl_camara — ✔ deputados.csv (7878 linhas)
+2026-03-05 01:36:49,401 [INFO] etl_camara —   upsert deputados → 7878 registros
+2026-03-05 01:36:50,080 [INFO] etl_camara — ✔ deputadosOcupacoes.csv (37445 linhas)
+2026-03-05 01:37:01,715 [INFO] etl_camara —   FK-insert _raw_deputadosOcupacoes → 33008 registros
+2026-03-05 01:37:02,254 [INFO] etl_camara — ✔ deputadosProfissoes.csv (12578 linhas)
+2026-03-05 01:37:06,269 [INFO] etl_camara —   FK-insert _raw_deputadosProfissoes → 12578 registros
+2026-03-05 01:37:06,755 [INFO] etl_camara — ✔ frentes.csv (1437 linhas)
+2026-03-05 01:37:08,458 [INFO] etl_camara —   FK-insert _raw_frentes → 1437 registros
+2026-03-05 01:37:11,772 [INFO] etl_camara — ✔ frentesDeputados.csv (261026 linhas)
+2026-03-05 01:42:18,291 [INFO] etl_camara —   FK-insert _raw_frentesDeputados → 261026 registros
+2026-03-05 01:42:18,648 [INFO] etl_camara — ✔ legislaturasMesas.csv (177 linhas)
+2026-03-05 01:42:18,777 [INFO] etl_camara —   upsert legislaturasMesas → 177 registros
+2026-03-05 01:42:19,034 [INFO] etl_camara — ✔ grupos.csv (118 linhas)
+2026-03-05 01:42:19,101 [INFO] etl_camara —   upsert grupos → 118 registros
+2026-03-05 01:42:19,569 [INFO] etl_camara — ✔ gruposMembros.csv (7086 linhas)
+2026-03-05 01:42:22,403 [INFO] etl_camara —   FK-insert _raw_gruposMembros → 7086 registros
+2026-03-05 01:42:22,739 [INFO] etl_camara — ✔ gruposHistorico.csv (408 linhas)
+2026-03-05 01:42:22,923 [INFO] etl_camara —   FK-insert _raw_gruposHistorico → 408 registros
+2026-03-05 01:42:23,586 [INFO] etl_camara — ✔ funcionarios.csv (14992 linhas)
+2026-03-05 01:42:26,440 [INFO] etl_camara —   upsert funcionarios → 14988 registros
+2026-03-05 01:42:26,684 [INFO] etl_camara — ✔ tecadCategorias.csv (79 linhas)
+2026-03-05 01:42:26,711 [INFO] etl_camara —   upsert tecadCategorias → 79 registros
+2026-03-05 01:42:28,055 [INFO] etl_camara — ✔ tecadTermos.csv (78615 linhas)
+2026-03-05 01:42:42,778 [INFO] etl_camara —   upsert tecadTermos → 78615 registros
+2026-03-05 01:42:43,502 [INFO] etl_camara — ✔ eventos-2019.csv (3826 linhas)
+2026-03-05 01:42:44,457 [INFO] etl_camara —   upsert eventos → 3826 registros
+2026-03-05 01:42:44,856 [INFO] etl_camara — ✔ eventosOrgaos-2019.csv (3987 linhas)
+2026-03-05 01:42:46,626 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 3987 registros
+2026-03-05 01:42:46,976 [INFO] etl_camara — ✔ eventosRequerimentos-2019.csv (2302 linhas)
+2026-03-05 01:42:47,724 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 2302 registros
+2026-03-05 01:42:49,115 [INFO] etl_camara — ✔ eventosPresencaDeputados-2019.csv (152020 linhas)
+2026-03-05 01:43:58,461 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 152020 registros
+2026-03-05 01:44:00,166 [INFO] etl_camara — ✔ proposicoes-2019.csv (38410 linhas)

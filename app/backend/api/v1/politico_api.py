@@ -1,5 +1,5 @@
 """
-Router de Políticos — Camada de transporte HTTP.
+Router de Deputados — Camada de transporte HTTP.
 
 Segurança (OWASP):
   - A01 / Broken Access Control: apenas leitura (GET); sem endpoints de escrita
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 LimitQuery      = Annotated[int, Query(ge=1, le=100, description="Máximo de itens por página")]
 OffsetQuery     = Annotated[int, Query(ge=0, description="Deslocamento para paginação")]
-PoliticoIdPath  = Annotated[int, Path(gt=0, description="ID interno do político")]
+DeputadoIdPath  = Annotated[int, Path(gt=0, description="ID interno do deputado")]
 AnoQuery        = Annotated[int | None, Query(ge=2000, le=2100, description="Filtro por ano")]
 
 # ---------------------------------------------------------------------------
@@ -51,7 +51,7 @@ AnoQuery        = Annotated[int | None, Query(ge=2000, le=2100, description="Fil
 # ---------------------------------------------------------------------------
 router = APIRouter(
     prefix="/politicos",
-    tags=["Políticos"],
+    tags=["Deputados"],
 )
 
 
@@ -66,7 +66,7 @@ def _politico_service(db: AsyncSession = Depends(get_db)) -> PoliticoService:
 @router.get(
     "/",
     response_model=list[PoliticoResponse],
-    summary="Lista políticos com filtros opcionais",
+    summary="Lista deputados com filtros opcionais",
 )
 @cache(expire=3600, key_builder=politico_key_builder)
 async def listar_politicos(
@@ -77,38 +77,38 @@ async def listar_politicos(
     offset: OffsetQuery = 0,
     service: PoliticoService = Depends(_politico_service),
 ):
-    logger.info("Listando políticos | q=%s uf=%s partido=%s limit=%s offset=%s", q, uf, partido, limit, offset)
+    logger.info("Listando deputados | q=%s uf=%s partido=%s limit=%s offset=%s", q, uf, partido, limit, offset)
     return await service.get_politicos_service(q=q, uf=uf, partido=partido, limit=limit, offset=offset)
 
 
 @router.get(
     "/{politico_id}",
     response_model=PoliticoResponse,
-    summary="Detalha um político pelo ID",
-    responses={404: {"description": "Político não encontrado"}},
+    summary="Detalha um deputado pelo ID",
+    responses={404: {"description": "Deputado não encontrado"}},
 )
 @cache(expire=3600, key_builder=politico_key_builder)
 async def get_politico(
-    politico_id: PoliticoIdPath,
+    politico_id: DeputadoIdPath,
     service: PoliticoService = Depends(_politico_service),
 ):
-    logger.info("Detalhe do político id=%s", politico_id)
+    logger.info("Detalhe do deputado id=%s", politico_id)
     return await service.get_politicos_detalhe_service(politico_id)
 
 
 @router.get(
     "/{politico_id}/votacoes",
     response_model=list[PoliticoVoto],
-    summary="Últimas votações de um político",
+    summary="Últimas votações de um deputado",
 )
 @cache(expire=86400, key_builder=politico_key_builder)
 async def ultimas_votacoes(
-    politico_id: PoliticoIdPath,
+    politico_id: DeputadoIdPath,
     limit: Annotated[int, Query(ge=1, le=20)] = 20,
     ano: AnoQuery = None,
     service: PoliticoService = Depends(_politico_service),
 ):
-    logger.info("Votações | político id=%s limit=%s ano=%s", politico_id, limit, ano)
+    logger.info("Votações | deputado id=%s limit=%s ano=%s", politico_id, limit, ano)
     return await service.get_politicos_votacoes_service(politico_id, limit=limit, ano=ano)
 
 
@@ -119,13 +119,13 @@ async def ultimas_votacoes(
 )
 @cache(expire=86400, key_builder=politico_key_builder)
 async def listar_despesas_detalhadas(
-    politico_id: PoliticoIdPath,
+    politico_id: DeputadoIdPath,
     ano: AnoQuery = None,
     mes: Annotated[int | None, Query(ge=1, le=12)] = None,
     limit: Annotated[int, Query(ge=1, le=20)] = 20,
     service: PoliticoService = Depends(_politico_service),
 ):
-    logger.info("Despesas | político id=%s ano=%s mes=%s", politico_id, ano, mes)
+    logger.info("Despesas | deputado id=%s ano=%s mes=%s", politico_id, ano, mes)
     return await service.get_politicos_despesas_services(politico_id, ano=ano, mes=mes, limit=limit)
 
 
@@ -136,12 +136,12 @@ async def listar_despesas_detalhadas(
 )
 @cache(expire=86400, key_builder=politico_key_builder)
 async def resumo_despesas(
-    politico_id: PoliticoIdPath,
+    politico_id: DeputadoIdPath,
     ano: AnoQuery = None,
     limit: Annotated[int, Query(ge=1, le=60)] = 60,
     service: PoliticoService = Depends(_politico_service),
 ):
-    logger.info("Resumo despesas | político id=%s ano=%s", politico_id, ano)
+    logger.info("Resumo despesas | deputado id=%s ano=%s", politico_id, ano)
     return await service.get_politicos_despesas_resumo_services(politico_id, ano=ano, limit=limit)
 
 
@@ -152,12 +152,12 @@ async def resumo_despesas(
 )
 @cache(expire=86400, key_builder=politico_key_builder)
 async def resumo_despesas_completo(
-    politico_id: PoliticoIdPath,
+    politico_id: DeputadoIdPath,
     ano: AnoQuery = None,
     limit_meses: Annotated[int, Query(ge=1, le=60)] = 60,
     service: PoliticoService = Depends(_politico_service),
 ):
-    logger.info("Resumo completo despesas | político id=%s ano=%s", politico_id, ano)
+    logger.info("Resumo completo despesas | deputado id=%s ano=%s", politico_id, ano)
     return await service.get_politicos_despesas_resumo_completo_services(
         politico_id, ano=ano, limit_meses=limit_meses
     )
@@ -166,7 +166,7 @@ async def resumo_despesas_completo(
 @router.get(
     "/{politico_id}/estatisticas",
     response_model=PoliticoEstatisticasResponse,
-    summary="Estatísticas gerais do político",
+    summary="Estatísticas gerais do deputado",
     description=(
         "Retorna totais de votações, despesas, gastos e média mensal. "
         "Use `ano` para filtrar um ano específico e comparar na linha do tempo."
@@ -174,11 +174,11 @@ async def resumo_despesas_completo(
 )
 @cache(expire=86400, key_builder=politico_key_builder)
 async def estatisticas(
-    politico_id: PoliticoIdPath,
+    politico_id: DeputadoIdPath,
     ano: AnoQuery = None,
     service: PoliticoService = Depends(_politico_service),
 ):
-    logger.info("Estatísticas | político id=%s ano=%s", politico_id, ano)
+    logger.info("Estatísticas | deputado id=%s ano=%s", politico_id, ano)
     return await service.get_politico_estatisticas_service(politico_id, ano=ano)
 
 
@@ -191,15 +191,15 @@ async def estatisticas(
         "Use `ano` para obter o score de um ano específico — "
         "útil para comparação justa na linha do tempo."
     ),
-    responses={404: {"description": "Político não encontrado"}},
+    responses={404: {"description": "Deputado não encontrado"}},
 )
 @cache(expire=86400, key_builder=politico_key_builder)
 async def performance(
-    politico_id: PoliticoIdPath,
+    politico_id: DeputadoIdPath,
     ano: AnoQuery = None,
     service: PoliticoService = Depends(_politico_service),
 ):
-    logger.info("Performance | político id=%s ano=%s", politico_id, ano)
+    logger.info("Performance | deputado id=%s ano=%s", politico_id, ano)
     return await service.get_politico_performance_service(politico_id, ano=ano)
 
 
@@ -212,56 +212,33 @@ async def performance(
         "e gastos do parlamentar. Cada item representa um ano com dados registrados. "
         "Ideal para exibir gráficos de evolução histórica e comparar mandatos."
     ),
-    responses={404: {"description": "Político não encontrado"}},
+    responses={404: {"description": "Deputado não encontrado"}},
 )
 @cache(expire=86400, key_builder=politico_key_builder)
 async def timeline(
-    politico_id: PoliticoIdPath,
+    politico_id: DeputadoIdPath,
     service: PoliticoService = Depends(_politico_service),
 ):
-    """
-    Exemplo de resposta:
-    ```json
-    [
-      {
-        "ano": 2023,
-        "score": 61.4,
-        "notas": { "assiduidade": 87.0, "economia": 74.2, "producao": 38.5 },
-        "estatisticas": {
-          "total_votacoes": 142,
-          "total_despesas": 89,
-          "total_gasto": 312400.0,
-          "media_mensal": 26033.33
-        },
-        "info": {
-          "valor_cota_mensal": 42837.33,
-          "meses_ativos": 12,
-          "cota_total": 514047.96,
-          "cota_utilizada_pct": 60.73
-        }
-      }
-    ]
-    ```
-    """
-    logger.info("Timeline | político id=%s", politico_id)
+    logger.info("Timeline | deputado id=%s", politico_id)
     return await service.get_politico_timeline_service(politico_id)
+
 
 @router.get(
     "/{politico_id}/proposicoes",
     response_model=list[ProposicaoParaPolitico],
-    summary="Proposições em que o político é autor ou coautor",
+    summary="Proposições em que o deputado é autor ou coautor",
 )
 @cache(expire=86400, key_builder=politico_key_builder)
 async def proposicoes_do_politico(
-    politico_id: PoliticoIdPath,
+    politico_id: DeputadoIdPath,
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
     service: PoliticoService = Depends(_politico_service),
 ):
     """
-    Retorna proposições onde o político figura como autor.
+    Retorna proposições onde o deputado figura como autor.
     O campo `proponente=true` indica autoria principal.
     """
-    logger.info("Proposições | político id=%s limit=%s", politico_id, limit)
+    logger.info("Proposições | deputado id=%s limit=%s", politico_id, limit)
     return await service.get_politico_proposicoes_service(politico_id, limit=limit)
 
 
@@ -283,11 +260,11 @@ async def proposicoes_do_politico(
         "\n\n"
         "O campo `proponente=true` em cada proposição indica autoria principal."
     ),
-    responses={404: {"description": "Político não encontrado"}},
+    responses={404: {"description": "Deputado não encontrado"}},
 )
 @cache(expire=86400, key_builder=politico_key_builder)
 async def atividade_legislativa(
-    politico_id: PoliticoIdPath,
+    politico_id: DeputadoIdPath,
     ano: AnoQuery = None,
     limit_votacoes: Annotated[
         int,
@@ -307,56 +284,9 @@ async def atividade_legislativa(
     ] = 0,
     service: PoliticoService = Depends(_politico_service),
 ):
-    """
-    Exemplo de resposta:
-    ```json
-    {
-      "votacoes": [
-        {
-          "id_votacao": 9182,
-          "data": "2024-06-12",
-          "proposicao_id": 2345,
-          "proposicao_sigla": "PL",
-          "proposicao_numero": 1087,
-          "proposicao_ano": 2023,
-          "proposicao_ementa": "Dispõe sobre...",
-          "voto": "Sim",
-          "aprovacao": 1,
-          "tipo_votacao": "Nominal",
-          "sigla_orgao": "PLEN"
-        }
-      ],
-      "proposicoes": [
-        {
-          "id": 441,
-          "id_camara": 2407052,
-          "sigla_tipo": "PL",
-          "numero": 3842,
-          "ano": 2024,
-          "ementa": "Altera a Lei nº...",
-          "proponente": true,
-          "tipo_autoria": "Deputado",
-          "temas": ["Direito Penal e Processual Penal", "Segurança Pública"]
-        }
-      ],
-      "total_votacoes": 347,
-      "total_proposicoes": 12,
-      "limit_votacoes": 20,
-      "limit_proposicoes": 20,
-      "offset_votacoes": 0,
-      "offset_proposicoes": 0,
-      "ano": null
-    }
-    ```
-    """
     logger.info(
-        "Atividade legislativa | político id=%s ano=%s lv=%s lp=%s ov=%s op=%s",
-        politico_id,
-        ano,
-        limit_votacoes,
-        limit_proposicoes,
-        offset_votacoes,
-        offset_proposicoes,
+        "Atividade legislativa | deputado id=%s ano=%s lv=%s lp=%s ov=%s op=%s",
+        politico_id, ano, limit_votacoes, limit_proposicoes, offset_votacoes, offset_proposicoes,
     )
     return await service.get_politico_atividade_legislativa_service(
         politico_id,

@@ -43,15 +43,18 @@ const LIMITS = {
 export interface Politico {
   readonly id: number
   readonly nome: string
-  readonly uf: string
-  readonly partido_sigla: string
+  readonly sigla_uf: string           // era: uf
+  readonly sigla_partido: string      // era: partido_sigla
   readonly url_foto?: string
 }
 
 export interface PoliticoDetalhe extends Politico {
+  readonly nome_civil?: string
   readonly escolaridade?: string
   readonly situacao?: string
   readonly condicao_eleitoral?: string
+  readonly sigla_sexo?: string        // era: sexo
+  readonly data_nascimento?: string
   readonly email_gabinete?: string
   readonly telefone_gabinete?: string
   readonly id_camara?: number

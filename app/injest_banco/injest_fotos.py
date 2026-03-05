@@ -2,8 +2,8 @@ import os
 import requests
 from io import BytesIO
 from PIL import Image
-from injest_banco.db.database import SessionLocal
-from injest_banco.db.models import Politico
+from backend.database import SessionLocal
+from backend.models import Deputado
 
 # Configurações
 PASTA_DESTINO = "../frontend/public/fotos_politicos" # Mude para a pasta real da sua VPS
@@ -19,7 +19,7 @@ def baixar_e_converter_fotos():
     configurar_pasta()
     with SessionLocal() as db:
         # Busca apenas quem tem URL cadastrados
-        politicos = db.query(Politico.id, Politico.url_foto).filter(Politico.url_foto.isnot(None)).all()
+        politicos = db.query(Deputado.id, Deputado.urlFoto).filter(Deputado.urlFoto.isnot(None)).all()
         
         print(f"Encontrados {len(politicos)} políticos para processar.")
 

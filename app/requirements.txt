@@ -10,3 +10,6 @@ asyncpg
 bs4
 Pillow
 alembic
+pandas
+tqdm
+numpy
