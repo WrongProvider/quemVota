@@ -26,7 +26,7 @@ import {
   FilterService,
 } from "../services/rankings.service"
 
-const PATH_FOTOS = "/politicos/"
+const PATH_FOTOS = "/fotos_politicos/"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tipos de abas

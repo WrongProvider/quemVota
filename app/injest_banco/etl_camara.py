@@ -22,12 +22,14 @@ from __future__ import annotations
 import numpy as np
 import argparse
 import io
+import json
 import logging
 import os
 import sys
 import time
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Callable, Optional
 
 import pandas as pd
@@ -58,7 +60,7 @@ DATABASE_URL   = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@local
 BASE_URL       = "http://dadosabertos.camara.leg.br/arquivos"
 FORMATO        = "csv"
 ANO_ATUAL      = datetime.now().year
-ANOS_HISTORICO = list(range(2019, ANO_ATUAL + 1))
+ANOS_HISTORICO = list(range(2008, ANO_ATUAL + 1))
 REQUEST_TIMEOUT = 60
 CHUNK_SIZE      = 5_000
 MAX_RETRIES     = 3
@@ -66,17 +68,62 @@ RETRY_DELAY     = 5
 
 
 # ===========================================================================
+# Cache de ETag / Last-Modified
+# ===========================================================================
+
+CACHE_FILE = Path(os.getenv("ETL_CACHE_FILE", "etl_cache.json"))
+
+
+def _cache_load() -> dict:
+    if CACHE_FILE.exists():
+        try:
+            return json.loads(CACHE_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
+
+
+def _cache_save(cache: dict) -> None:
+    tmp = CACHE_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(cache, indent=2, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(CACHE_FILE)
+
+
+# Sentinel retornado quando o servidor confirma 304 Not Modified
+_CACHE_HIT = object()
+
+
+# ===========================================================================
 # Helpers de download
 # ===========================================================================
 
-def _download_csv(url: str) -> Optional[pd.DataFrame]:
+def _download_csv(url: str, cache: Optional[dict] = None) -> Optional[pd.DataFrame]:
+    headers = {}
+    if cache is not None:
+        entry = cache.get(url, {})
+        if entry.get("etag"):
+            headers["If-None-Match"] = entry["etag"]
+        elif entry.get("last_modified"):
+            headers["If-Modified-Since"] = entry["last_modified"]
+
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            resp = requests.get(url, timeout=REQUEST_TIMEOUT)
+            resp = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+            if resp.status_code == 304:
+                log.info("→ sem alterações (304): %s", url.split("/")[-1])
+                return _CACHE_HIT
             if resp.status_code == 404:
                 log.warning("404 — não encontrado: %s", url)
                 return None
             resp.raise_for_status()
+            if cache is not None:
+                entry = {}
+                if resp.headers.get("ETag"):
+                    entry["etag"] = resp.headers["ETag"]
+                if resp.headers.get("Last-Modified"):
+                    entry["last_modified"] = resp.headers["Last-Modified"]
+                if entry:
+                    cache[url] = entry
             df = pd.read_csv(
                 io.StringIO(resp.content.decode("utf-8-sig", errors="replace")),
                 sep=";", dtype=str, low_memory=False,
@@ -89,7 +136,6 @@ def _download_csv(url: str) -> Optional[pd.DataFrame]:
                 time.sleep(RETRY_DELAY * attempt)
     log.error("Falha permanente: %s", url)
     return None
-
 
 def url_simples(dataset: str) -> str:
     return f"{BASE_URL}/{dataset}/{FORMATO}/{dataset}.{FORMATO}"
@@ -163,13 +209,14 @@ def _keep(df: pd.DataFrame, cols: list[str]) -> list[dict]:
 # Upsert em lotes via ON CONFLICT DO UPDATE
 # ===========================================================================
 
-def upsert(engine, table_name: str, records: list[dict], conflict_cols: list[str]) -> int:
+def upsert(engine, table_name: str, preserve_cols: list[str], records: list[dict], conflict_cols: list[str]) -> int:
     if not records:
         return 0
     from sqlalchemy import Table, MetaData
     meta = MetaData()
     meta.reflect(bind=engine, only=[table_name])
     table = meta.tables[table_name]
+    _preserve = set(preserve_cols or [])
     total = 0
     for i in range(0, len(records), CHUNK_SIZE):
         chunk = records[i : i + CHUNK_SIZE]
@@ -177,7 +224,9 @@ def upsert(engine, table_name: str, records: list[dict], conflict_cols: list[str
         update_cols = {
             c.name: stmt.excluded[c.name]
             for c in table.columns
-            if c.name not in conflict_cols and c.name != "id"
+            if c.name not in conflict_cols
+            and c.name != "id"
+            and c.name not in _preserve
         }
         if update_cols:
             stmt = stmt.on_conflict_do_update(index_elements=conflict_cols, set_=update_cols)
@@ -640,21 +689,34 @@ def t_tecad_termos(df):
 # Download de CSV zipado — cotas parlamentares
 # ===========================================================================
 
-def _download_csv_zip(url: str) -> "Optional[pd.DataFrame]":
-    """
-    Baixa um CSV compactado em ZIP e retorna o DataFrame.
-    Usado para os arquivos de Cota Parlamentar (camara.leg.br/cotas).
-    O ZIP contém um único .csv com separador ponto-e-vírgula.
-    """
+def _download_csv_zip(url: str, cache: Optional[dict] = None) -> Optional[pd.DataFrame]:
     import zipfile
+    headers = {}
+    if cache is not None:
+        entry = cache.get(url, {})
+        if entry.get("etag"):
+            headers["If-None-Match"] = entry["etag"]
+        elif entry.get("last_modified"):
+            headers["If-Modified-Since"] = entry["last_modified"]
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            resp = requests.get(url, timeout=REQUEST_TIMEOUT)
+            resp = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+            if resp.status_code == 304:
+                log.info("→ sem alterações (304): %s", url.split("/")[-1])
+                return _CACHE_HIT
             if resp.status_code == 404:
                 log.warning("404 — não encontrado: %s", url)
                 return None
             resp.raise_for_status()
+            if cache is not None:
+                entry = {}
+                if resp.headers.get("ETag"):
+                    entry["etag"] = resp.headers["ETag"]
+                if resp.headers.get("Last-Modified"):
+                    entry["last_modified"] = resp.headers["Last-Modified"]
+                if entry:
+                    cache[url] = entry
             with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
                 csv_names = [n for n in zf.namelist() if n.lower().endswith(".csv")]
                 if not csv_names:
@@ -670,7 +732,6 @@ def _download_csv_zip(url: str) -> "Optional[pd.DataFrame]":
                 time.sleep(RETRY_DELAY * attempt)
     log.error("Falha permanente: %s", url)
     return None
-
 
 # ===========================================================================
 # Transformação — Cotas Parlamentares (CEAP)
@@ -772,7 +833,8 @@ class Dataset:
     transform_fn: Callable
     table_name: str          # prefixo "_raw_" → resolve FK antes de inserir
     conflict_cols: list[str]
-
+    ano_ref: Optional[int] = None  # ano dos dados; None = dataset atemporal
+    preserve_cols: list[str] = None # colunas a preservar no upsert (além de conflict_cols); None = todas
 
 # ===========================================================================
 # Catálogo — ordenado por dependência de FK
@@ -786,7 +848,8 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
         Dataset("orgaos",              lambda: url_simples("orgaos"),
                 t_orgaos,              "orgaos",             ["idCamara"]),
         Dataset("deputados",           lambda: url_simples("deputados"),
-                t_deputados,           "deputados",          ["idCamara"]),
+                t_deputados,           "deputados",          ["idCamara"],
+                preserve_cols=["urlFoto", "escolaridade", "emailGabinete", "nomeCivil", "condicaoEleitoral", "telefoneGabinete"]),
         Dataset("deputadosOcupacoes",  lambda: url_simples("deputadosOcupacoes"),
                 t_deputados_ocupacoes, "_raw_deputadosOcupacoes", []),
         Dataset("deputadosProfissoes", lambda: url_simples("deputadosProfissoes"),
@@ -855,7 +918,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
     # Cotas parlamentares (CEAP) — camara.leg.br/cotas/Ano-{ano}.csv.zip
     cotas_datasets = [
         Dataset(f"cotas_{a}", lambda ano=a: url_cota_anual(ano),
-                t_cotas, "_raw_cotas", [])
+                t_cotas, "_raw_cotas", [], ano_ref=a)
         for a in A
     ]
 
@@ -1154,18 +1217,34 @@ def _resolve_and_insert(engine, raw_table: str, records: list[dict]):
 # Pipeline
 # ===========================================================================
 
-def run_etl(datasets: list[Dataset], engine):
+def run_etl(datasets: list[Dataset], engine, *, force: bool = False, skip_historical: bool = False):
+    cache = {} if force else _cache_load()
     erros = []
+    pulados_historico = 0
+    pulados_304 = 0
+
     for ds in tqdm(datasets, desc="ETL Câmara"):
+        # Estratégia 1: pula anos históricos fechados sem fazer request
+        if skip_historical and ds.ano_ref is not None and ds.ano_ref < ANO_ATUAL:
+            log.debug("⏭ histórico imutável, pulando: %s", ds.nome)
+            pulados_historico += 1
+            continue
+
         url = ds.url_fn()
-        # Cotas vêm compactadas em ZIP — usa downloader específico
+
+        # Estratégia 2: download com ETag/Last-Modified
         if ds.nome.startswith("cotas_"):
-            df = _download_csv_zip(url)
+            df = _download_csv_zip(url, cache=cache)
         else:
-            df = _download_csv(url)
+            df = _download_csv(url, cache=cache)
+
+        if df is _CACHE_HIT:
+            pulados_304 += 1
+            continue
         if df is None:
             erros.append(ds.nome)
             continue
+
         try:
             records = ds.transform_fn(df)
         except Exception as exc:
@@ -1182,16 +1261,22 @@ def run_etl(datasets: list[Dataset], engine):
                 erros.append(ds.nome)
         else:
             try:
-                n = upsert(engine, ds.table_name, records, ds.conflict_cols)
+                n = upsert(engine, ds.table_name, ds.preserve_cols, records, ds.conflict_cols)
                 log.info("  upsert %s → %d registros", ds.table_name, n)
             except Exception as exc:
                 log.error("Upsert error [%s]: %s", ds.nome, exc)
                 erros.append(ds.nome)
 
+    if not force:
+        _cache_save(cache)
+
+    processados = len(datasets) - pulados_historico - pulados_304 - len(erros)
+    log.info(
+        "ETL concluído — processados: %d | sem alteração (304): %d | histórico pulado: %d | erros: %d",
+        processados, pulados_304, pulados_historico, len(erros),
+    )
     if erros:
         log.warning("Datasets com falha (%d): %s", len(erros), erros)
-    else:
-        log.info("ETL concluído sem erros ✔")
 
 
 # ===========================================================================
@@ -1211,20 +1296,32 @@ def main():
     parser = argparse.ArgumentParser(description="ETL — Dados Abertos da Câmara dos Deputados")
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--full",    action="store_true", help="Carga histórica completa (2019–hoje)")
-    mode.add_argument("--update",  action="store_true", help="Apenas o ano corrente")
+    mode.add_argument("--update",  action="store_true", help="Apenas o ano corrente (pula histórico automaticamente)")
     mode.add_argument("--dataset", type=str,            help="Prefixo do dataset (ex: votacoes, eventos)")
-    parser.add_argument("--anos",  type=int, nargs="+", help="Anos específicos (usado com --dataset ou --update)")
+    parser.add_argument("--anos",  type=int, nargs="+", help="Anos específicos")
+    parser.add_argument("--force", action="store_true",
+                        help="Ignora cache de ETag e reprocessa tudo (inclui anos históricos)")
+    parser.add_argument("--cache-file", type=str, default=None,
+                        help="Caminho do arquivo de cache (padrão: etl_cache.json)")
     args = parser.parse_args()
+
+    if args.cache_file:
+        global CACHE_FILE
+        CACHE_FILE = Path(args.cache_file)
 
     engine = create_engine(DATABASE_URL, pool_pre_ping=True)
     log.info("Banco: %s", DATABASE_URL.split("@")[-1])
+    log.info("Cache: %s%s", CACHE_FILE, " (desativado via --force)" if args.force else "")
 
     if args.full:
         anos = ANOS_HISTORICO
+        skip_historical = False
     elif args.update:
         anos = args.anos or [ANO_ATUAL]
+        skip_historical = not args.force
     else:
         anos = args.anos or [ANO_ATUAL]
+        skip_historical = False
 
     legislaturas = _get_legislaturas(engine)
     catalog = build_catalog(anos, legislaturas)
@@ -1237,7 +1334,7 @@ def main():
 
     log.info("Iniciando ETL: %d datasets | anos=%s | legislaturas=%s",
              len(catalog), anos, legislaturas)
-    run_etl(catalog, engine)
+    run_etl(catalog, engine, force=args.force, skip_historical=skip_historical)
 
 
 if __name__ == "__main__":

@@ -30,8 +30,13 @@ class RankingService:
     """Orquestra as regras de negocio dos rankings. Nao expoe infraestrutura para a camada HTTP."""
 
     def __init__(self, db: AsyncSession) -> None:
-        self._repo  = RankingRepository(db)
-        self._cache = FastAPICache.get_backend()
+        self._repo = RankingRepository(db)
+
+    @property
+    def _cache(self):
+        # Lazy: obtém o backend somente quando necessário, evitando falha
+        # se FastAPICache ainda não estiver inicializado (ex: testes, startup).
+        return FastAPICache.get_backend()
 
     # ------------------------------------------------------------------
     # Rankings de despesas

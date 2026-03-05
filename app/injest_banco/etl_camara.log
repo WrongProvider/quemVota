@@ -1,39 +1,266 @@
-2026-03-05 01:36:45,197 [INFO] etl_camara — Banco: localhost:5432/quemvota_teste
-2026-03-05 01:36:45,210 [INFO] etl_camara — Iniciando ETL: 207 datasets | anos=[2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026] | legislaturas=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
-2026-03-05 01:36:45,450 [INFO] etl_camara — ✔ legislaturas.csv (57 linhas)
-2026-03-05 01:36:45,502 [INFO] etl_camara —   upsert legislaturas → 57 registros
-2026-03-05 01:36:45,966 [INFO] etl_camara — ✔ orgaos.csv (3804 linhas)
-2026-03-05 01:36:46,991 [INFO] etl_camara —   upsert orgaos → 3804 registros
-2026-03-05 01:36:47,513 [INFO] etl_camara — ✔ deputados.csv (7878 linhas)
-2026-03-05 01:36:49,401 [INFO] etl_camara —   upsert deputados → 7878 registros
-2026-03-05 01:36:50,080 [INFO] etl_camara — ✔ deputadosOcupacoes.csv (37445 linhas)
-2026-03-05 01:37:01,715 [INFO] etl_camara —   FK-insert _raw_deputadosOcupacoes → 33008 registros
-2026-03-05 01:37:02,254 [INFO] etl_camara — ✔ deputadosProfissoes.csv (12578 linhas)
-2026-03-05 01:37:06,269 [INFO] etl_camara —   FK-insert _raw_deputadosProfissoes → 12578 registros
-2026-03-05 01:37:06,755 [INFO] etl_camara — ✔ frentes.csv (1437 linhas)
-2026-03-05 01:37:08,458 [INFO] etl_camara —   FK-insert _raw_frentes → 1437 registros
-2026-03-05 01:37:11,772 [INFO] etl_camara — ✔ frentesDeputados.csv (261026 linhas)
-2026-03-05 01:42:18,291 [INFO] etl_camara —   FK-insert _raw_frentesDeputados → 261026 registros
-2026-03-05 01:42:18,648 [INFO] etl_camara — ✔ legislaturasMesas.csv (177 linhas)
-2026-03-05 01:42:18,777 [INFO] etl_camara —   upsert legislaturasMesas → 177 registros
-2026-03-05 01:42:19,034 [INFO] etl_camara — ✔ grupos.csv (118 linhas)
-2026-03-05 01:42:19,101 [INFO] etl_camara —   upsert grupos → 118 registros
-2026-03-05 01:42:19,569 [INFO] etl_camara — ✔ gruposMembros.csv (7086 linhas)
-2026-03-05 01:42:22,403 [INFO] etl_camara —   FK-insert _raw_gruposMembros → 7086 registros
-2026-03-05 01:42:22,739 [INFO] etl_camara — ✔ gruposHistorico.csv (408 linhas)
-2026-03-05 01:42:22,923 [INFO] etl_camara —   FK-insert _raw_gruposHistorico → 408 registros
-2026-03-05 01:42:23,586 [INFO] etl_camara — ✔ funcionarios.csv (14992 linhas)
-2026-03-05 01:42:26,440 [INFO] etl_camara —   upsert funcionarios → 14988 registros
-2026-03-05 01:42:26,684 [INFO] etl_camara — ✔ tecadCategorias.csv (79 linhas)
-2026-03-05 01:42:26,711 [INFO] etl_camara —   upsert tecadCategorias → 79 registros
-2026-03-05 01:42:28,055 [INFO] etl_camara — ✔ tecadTermos.csv (78615 linhas)
-2026-03-05 01:42:42,778 [INFO] etl_camara —   upsert tecadTermos → 78615 registros
-2026-03-05 01:42:43,502 [INFO] etl_camara — ✔ eventos-2019.csv (3826 linhas)
-2026-03-05 01:42:44,457 [INFO] etl_camara —   upsert eventos → 3826 registros
-2026-03-05 01:42:44,856 [INFO] etl_camara — ✔ eventosOrgaos-2019.csv (3987 linhas)
-2026-03-05 01:42:46,626 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 3987 registros
-2026-03-05 01:42:46,976 [INFO] etl_camara — ✔ eventosRequerimentos-2019.csv (2302 linhas)
-2026-03-05 01:42:47,724 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 2302 registros
-2026-03-05 01:42:49,115 [INFO] etl_camara — ✔ eventosPresencaDeputados-2019.csv (152020 linhas)
-2026-03-05 01:43:58,461 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 152020 registros
-2026-03-05 01:44:00,166 [INFO] etl_camara — ✔ proposicoes-2019.csv (38410 linhas)
+2026-03-05 19:41:08,083 [INFO] etl_camara — Banco: localhost:5432/quemvota_teste
+2026-03-05 19:41:08,083 [INFO] etl_camara — Cache: etl_cache.json
+2026-03-05 19:41:08,096 [INFO] etl_camara — Iniciando ETL: 394 datasets | anos=[2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026] | legislaturas=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
+2026-03-05 19:41:08,321 [INFO] etl_camara — ✔ legislaturas.csv (57 linhas)
+2026-03-05 19:41:08,372 [INFO] etl_camara —   upsert legislaturas → 57 registros
+2026-03-05 19:41:08,883 [INFO] etl_camara — ✔ orgaos.csv (3804 linhas)
+2026-03-05 19:41:09,887 [INFO] etl_camara —   upsert orgaos → 3804 registros
+2026-03-05 19:41:10,337 [INFO] etl_camara — ✔ deputados.csv (7878 linhas)
+2026-03-05 19:41:12,210 [INFO] etl_camara —   upsert deputados → 7878 registros
+2026-03-05 19:41:12,936 [INFO] etl_camara — ✔ deputadosOcupacoes.csv (37445 linhas)
+2026-03-05 19:41:24,339 [INFO] etl_camara —   FK-insert _raw_deputadosOcupacoes → 33008 registros
+2026-03-05 19:41:24,818 [INFO] etl_camara — ✔ deputadosProfissoes.csv (12578 linhas)
+2026-03-05 19:41:28,841 [INFO] etl_camara —   FK-insert _raw_deputadosProfissoes → 12578 registros
+2026-03-05 19:41:29,245 [INFO] etl_camara — ✔ frentes.csv (1437 linhas)
+2026-03-05 19:41:30,866 [INFO] etl_camara —   FK-insert _raw_frentes → 1437 registros
+2026-03-05 19:41:34,712 [INFO] etl_camara — ✔ frentesDeputados.csv (261026 linhas)
+2026-03-05 19:47:53,039 [INFO] etl_camara —   FK-insert _raw_frentesDeputados → 261026 registros
+2026-03-05 19:47:53,421 [INFO] etl_camara — ✔ legislaturasMesas.csv (177 linhas)
+2026-03-05 19:47:53,548 [INFO] etl_camara —   upsert legislaturasMesas → 177 registros
+2026-03-05 19:47:53,785 [INFO] etl_camara — ✔ grupos.csv (118 linhas)
+2026-03-05 19:47:53,853 [INFO] etl_camara —   upsert grupos → 118 registros
+2026-03-05 19:47:54,403 [INFO] etl_camara — ✔ gruposMembros.csv (7086 linhas)
+2026-03-05 19:47:57,209 [INFO] etl_camara —   FK-insert _raw_gruposMembros → 7086 registros
+2026-03-05 19:47:57,474 [INFO] etl_camara — ✔ gruposHistorico.csv (408 linhas)
+2026-03-05 19:47:57,660 [INFO] etl_camara —   FK-insert _raw_gruposHistorico → 408 registros
+2026-03-05 19:47:58,246 [INFO] etl_camara — ✔ funcionarios.csv (14992 linhas)
+2026-03-05 19:48:01,150 [INFO] etl_camara —   upsert funcionarios → 14988 registros
+2026-03-05 19:48:01,331 [INFO] etl_camara — ✔ tecadCategorias.csv (79 linhas)
+2026-03-05 19:48:01,358 [INFO] etl_camara —   upsert tecadCategorias → 79 registros
+2026-03-05 19:48:02,474 [INFO] etl_camara — ✔ tecadTermos.csv (78615 linhas)
+2026-03-05 19:48:18,138 [INFO] etl_camara —   upsert tecadTermos → 78615 registros
+2026-03-05 19:48:18,606 [INFO] etl_camara — ✔ eventos-2008.csv (1967 linhas)
+2026-03-05 19:48:19,177 [INFO] etl_camara —   upsert eventos → 1967 registros
+2026-03-05 19:48:19,533 [INFO] etl_camara — ✔ eventosOrgaos-2008.csv (2051 linhas)
+2026-03-05 19:48:20,436 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 2051 registros
+2026-03-05 19:48:20,631 [INFO] etl_camara — ✔ eventosRequerimentos-2008.csv (215 linhas)
+2026-03-05 19:48:20,725 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 215 registros
+2026-03-05 19:48:21,593 [INFO] etl_camara — ✔ eventosPresencaDeputados-2008.csv (98816 linhas)
+2026-03-05 19:49:07,279 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 98816 registros
+2026-03-05 19:49:08,909 [INFO] etl_camara — ✔ proposicoes-2008.csv (30314 linhas)
+2026-03-05 19:49:25,862 [INFO] etl_camara —   upsert proposicoes → 30314 registros
+2026-03-05 19:49:27,259 [INFO] etl_camara — ✔ proposicoesAutores-2008.csv (128554 linhas)
+2026-03-05 19:52:29,281 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 128554 registros
+2026-03-05 19:52:29,708 [INFO] etl_camara — ✔ proposicoesTemas-2008.csv (9164 linhas)
+2026-03-05 19:52:34,918 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 9164 registros
+2026-03-05 19:52:35,611 [INFO] etl_camara — ✔ votacoes-2008.csv (7187 linhas)
+2026-03-05 19:52:40,782 [INFO] etl_camara —   FK-insert _raw_votacoes → 7187 registros
+2026-03-05 19:52:41,481 [INFO] etl_camara — ✔ votacoesVotos-2008.csv (32110 linhas)
+2026-03-05 19:52:58,101 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 32110 registros
+2026-03-05 19:52:58,473 [INFO] etl_camara — ✔ votacoesOrientacoes-2008.csv (1251 linhas)
+2026-03-05 19:52:58,901 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 1251 registros
+2026-03-05 19:52:59,471 [INFO] etl_camara — ✔ votacoesProposicoes-2008.csv (5447 linhas)
+2026-03-05 19:53:01,720 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 5447 registros
+2026-03-05 19:53:01,959 [INFO] etl_camara — ✔ licitacoes-2008.csv (277 linhas)
+2026-03-05 19:53:02,054 [INFO] etl_camara —   upsert licitacoes → 277 registros
+2026-03-05 19:53:02,361 [INFO] etl_camara — ✔ licitacoesPedidos-2008.csv (252 linhas)
+2026-03-05 19:53:02,478 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 252 registros
+2026-03-05 19:53:02,740 [INFO] etl_camara — ✔ licitacoesPropostas-2008.csv (824 linhas)
+2026-03-05 19:53:03,114 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 824 registros
+2026-03-05 19:53:03,652 [INFO] etl_camara — ✔ licitacoesItens-2008.csv (4719 linhas)
+2026-03-05 19:53:05,865 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 4719 registros
+2026-03-05 19:53:06,345 [INFO] etl_camara — ✔ licitacoesContratos-2008.csv (1828 linhas)
+2026-03-05 19:53:07,250 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1828 registros
+2026-03-05 19:53:07,717 [INFO] etl_camara — ✔ eventos-2009.csv (2762 linhas)
+2026-03-05 19:53:08,389 [INFO] etl_camara —   upsert eventos → 2762 registros
+2026-03-05 19:53:08,731 [INFO] etl_camara — ✔ eventosOrgaos-2009.csv (2900 linhas)
+2026-03-05 19:53:09,940 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 2900 registros
+2026-03-05 19:53:10,165 [INFO] etl_camara — ✔ eventosRequerimentos-2009.csv (381 linhas)
+2026-03-05 19:53:10,295 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 381 registros
+2026-03-05 19:53:11,172 [INFO] etl_camara — ✔ eventosPresencaDeputados-2009.csv (113720 linhas)
+2026-03-05 19:54:02,996 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 113720 registros
+2026-03-05 19:54:04,187 [INFO] etl_camara — ✔ proposicoes-2009.csv (31690 linhas)
+2026-03-05 19:54:21,120 [INFO] etl_camara —   upsert proposicoes → 31690 registros
+2026-03-05 19:54:21,833 [INFO] etl_camara — ✔ proposicoesAutores-2009.csv (43779 linhas)
+2026-03-05 19:55:15,842 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 43779 registros
+2026-03-05 19:55:16,337 [INFO] etl_camara — ✔ proposicoesTemas-2009.csv (9783 linhas)
+2026-03-05 19:55:21,900 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 9783 registros
+2026-03-05 19:55:22,646 [INFO] etl_camara — ✔ votacoes-2009.csv (8896 linhas)
+2026-03-05 19:55:29,074 [INFO] etl_camara —   FK-insert _raw_votacoes → 8896 registros
+2026-03-05 19:55:30,194 [INFO] etl_camara — ✔ votacoesVotos-2009.csv (45908 linhas)
+2026-03-05 19:55:54,353 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 45908 registros
+2026-03-05 19:55:54,769 [INFO] etl_camara — ✔ votacoesOrientacoes-2009.csv (1876 linhas)
+2026-03-05 19:55:55,436 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 1876 registros
+2026-03-05 19:55:56,197 [INFO] etl_camara — ✔ votacoesProposicoes-2009.csv (6697 linhas)
+2026-03-05 19:55:58,961 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 6697 registros
+2026-03-05 19:55:59,185 [INFO] etl_camara — ✔ licitacoes-2009.csv (259 linhas)
+2026-03-05 19:55:59,309 [INFO] etl_camara —   upsert licitacoes → 259 registros
+2026-03-05 19:55:59,711 [INFO] etl_camara — ✔ licitacoesPedidos-2009.csv (230 linhas)
+2026-03-05 19:55:59,836 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 230 registros
+2026-03-05 19:56:00,189 [INFO] etl_camara — ✔ licitacoesPropostas-2009.csv (889 linhas)
+2026-03-05 19:56:00,627 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 889 registros
+2026-03-05 19:56:01,360 [INFO] etl_camara — ✔ licitacoesItens-2009.csv (3068 linhas)
+2026-03-05 19:56:02,835 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 3068 registros
+2026-03-05 19:56:03,217 [INFO] etl_camara — ✔ licitacoesContratos-2009.csv (1750 linhas)
+2026-03-05 19:56:04,113 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1750 registros
+2026-03-05 19:56:04,516 [INFO] etl_camara — ✔ eventos-2010.csv (1550 linhas)
+2026-03-05 19:56:04,953 [INFO] etl_camara —   upsert eventos → 1550 registros
+2026-03-05 19:56:05,269 [INFO] etl_camara — ✔ eventosOrgaos-2010.csv (1591 linhas)
+2026-03-05 19:56:05,947 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 1591 registros
+2026-03-05 19:56:06,180 [INFO] etl_camara — ✔ eventosRequerimentos-2010.csv (209 linhas)
+2026-03-05 19:56:06,299 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 209 registros
+2026-03-05 19:56:06,986 [INFO] etl_camara — ✔ eventosPresencaDeputados-2010.csv (65406 linhas)
+2026-03-05 19:56:36,966 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 65406 registros
+2026-03-05 19:56:37,898 [INFO] etl_camara — ✔ proposicoes-2010.csv (18857 linhas)
+2026-03-05 19:56:48,095 [INFO] etl_camara —   upsert proposicoes → 18857 registros
+2026-03-05 19:56:48,714 [INFO] etl_camara — ✔ proposicoesAutores-2010.csv (21891 linhas)
+2026-03-05 19:57:13,017 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 21891 registros
+2026-03-05 19:57:13,409 [INFO] etl_camara — ✔ proposicoesTemas-2010.csv (5239 linhas)
+2026-03-05 19:57:16,376 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 5239 registros
+2026-03-05 19:57:16,965 [INFO] etl_camara — ✔ votacoes-2010.csv (5422 linhas)
+2026-03-05 19:57:20,958 [INFO] etl_camara —   FK-insert _raw_votacoes → 5422 registros
+2026-03-05 19:57:21,698 [INFO] etl_camara — ✔ votacoesVotos-2010.csv (22295 linhas)
+2026-03-05 19:57:33,423 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 22295 registros
+2026-03-05 19:57:33,728 [INFO] etl_camara — ✔ votacoesOrientacoes-2010.csv (1003 linhas)
+2026-03-05 19:57:34,078 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 1003 registros
+2026-03-05 19:57:34,602 [INFO] etl_camara — ✔ votacoesProposicoes-2010.csv (4508 linhas)
+2026-03-05 19:57:36,473 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 4508 registros
+2026-03-05 19:57:36,732 [INFO] etl_camara — ✔ licitacoes-2010.csv (360 linhas)
+2026-03-05 19:57:36,852 [INFO] etl_camara —   upsert licitacoes → 360 registros
+2026-03-05 19:57:37,235 [INFO] etl_camara — ✔ licitacoesPedidos-2010.csv (317 linhas)
+2026-03-05 19:57:37,383 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 317 registros
+2026-03-05 19:57:37,663 [INFO] etl_camara — ✔ licitacoesPropostas-2010.csv (788 linhas)
+2026-03-05 19:57:38,028 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 788 registros
+2026-03-05 19:57:38,558 [INFO] etl_camara — ✔ licitacoesItens-2010.csv (4283 linhas)
+2026-03-05 19:57:40,569 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 4283 registros
+2026-03-05 19:57:41,028 [INFO] etl_camara — ✔ licitacoesContratos-2010.csv (1677 linhas)
+2026-03-05 19:57:41,909 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1677 registros
+2026-03-05 19:57:42,416 [INFO] etl_camara — ✔ eventos-2011.csv (2628 linhas)
+2026-03-05 19:57:43,053 [INFO] etl_camara —   upsert eventos → 2628 registros
+2026-03-05 19:57:43,405 [INFO] etl_camara — ✔ eventosOrgaos-2011.csv (2707 linhas)
+2026-03-05 19:57:44,603 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 2707 registros
+2026-03-05 19:57:44,834 [INFO] etl_camara — ✔ eventosRequerimentos-2011.csv (396 linhas)
+2026-03-05 19:57:44,982 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 396 registros
+2026-03-05 19:57:45,963 [INFO] etl_camara — ✔ eventosPresencaDeputados-2011.csv (111966 linhas)
+2026-03-05 19:58:38,403 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 111966 registros
+2026-03-05 19:58:39,655 [INFO] etl_camara — ✔ proposicoes-2011.csv (33594 linhas)
+2026-03-05 19:58:57,967 [INFO] etl_camara —   upsert proposicoes → 33594 registros
+2026-03-05 19:58:58,707 [INFO] etl_camara — ✔ proposicoesAutores-2011.csv (39850 linhas)
+2026-03-05 19:59:51,845 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 39850 registros
+2026-03-05 19:59:52,329 [INFO] etl_camara — ✔ proposicoesTemas-2011.csv (9751 linhas)
+2026-03-05 19:59:57,886 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 9751 registros
+2026-03-05 19:59:58,462 [INFO] etl_camara — ✔ votacoes-2011.csv (6268 linhas)
+2026-03-05 20:00:02,965 [INFO] etl_camara —   FK-insert _raw_votacoes → 6268 registros
+2026-03-05 20:00:03,743 [INFO] etl_camara — ✔ votacoesVotos-2011.csv (33235 linhas)
+2026-03-05 20:00:21,180 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 33235 registros
+2026-03-05 20:00:21,581 [INFO] etl_camara — ✔ votacoesOrientacoes-2011.csv (1283 linhas)
+2026-03-05 20:00:22,033 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 1283 registros
+2026-03-05 20:00:22,607 [INFO] etl_camara — ✔ votacoesProposicoes-2011.csv (4169 linhas)
+2026-03-05 20:00:24,289 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 4169 registros
+2026-03-05 20:00:24,527 [INFO] etl_camara — ✔ licitacoes-2011.csv (287 linhas)
+2026-03-05 20:00:24,675 [INFO] etl_camara —   upsert licitacoes → 287 registros
+2026-03-05 20:00:24,991 [INFO] etl_camara — ✔ licitacoesPedidos-2011.csv (241 linhas)
+2026-03-05 20:00:25,110 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 241 registros
+2026-03-05 20:00:25,379 [INFO] etl_camara — ✔ licitacoesPropostas-2011.csv (723 linhas)
+2026-03-05 20:00:25,719 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 723 registros
+2026-03-05 20:00:26,335 [INFO] etl_camara — ✔ licitacoesItens-2011.csv (4358 linhas)
+2026-03-05 20:00:28,378 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 4358 registros
+2026-03-05 20:00:28,749 [INFO] etl_camara — ✔ licitacoesContratos-2011.csv (1561 linhas)
+2026-03-05 20:00:29,526 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1561 registros
+2026-03-05 20:00:29,973 [INFO] etl_camara — ✔ eventos-2012.csv (2251 linhas)
+2026-03-05 20:00:30,493 [INFO] etl_camara —   upsert eventos → 2251 registros
+2026-03-05 20:00:30,853 [INFO] etl_camara — ✔ eventosOrgaos-2012.csv (2317 linhas)
+2026-03-05 20:00:31,812 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 2317 registros
+2026-03-05 20:00:32,068 [INFO] etl_camara — ✔ eventosRequerimentos-2012.csv (359 linhas)
+2026-03-05 20:00:32,200 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 359 registros
+2026-03-05 20:00:32,972 [INFO] etl_camara — ✔ eventosPresencaDeputados-2012.csv (94138 linhas)
+2026-03-05 20:01:15,802 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 94138 registros
+2026-03-05 20:01:17,036 [INFO] etl_camara — ✔ proposicoes-2012.csv (23491 linhas)
+2026-03-05 20:01:30,383 [INFO] etl_camara —   upsert proposicoes → 23491 registros
+2026-03-05 20:01:30,995 [INFO] etl_camara — ✔ proposicoesAutores-2012.csv (27924 linhas)
+2026-03-05 20:02:07,155 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 27924 registros
+2026-03-05 20:02:07,703 [INFO] etl_camara — ✔ proposicoesTemas-2012.csv (5503 linhas)
+2026-03-05 20:02:10,891 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 5503 registros
+2026-03-05 20:02:11,492 [INFO] etl_camara — ✔ votacoes-2012.csv (5434 linhas)
+2026-03-05 20:02:15,236 [INFO] etl_camara —   FK-insert _raw_votacoes → 5434 registros
+2026-03-05 20:02:15,937 [INFO] etl_camara — ✔ votacoesVotos-2012.csv (22729 linhas)
+2026-03-05 20:02:27,622 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 22729 registros
+2026-03-05 20:02:27,969 [INFO] etl_camara — ✔ votacoesOrientacoes-2012.csv (1057 linhas)
+2026-03-05 20:02:28,326 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 1057 registros
+2026-03-05 20:02:28,848 [INFO] etl_camara — ✔ votacoesProposicoes-2012.csv (3711 linhas)
+2026-03-05 20:02:30,325 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 3711 registros
+2026-03-05 20:02:30,576 [INFO] etl_camara — ✔ licitacoes-2012.csv (282 linhas)
+2026-03-05 20:02:30,674 [INFO] etl_camara —   upsert licitacoes → 282 registros
+2026-03-05 20:02:31,015 [INFO] etl_camara — ✔ licitacoesPedidos-2012.csv (267 linhas)
+2026-03-05 20:02:31,135 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 267 registros
+2026-03-05 20:02:31,444 [INFO] etl_camara — ✔ licitacoesPropostas-2012.csv (678 linhas)
+2026-03-05 20:02:31,771 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 678 registros
+2026-03-05 20:02:32,511 [INFO] etl_camara — ✔ licitacoesItens-2012.csv (3188 linhas)
+2026-03-05 20:02:34,009 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 3188 registros
+2026-03-05 20:02:34,338 [INFO] etl_camara — ✔ licitacoesContratos-2012.csv (1445 linhas)
+2026-03-05 20:02:35,051 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1445 registros
+2026-03-05 20:02:35,525 [INFO] etl_camara — ✔ eventos-2013.csv (3299 linhas)
+2026-03-05 20:02:36,307 [INFO] etl_camara —   upsert eventos → 3299 registros
+2026-03-05 20:02:36,700 [INFO] etl_camara — ✔ eventosOrgaos-2013.csv (3416 linhas)
+2026-03-05 20:02:38,150 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 3416 registros
+2026-03-05 20:02:38,430 [INFO] etl_camara — ✔ eventosRequerimentos-2013.csv (665 linhas)
+2026-03-05 20:02:38,652 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 665 registros
+2026-03-05 20:02:39,529 [INFO] etl_camara — ✔ eventosPresencaDeputados-2013.csv (123554 linhas)
+2026-03-05 20:03:37,734 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 123554 registros
+2026-03-05 20:03:38,928 [INFO] etl_camara — ✔ proposicoes-2013.csv (29162 linhas)
+2026-03-05 20:03:55,419 [INFO] etl_camara —   upsert proposicoes → 29162 registros
+2026-03-05 20:03:56,172 [INFO] etl_camara — ✔ proposicoesAutores-2013.csv (42882 linhas)
+2026-03-05 20:04:52,551 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 42882 registros
+2026-03-05 20:04:53,002 [INFO] etl_camara — ✔ proposicoesTemas-2013.csv (7782 linhas)
+2026-03-05 20:04:57,452 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 7782 registros
+2026-03-05 20:04:58,127 [INFO] etl_camara — ✔ votacoes-2013.csv (7256 linhas)
+2026-03-05 20:05:03,392 [INFO] etl_camara —   FK-insert _raw_votacoes → 7256 registros
+2026-03-05 20:05:04,380 [INFO] etl_camara — ✔ votacoesVotos-2013.csv (43597 linhas)
+2026-03-05 20:05:27,375 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 43597 registros
+2026-03-05 20:05:27,829 [INFO] etl_camara — ✔ votacoesOrientacoes-2013.csv (2403 linhas)
+2026-03-05 20:05:28,641 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 2403 registros
+2026-03-05 20:05:29,146 [INFO] etl_camara — ✔ votacoesProposicoes-2013.csv (4801 linhas)
+2026-03-05 20:05:31,089 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 4801 registros
+2026-03-05 20:05:31,342 [INFO] etl_camara — ✔ licitacoes-2013.csv (279 linhas)
+2026-03-05 20:05:31,448 [INFO] etl_camara —   upsert licitacoes → 279 registros
+2026-03-05 20:05:31,830 [INFO] etl_camara — ✔ licitacoesPedidos-2013.csv (253 linhas)
+2026-03-05 20:05:31,954 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 253 registros
+2026-03-05 20:05:32,258 [INFO] etl_camara — ✔ licitacoesPropostas-2013.csv (683 linhas)
+2026-03-05 20:05:32,594 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 683 registros
+2026-03-05 20:05:33,146 [INFO] etl_camara — ✔ licitacoesItens-2013.csv (3308 linhas)
+2026-03-05 20:05:34,795 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 3308 registros
+2026-03-05 20:05:35,156 [INFO] etl_camara — ✔ licitacoesContratos-2013.csv (1334 linhas)
+2026-03-05 20:05:35,848 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1334 registros
+2026-03-05 20:05:36,277 [INFO] etl_camara — ✔ eventos-2014.csv (2143 linhas)
+2026-03-05 20:05:36,794 [INFO] etl_camara —   upsert eventos → 2143 registros
+2026-03-05 20:05:37,143 [INFO] etl_camara — ✔ eventosOrgaos-2014.csv (2188 linhas)
+2026-03-05 20:05:38,132 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 2188 registros
+2026-03-05 20:05:38,416 [INFO] etl_camara — ✔ eventosRequerimentos-2014.csv (591 linhas)
+2026-03-05 20:05:38,601 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 591 registros
+2026-03-05 20:05:39,344 [INFO] etl_camara — ✔ eventosPresencaDeputados-2014.csv (75134 linhas)
+2026-03-05 20:06:13,984 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 75134 registros
+2026-03-05 20:06:14,926 [INFO] etl_camara — ✔ proposicoes-2014.csv (17403 linhas)
+2026-03-05 20:06:24,618 [INFO] etl_camara —   upsert proposicoes → 17403 registros
+2026-03-05 20:06:25,247 [INFO] etl_camara — ✔ proposicoesAutores-2014.csv (21271 linhas)
+2026-03-05 20:06:54,017 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 21271 registros
+2026-03-05 20:06:54,396 [INFO] etl_camara — ✔ proposicoesTemas-2014.csv (4101 linhas)
+2026-03-05 20:06:56,665 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 4101 registros
+2026-03-05 20:06:57,162 [INFO] etl_camara — ✔ votacoes-2014.csv (3525 linhas)
+2026-03-05 20:06:59,591 [INFO] etl_camara —   FK-insert _raw_votacoes → 3525 registros
+2026-03-05 20:07:00,502 [INFO] etl_camara — ✔ votacoesVotos-2014.csv (25213 linhas)
+2026-03-05 20:07:13,486 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 25213 registros
+2026-03-05 20:07:13,996 [INFO] etl_camara — ✔ votacoesOrientacoes-2014.csv (1429 linhas)
+2026-03-05 20:07:14,473 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 1429 registros
+2026-03-05 20:07:14,929 [INFO] etl_camara — ✔ votacoesProposicoes-2014.csv (2373 linhas)
+2026-03-05 20:07:15,920 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 2373 registros
+2026-03-05 20:07:16,192 [INFO] etl_camara — ✔ licitacoes-2014.csv (265 linhas)
+2026-03-05 20:07:16,291 [INFO] etl_camara —   upsert licitacoes → 265 registros
+2026-03-05 20:07:16,658 [INFO] etl_camara — ✔ licitacoesPedidos-2014.csv (263 linhas)
+2026-03-05 20:07:16,787 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 263 registros
+2026-03-05 20:07:17,080 [INFO] etl_camara — ✔ licitacoesPropostas-2014.csv (683 linhas)
+2026-03-05 20:07:17,396 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 683 registros
+2026-03-05 20:07:18,058 [INFO] etl_camara — ✔ licitacoesItens-2014.csv (3649 linhas)
+2026-03-05 20:07:19,782 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 3649 registros
+2026-03-05 20:07:20,287 [INFO] etl_camara — ✔ licitacoesContratos-2014.csv (1204 linhas)
+2026-03-05 20:07:20,873 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1204 registros
+2026-03-05 20:07:21,387 [INFO] etl_camara — ✔ eventos-2015.csv (3937 linhas)
+2026-03-05 20:07:22,314 [INFO] etl_camara —   upsert eventos → 3937 registros
+2026-03-05 20:07:22,679 [INFO] etl_camara — ✔ eventosOrgaos-2015.csv (4085 linhas)
+2026-03-05 20:07:24,427 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 4085 registros
+2026-03-05 20:07:24,896 [INFO] etl_camara — ✔ eventosRequerimentos-2015.csv (2414 linhas)
+2026-03-05 20:07:25,661 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 2414 registros
+2026-03-05 20:07:26,814 [INFO] etl_camara — ✔ eventosPresencaDeputados-2015.csv (181413 linhas)
+2026-03-05 20:08:49,290 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 181413 registros
+2026-03-05 20:08:50,989 [INFO] etl_camara — ✔ proposicoes-2015.csv (39659 linhas)
+2026-03-05 20:09:12,788 [INFO] etl_camara —   upsert proposicoes → 39659 registros
+2026-03-05 20:09:13,936 [INFO] etl_camara — ✔ proposicoesAutores-2015.csv (55740 linhas)

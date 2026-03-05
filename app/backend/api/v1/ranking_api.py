@@ -134,5 +134,5 @@ async def get_stats_geral(
     return {
         "media_global": round(media, 2),
         "total_parlamentares": total,
-        "top_3": ranking_completo[:50],
+        "top_50": ranking_completo[:50],
     }

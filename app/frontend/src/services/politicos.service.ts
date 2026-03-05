@@ -18,9 +18,11 @@ import {
   fetchPoliticos,
   fetchPoliticosPage,
   fetchPoliticoDetalhe,
+  fetchPoliticoDetalheBySlug,
   fetchPoliticoEstatisticas,
   fetchPoliticoPerformance,
   fetchPoliticoTimeline,
+  nomeParaSlug,
   type ListarPoliticosParams,
   type Politico,
   type PoliticosPage,
@@ -31,7 +33,7 @@ import {
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Erros de domínio — OWASP A03: mensagens controladas, sem vazamento interno
+// Erros de domínio — OWASP A03
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type ApiErrorKind =
@@ -116,9 +118,6 @@ function normalizeError(error: unknown, context: string): PoliticoServiceError {
 // Funções de serviço públicas
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Lista políticos com filtros opcionais.
- */
 export async function listarPoliticosService(
   params?: ListarPoliticosParams,
   signal?: AbortSignal,
@@ -130,9 +129,6 @@ export async function listarPoliticosService(
   }
 }
 
-/**
- * Retorna uma página de políticos para infinite scroll.
- */
 export async function listarPoliticosPageService(
   params?: ListarPoliticosParams,
   signal?: AbortSignal,
@@ -145,7 +141,7 @@ export async function listarPoliticosPageService(
 }
 
 /**
- * Retorna o detalhe de um político pelo ID.
+ * Retorna o detalhe de um político pelo ID numérico.
  */
 export async function obterPoliticoDetalheService(
   id: number,
@@ -159,12 +155,67 @@ export async function obterPoliticoDetalheService(
 }
 
 /**
- * Retorna as estatísticas de um político.
+ * Retorna o detalhe de um político pelo slug do nome.
  *
- * @param id     - ID inteiro positivo
- * @param ano    - Quando fornecido, filtra os dados pelo ano — útil para a timeline
- * @param signal - AbortSignal para cancelamento
+ * Estratégia em duas etapas:
+ *  1. Tenta GET /politicos/slug/:slug (endpoint dedicado no backend).
+ *  2. Se o backend retornar 404 ou ainda não suportar o endpoint (500/404),
+ *     faz fallback via listagem com busca textual e compara slugs localmente.
+ *     Isso permite usar a feature sem alteração imediata no backend.
+ *
+ * Remova o fallback assim que o endpoint /politicos/slug/:slug estiver estável.
  */
+export async function obterPoliticoDetalheBySlugService(
+  slug: string,
+  signal?: AbortSignal,
+): Promise<PoliticoDetalhe> {
+  // ── Tentativa 1: endpoint dedicado ──────────────────────────────────────
+  try {
+    return await fetchPoliticoDetalheBySlug(slug, signal)
+  } catch (error) {
+    const serviceError = normalizeError(error, "obterPoliticoDetalheBySlugService[dedicated]")
+
+    // Se não for not_found nem server_error, propaga imediatamente
+    if (serviceError.kind !== "not_found" && serviceError.kind !== "server_error") {
+      throw serviceError
+    }
+
+    if (import.meta.env.DEV) {
+      console.warn(
+        `[PoliticoService] Endpoint /politicos/slug/${slug} retornou ${serviceError.statusCode}. ` +
+        `Tentando fallback via listagem...`
+      )
+    }
+  }
+
+  // ── Fallback: busca textual + comparação de slug local ──────────────────
+  //
+  // Converte o slug de volta em palavras para a busca (ex: "joao-silva" → "joao silva").
+  // Não é perfeito, mas cobre a maioria dos casos enquanto o backend não tem o endpoint.
+  try {
+    const termoBusca = slug.replace(/-/g, " ")
+    const candidatos = await fetchPoliticos({ q: termoBusca, limit: 20 }, signal)
+
+    const encontrado = candidatos.find(
+      (p) => nomeParaSlug(p.nome) === slug,
+    )
+
+    if (!encontrado) {
+      throw new PoliticoServiceError(
+        "Parlamentar não encontrado.",
+        "not_found",
+        404,
+      )
+    }
+
+    // Busca o detalhe completo pelo ID resolvido
+    return await fetchPoliticoDetalhe(encontrado.id, signal)
+  } catch (error) {
+    if (error instanceof PoliticoServiceError) throw error
+    throw normalizeError(error, "obterPoliticoDetalheBySlugService[fallback]")
+  }
+}
+
 export async function obterPoliticoEstatisticasService(
   id: number,
   ano?: number | null,
@@ -177,13 +228,6 @@ export async function obterPoliticoEstatisticasService(
   }
 }
 
-/**
- * Retorna o score de performance de um político.
- *
- * @param id     - ID inteiro positivo
- * @param ano    - Quando fornecido, calcula o score apenas para aquele ano
- * @param signal - AbortSignal para cancelamento
- */
 export async function obterPoliticoPerformanceService(
   id: number,
   ano?: number | null,
@@ -196,14 +240,6 @@ export async function obterPoliticoPerformanceService(
   }
 }
 
-/**
- * Retorna a linha do tempo anual do parlamentar.
- * Cada item contém score, notas detalhadas, estatísticas e info de cota
- * para um ano com dados registrados no banco.
- *
- * @param id     - ID inteiro positivo
- * @param signal - AbortSignal para cancelamento
- */
 export async function obterPoliticoTimelineService(
   id: number,
   signal?: AbortSignal,
@@ -214,3 +250,6 @@ export async function obterPoliticoTimelineService(
     throw normalizeError(error, "obterPoliticoTimelineService")
   }
 }
+
+// Re-exporta para que componentes importem só daqui
+export { nomeParaSlug }

@@ -43,7 +43,8 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 LimitQuery      = Annotated[int, Query(ge=1, le=100, description="Máximo de itens por página")]
 OffsetQuery     = Annotated[int, Query(ge=0, description="Deslocamento para paginação")]
-DeputadoIdPath  = Annotated[int, Path(gt=0, description="ID interno do deputado")]
+DeputadoIdPath    = Annotated[int, Path(gt=0, description="ID interno do deputado")]
+DeputadoSlugPath  = Annotated[str, Path(min_length=1, max_length=120, description="Slug ou ID do deputado")]
 AnoQuery        = Annotated[int | None, Query(ge=2000, le=2100, description="Filtro por ano")]
 
 # ---------------------------------------------------------------------------
@@ -82,18 +83,41 @@ async def listar_politicos(
 
 
 @router.get(
+    "/slug/{slug}",
+    response_model=PoliticoResponse,
+    summary="Detalha um deputado pelo slug do nome",
+    responses={404: {"description": "Deputado não encontrado"}},
+)
+@cache(expire=3600, key_builder=politico_key_builder)
+async def get_politico_by_slug(
+    slug: Annotated[str, Path(min_length=1, max_length=120, description="Slug do nome do deputado")],
+    service: PoliticoService = Depends(_politico_service),
+):
+    """
+    Busca um deputado pelo slug do nome (ex: `joao-silva-neto`).
+    Retorna os mesmos dados que o endpoint por ID.
+    """
+    logger.info("Detalhe do deputado slug=%s", slug)
+    return await service.get_politico_by_slug_service(slug)
+
+
+@router.get(
     "/{politico_id}",
     response_model=PoliticoResponse,
-    summary="Detalha um deputado pelo ID",
+    summary="Detalha um deputado pelo ID ou slug",
     responses={404: {"description": "Deputado não encontrado"}},
 )
 @cache(expire=3600, key_builder=politico_key_builder)
 async def get_politico(
-    politico_id: DeputadoIdPath,
+    politico_id: DeputadoSlugPath,
     service: PoliticoService = Depends(_politico_service),
 ):
-    logger.info("Detalhe do deputado id=%s", politico_id)
-    return await service.get_politicos_detalhe_service(politico_id)
+    """
+    Aceita tanto o ID numérico (`1047`) quanto o slug do nome (`joao-silva-neto`).
+    O frontend usa esta rota após a migração de URLs — IDs antigos continuam funcionando.
+    """
+    logger.info("Detalhe do deputado id_or_slug=%s", politico_id)
+    return await service.get_politico_by_id_or_slug_service(politico_id)
 
 
 @router.get(

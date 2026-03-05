@@ -18,6 +18,7 @@ import {
   obterPoliticoEstatisticasService,
   obterPoliticoPerformanceService,
   obterPoliticoTimelineService,
+  obterPoliticoDetalheBySlugService,
   PoliticoServiceError,
 } from "../services/politicos.service"
 import type {
@@ -77,6 +78,7 @@ export const politicoKeys = {
   performance:  (id: number, ano?: number | null) =>
     [...politicoKeys.detail(id), "performance", ano ?? "all"] as const,
   timeline:     (id: number) => [...politicoKeys.detail(id), "timeline"] as const,
+  slug:         (slug: string) => [...politicoKeys.details(), "slug", slug] as const,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -205,6 +207,29 @@ export function usePoliticoTimeline(
     enabled: Number.isInteger(id) && id > 0,
     // Timeline histórica muda raramente — 30 min é seguro
     staleTime: 30 * 60 * 1_000,
+    gcTime: GC_TIME_MS,
+    retry: shouldRetry,
+    retryDelay,
+  })
+}
+
+/**
+ * Retorna o detalhe de um político pelo slug do nome.
+ *
+ * Só dispara quando `slug` for uma string não-numérica válida.
+ * Usa a mesma política de retry e cache dos outros hooks de detalhe.
+ *
+ * @example
+ * const { data } = usePoliticoDetalheBySlug("joao-silva-neto")
+ */
+export function usePoliticoDetalheBySlug(
+  slug: string | undefined,
+): UseQueryResult<PoliticoDetalhe, PoliticoServiceError> {
+  return useQuery({
+    queryKey: politicoKeys.slug(slug ?? ""),
+    queryFn: ({ signal }) => obterPoliticoDetalheBySlugService(slug!, signal),
+    enabled: !!slug && !/^\d+$/.test(slug),
+    staleTime: STALE_TIME_MS,
     gcTime: GC_TIME_MS,
     retry: shouldRetry,
     retryDelay,

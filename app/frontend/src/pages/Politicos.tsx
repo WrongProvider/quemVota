@@ -296,7 +296,7 @@ export default function Politicos() {
                   {allPoliticos.map((p) => (
                     <Link
                       key={p.id}
-                      to={`/politicos_detalhe/${p.id}`}
+                      to={`/politicos/${p.slug ?? p.id}`}
                       className="group flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors border-b border-slate-100 sm:border-b sm:border-r last:border-0 no-underline"
                     >
                       {/* Foto */}

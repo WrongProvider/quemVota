@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import get_db
 from typing import List
 from backend.schemas import MaisPesquisadoSchema
 from backend.services.busca_popular import registrar_busca, obter_mais_pesquisados
-
+from backend.rate_limit import limiter
 router = APIRouter(prefix="/busca", tags=["busca"])
 
 
@@ -13,10 +13,12 @@ router = APIRouter(prefix="/busca", tags=["busca"])
     status_code=204,
     summary="Registra uma visualização de um deputado",
 )
+@limiter.limit("10/minute")
 async def registrar(
+    request: Request,
     deputado_id: int,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Chamado pelo frontend quando o usuário abre o perfil de um deputado.
@@ -27,15 +29,11 @@ async def registrar(
     background_tasks.add_task(registrar_busca, db, deputado_id)
 
 
-@router.get(
-    "/mais-pesquisados",
-    response_model=List[MaisPesquisadoSchema],
-    summary="Retorna os N deputados mais buscados",
-)
-def mais_pesquisados(
+@router.get("/mais-pesquisados", response_model=List[MaisPesquisadoSchema])
+async def mais_pesquisados(
     limit: int = 10,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     if not (1 <= limit <= 50):
         raise HTTPException(status_code=422, detail="limit deve estar entre 1 e 50.")
-    return obter_mais_pesquisados(db, limit)
+    return await obter_mais_pesquisados(db, limit)

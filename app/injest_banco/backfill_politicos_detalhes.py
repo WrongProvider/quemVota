@@ -35,8 +35,10 @@ Uso:
 
 import argparse
 import logging
+import re
 import time
 from datetime import date
+import unicodedata
 
 from injest_banco.db.database import SessionLocal
 from injest_banco.db.models import Deputado
@@ -79,8 +81,16 @@ def _is_incompleto(dep: Deputado) -> bool:
         not dep.escolaridade,
         not dep.situacao,
         not dep.emailGabinete,
+        not dep.slug, 
     ])
 
+def generate_slug(text):
+    if not text: return None
+    # Remove acentos e converte para minúsculas
+    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8').lower()
+    # Remove caracteres especiais e substitui espaços por hífens
+    text = re.sub(r'[^a-z0-9]+', '-', text).strip('-')
+    return text
 
 def _aplicar_detalhes(dep: Deputado, dados: dict) -> bool:
     """
@@ -105,6 +115,7 @@ def _aplicar_detalhes(dep: Deputado, dados: dict) -> bool:
         # Gabinete
         "emailGabinete":     gabinete.get("email") or status.get("email"),
         "telefoneGabinete":  gabinete.get("telefone"),
+        "slug":             generate_slug(status.get("nome")),  # Será gerado depois de salvar o nomeCivil atualizado
     }
 
     alterado = False
@@ -120,19 +131,29 @@ def _aplicar_detalhes(dep: Deputado, dados: dict) -> bool:
 # Função principal
 # ─────────────────────────────────────────────────────────────────────────────
 
-def rodar_backfill(force: bool = False) -> None:
+def rodar_backfill(force: bool = False, slug: bool = False) -> None:
     """
     Percorre todos os deputados (ou apenas os incompletos) e preenche
     os campos de detalhe via GET /deputados/{id_camara}.
 
     Args:
         force: Se True, processa todos independentemente do estado atual.
+        slug: Se True, gera o campo slug a partir do nomeCivil.
     """
     logger.info("🚀 Backfill de detalhes de deputados iniciado  [force=%s]", force)
 
     with SessionLocal() as db:
         todos = db.query(Deputado).order_by(Deputado.id).all()
-
+        if slug:
+            logger.info("⚡ Gerando slugs para todos os deputados com base no nomeCivil.")
+            for dep in todos:
+                dep.slug = generate_slug(dep.nome)
+                if dep.slug in [d.slug for d in todos if d.id != dep.id]:
+                    logger.warning("⚠️  Slug duplicado gerado para '%s' (idCamara=%s): %s", dep.nome, dep.idCamara, dep.slug)
+                    dep.slug = dep.slug + f"-{dep.id}"  # Adiciona idCamara para garantir unicidade
+            db.commit()
+            logger.info("✅ Slugs gerados e salvos com sucesso.")
+            return
         if not force:
             alvo = [d for d in todos if _is_incompleto(d)]
             logger.info(
@@ -229,9 +250,15 @@ def _parse_args() -> argparse.Namespace:
         default=False,
         help="Atualiza todos os deputados, não só os incompletos.",
     )
+    parser.add_argument(
+        "--slug",
+        action="store_true",
+        default=False,
+        help="Gera o campo slug a partir do nomeCivil (útil para rodar depois de corrigir nomes).",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = _parse_args()
-    rodar_backfill(force=args.force)
+    rodar_backfill(force=args.force, slug=args.slug)

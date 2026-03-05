@@ -34,6 +34,7 @@ from backend.schemas import (
     VotacaoDetalhe,
     VotacaoResponse,
 )
+from backend.api.v1.keybuilder import politico_key_builder
 from backend.services.proposicao_service import ProposicaoService
 from fastapi_cache.decorator import cache
 
@@ -81,7 +82,7 @@ def _proposicao_service(db: AsyncSession = Depends(get_db)) -> ProposicaoService
     response_model=list[ProposicaoResponse],
     summary="Lista proposições com filtros opcionais",
 )
-@cache(expire=3600)
+@cache(expire=3600, key_builder=politico_key_builder)
 async def listar_proposicoes(
     q: Annotated[
         str | None,
@@ -134,7 +135,7 @@ async def listar_proposicoes(
     summary="Detalha uma proposição pelo ID",
     responses={404: {"description": "Proposição não encontrada"}},
 )
-@cache(expire=3600)
+@cache(expire=3600, key_builder=politico_key_builder)
 async def get_proposicao(
     proposicao_id: ProposicaoIdPath,
     service: ProposicaoService = Depends(_proposicao_service),
@@ -161,7 +162,7 @@ async def get_proposicao(
     summary="Votações vinculadas a uma proposição",
     responses={404: {"description": "Proposição não encontrada"}},
 )
-@cache(expire=3600)
+@cache(expire=3600, key_builder=politico_key_builder)
 async def get_votacoes_da_proposicao(
     proposicao_id: ProposicaoIdPath,
     service: ProposicaoService = Depends(_proposicao_service),
@@ -188,7 +189,7 @@ async def get_votacoes_da_proposicao(
     response_model=list[VotacaoResponse],
     summary="Lista votações com filtros opcionais",
 )
-@cache(expire=3600)
+@cache(expire=3600, key_builder=politico_key_builder)
 async def listar_votacoes(
     ano: Annotated[
         int | None,
@@ -238,7 +239,7 @@ async def listar_votacoes(
     summary="Detalha uma votação pelo ID",
     responses={404: {"description": "Votação não encontrada"}},
 )
-@cache(expire=3600)
+@cache(expire=3600, key_builder=politico_key_builder)
 async def get_votacao(
     votacao_id: VotacaoIdPath,
     service: ProposicaoService = Depends(_proposicao_service),

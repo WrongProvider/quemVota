@@ -203,7 +203,7 @@ class Deputado(Base):
     id                  = Column(Integer, primary_key=True)
     idCamara            = Column(Integer, nullable=False, unique=True, index=True)
     uri                 = Column(Text, unique=True)
-
+    slug                = Column(String(200), unique=True, index=True)  # Gerado a partir do nome para URLs amigáveis
     # Identificação
     nome                = Column(String(200), nullable=False, index=True)
     nomeCivil           = Column(String(200))
@@ -1218,8 +1218,8 @@ class LicitacaoItem(Base):
     situacaoItem          = Column(String(50))
     observacoes           = Column(Text)
 
-    naturezaDespesa       = Column(String(100))
-    programaTrabalho      = Column(String(100))
+    naturezaDespesa       = Column(Text)
+    programaTrabalho      = Column(Text)
     codPTRES              = Column(String(50))
 
     licitacao = relationship("Licitacao", back_populates="itens")

@@ -58,18 +58,29 @@ _FORNECEDOR_DATA_FIX: dict = {
 # ---------------------------------------------------------------------------
 
 def _sub_presenca(deputado_id: int, ano: int | None = None):
-    """Subquery de assiduidade via eventosPresencaDeputados, filtrável por ano."""
+    """Subquery de assiduidade via eventosPresencaDeputados, filtrável por ano.
+
+    Fórmula: (eventos em que o deputado esteve presente) / (total de eventos no período) * 100
+    O denominador usa uma subquery separada com COUNT sem filtro de deputado para
+    representar o universo total de eventos disponíveis naquele ano.
+    """
+    filtro_ano = [extract("year", PresencaDeputado.dataHoraInicio) == ano] if ano is not None else []
+
+    # Total de eventos disponíveis no período (denominador)
+    sub_total_eventos = (
+        select(func.count(PresencaDeputado.id))
+        .filter(*filtro_ano)
+        .scalar_subquery()
+    )
+
     q = (
         select(
             PresencaDeputado.idDeputado,
             func.coalesce(
                 func.round(
                     cast(
-                        (
-                            func.count(PresencaDeputado.id)
-                            .cast(Float)
-                            / func.nullif(func.count(PresencaDeputado.id), 0)
-                        )
+                        func.count(PresencaDeputado.id).cast(Float)
+                        / func.nullif(sub_total_eventos, 0)
                         * 100,
                         Numeric,
                     ),
@@ -270,17 +281,19 @@ class RankingRepository:
         Sem filtro de ano — usa o mandato inteiro.
         O cálculo do score é responsabilidade do serviço (performance_calc).
         """
+        # Total de eventos disponíveis (denominador da assiduidade)
+        sub_total_eventos = (
+            select(func.count(PresencaDeputado.id)).scalar_subquery()
+        )
+
         sub_presenca = (
             select(
                 PresencaDeputado.idDeputado,
                 func.coalesce(
                     func.round(
                         cast(
-                            (
-                                func.count(PresencaDeputado.id)
-                                .cast(Float)
-                                / func.nullif(func.count(PresencaDeputado.id), 0)
-                            )
+                            func.count(PresencaDeputado.id).cast(Float)
+                            / func.nullif(sub_total_eventos, 0)
                             * 100,
                             Numeric,
                         ),
@@ -402,18 +415,25 @@ class RankingRepository:
         )
 
         # --- Assiduidade por ano ---
+        # Denominador: total de eventos por ano (independente do deputado)
         _ano_presenca = extract("year", PresencaDeputado.dataHoraInicio).cast(Integer).label("ano")
+        _ano_presenca_all = extract("year", PresencaDeputado.dataHoraInicio).cast(Integer).label("ano")
+        sub_total_por_ano = (
+            select(
+                _ano_presenca_all,
+                func.count(PresencaDeputado.id).label("total_eventos"),
+            )
+            .group_by(_ano_presenca_all)
+        ).subquery()
+
         stmt_presenca = (
             select(
                 _ano_presenca,
                 func.coalesce(
                     func.round(
                         cast(
-                            (
-                                func.count(PresencaDeputado.id)
-                                .cast(Float)
-                                / func.nullif(func.count(PresencaDeputado.id), 0)
-                            )
+                            func.count(PresencaDeputado.id).cast(Float)
+                            / func.nullif(sub_total_por_ano.c.total_eventos, 0)
                             * 100,
                             Numeric,
                         ),
@@ -422,8 +442,12 @@ class RankingRepository:
                     0,
                 ).label("nota_assiduidade"),
             )
+            .join(
+                sub_total_por_ano,
+                extract("year", PresencaDeputado.dataHoraInicio).cast(Integer) == sub_total_por_ano.c.ano,
+            )
             .where(PresencaDeputado.idDeputado == deputado_id)
-            .group_by(_ano_presenca)
+            .group_by(_ano_presenca, sub_total_por_ano.c.total_eventos)
         )
 
         # --- Produção ponderada por ano ---
@@ -539,6 +563,11 @@ class RankingRepository:
         safe_limit  = min(abs(limit), _MAX_LIMIT_RANKING)
         safe_offset = max(offset, 0)
 
+        # Busca um volume maior do banco para compensar o merge de fornecedores duplicados
+        # (ex: TAM/LATAM). O offset real é aplicado em memória após o merge porque a
+        # deduplicação muda a ordem. Para cobrir até safe_offset + safe_limit entradas
+        # únicas, buscamos (safe_offset + safe_limit) * 3 do banco.
+        _fetch_size = (safe_offset + safe_limit) * 3
         stmt = (
             select(
                 func.coalesce(Despesa.cnpjCpfFornecedor, "").label("cnpj"),
@@ -547,7 +576,7 @@ class RankingRepository:
             )
             .group_by(text("cnpj"), text("nome_bruto"))
             .order_by(desc("total"))
-            .limit(safe_limit * 3)
+            .limit(_fetch_size)
         )
 
         try:

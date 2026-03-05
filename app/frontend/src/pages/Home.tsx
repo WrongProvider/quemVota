@@ -2,7 +2,86 @@ import Header from "../components/Header"
 import { Link, useNavigate } from "react-router-dom"
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { MagnifyingGlassIcon, ArrowRightIcon } from "@heroicons/react/24/outline"
+import { MagnifyingGlassIcon, ArrowRightIcon, FireIcon } from "@heroicons/react/24/outline"
+import { useMaisPesquisados } from "../hooks/useBuscaPopular"
+
+function EmAltaSkeleton() {
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div
+          key={i}
+          className="flex-shrink-0 flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-100 animate-pulse w-40 h-12"
+        />
+      ))}
+    </div>
+  )
+}
+
+function EmAlta() {
+  const { data, isLoading, isError } = useMaisPesquisados(8)
+
+  if (isError) return null
+
+  return (
+    <div className="max-w-xl mx-auto mt-6">
+      <div className="flex items-center gap-1.5 mb-3 justify-center">
+        <FireIcon className="w-3.5 h-3.5 text-orange-500" />
+        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+          Em Alta agora
+        </span>
+      </div>
+
+      {isLoading ? (
+        <EmAltaSkeleton />
+      ) : (
+        <div className="flex gap-2.5 overflow-x-auto pb-1 justify-center flex-wrap">
+          {data?.map((politico, i) => (
+            <motion.div
+              key={politico.politico_id}
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: i * 0.05 }}
+            >
+              <Link
+                to={`/politicos/${politico.slug ?? politico.politico_id}`}
+                className="group flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:border-blue-300 hover:shadow-md hover:shadow-blue-500/10 hover:-translate-y-0.5 transition-all duration-200 no-underline"
+              >
+                {/* Avatar */}
+                <div className="w-7 h-7 rounded-full bg-slate-100 overflow-hidden flex-shrink-0 ring-1 ring-slate-200 group-hover:ring-blue-300 transition-all">
+                  {politico.url_foto ? (
+                    <img
+                      src={politico.url_foto}
+                      alt={politico.nome}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none"
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-slate-400">
+                      {politico.nome.charAt(0)}
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-slate-800 truncate max-w-[110px] leading-tight group-hover:text-blue-600 transition-colors">
+                    {politico.nome.split(" ")[0]}
+                  </p>
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    {politico.partido_sigla} · {politico.uf}
+                  </p>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Home() {
   const [query, setQuery] = useState("")
@@ -93,24 +172,8 @@ export default function Home() {
                 </form>
               </div>
 
-              {/* Quick links */}
-              <div className="flex justify-center flex-wrap items-center gap-2 text-sm text-slate-400">
-                <span>Sugestões:</span>
-                {[
-                  { label: "São Paulo", href: "/politicos?uf=SP" },
-                  { label: "Rio de Janeiro", href: "/politicos?uf=RJ" },
-                  { label: "Rankings", href: "/rankings" },
-                  { label: "Metodologia", href: "/metodologia" },
-                ].map((l) => (
-                  <a
-                    key={l.label}
-                    href={l.href}
-                    className="px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-500 text-xs font-medium hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-all"
-                  >
-                    {l.label}
-                  </a>
-                ))}
-              </div>
+              {/* ── EM ALTA ── */}
+              <EmAlta />
             </motion.div>
           </div>
         </section>
@@ -276,7 +339,6 @@ export default function Home() {
                 { n: "03", title: "Visualização acessível",  text: "Apresentamos tudo de forma clara para que qualquer cidadão possa acompanhar." },
               ].map((step, i, arr) => (
                 <div key={i} className="flex gap-5 relative">
-                  {/* Linha conectora */}
                   {i < arr.length - 1 && (
                     <div className="absolute left-5 top-10 bottom-0 w-px bg-slate-200" />
                   )}

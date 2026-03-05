@@ -34,6 +34,7 @@ const LIMITS = {
   MES_MIN: 1,
   MES_MAX: 12,
   PARTIDO_LENGTH: 20,
+  SLUG_MAX_LENGTH: 120,
 } as const
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,8 +44,8 @@ const LIMITS = {
 export interface Politico {
   readonly id: number
   readonly nome: string
-  readonly sigla_uf: string           // era: uf
-  readonly sigla_partido: string      // era: partido_sigla
+  readonly sigla_uf: string
+  readonly sigla_partido: string
   readonly url_foto?: string
 }
 
@@ -53,7 +54,7 @@ export interface PoliticoDetalhe extends Politico {
   readonly escolaridade?: string
   readonly situacao?: string
   readonly condicao_eleitoral?: string
-  readonly sigla_sexo?: string        // era: sexo
+  readonly sigla_sexo?: string
   readonly data_nascimento?: string
   readonly email_gabinete?: string
   readonly telefone_gabinete?: string
@@ -91,10 +92,6 @@ export interface PoliticoPerformance {
   readonly info: InfoPerformance
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Timeline — espelha a resposta de GET /politicos/{id}/timeline
-// ─────────────────────────────────────────────────────────────────────────────
-
 export interface TimelineNotasAno {
   readonly assiduidade: number
   readonly producao: number
@@ -123,10 +120,6 @@ export interface TimelineEntrada {
   readonly info: TimelineInfoAno
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Parâmetros de busca com tipos estritos
-// ─────────────────────────────────────────────────────────────────────────────
-
 export interface ListarPoliticosParams {
   q?: string
   uf?: string
@@ -136,12 +129,47 @@ export interface ListarPoliticosParams {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Guards de tipo em runtime — OWASP A08 (Data Integrity)
+// Slug — utilitário puro, sem efeitos colaterais
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Converte um nome de parlamentar em slug de URL.
+ * Exportado para reutilização em componentes e testes.
+ *
+ * @example
+ *   nomeParaSlug("João Silva Neto") // → "joao-silva-neto"
+ *   nomeParaSlug("Átila D'Ávila")   // → "atila-davila"
+ */
+export function nomeParaSlug(nome: string): string {
+  return nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")   // remove diacríticos
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")     // remove caracteres especiais
+    .replace(/\s+/g, "-")              // espaços → hífens
+    .replace(/-+/g, "-")               // hífens múltiplos → um
+    .slice(0, LIMITS.SLUG_MAX_LENGTH)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Guards de tipo em runtime — OWASP A08
 // ─────────────────────────────────────────────────────────────────────────────
 
 function assertPoliticoId(id: unknown): asserts id is number {
   if (typeof id !== "number" || !Number.isInteger(id) || id <= 0) {
     throw new TypeError(`[politicos.api] ID inválido: "${id}". Deve ser inteiro positivo.`)
+  }
+}
+
+function assertSlug(slug: unknown): asserts slug is string {
+  if (
+    typeof slug !== "string" ||
+    slug.trim().length === 0 ||
+    slug.length > LIMITS.SLUG_MAX_LENGTH ||
+    /[^a-z0-9-]/.test(slug)
+  ) {
+    throw new TypeError(`[politicos.api] Slug inválido: "${slug}".`)
   }
 }
 
@@ -194,10 +222,6 @@ function sanitizeListarParams(params?: ListarPoliticosParams): Record<string, un
   return sanitized
 }
 
-/**
- * Valida e coerce o parâmetro `ano`.
- * Retorna undefined se o valor não estiver no intervalo permitido.
- */
 function sanitizeAno(ano?: number | null): number | undefined {
   if (ano == null) return undefined
   const n = Math.floor(Number(ano))
@@ -206,13 +230,10 @@ function sanitizeAno(ano?: number | null): number | undefined {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helper interno — evita duplicação de lógica de requisição
+// Helper interno
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function get<T>(
-  url: string,
-  config?: AxiosRequestConfig,
-): Promise<T> {
+async function get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
   const { data } = await api.get<T>(url, config)
   return data
 }
@@ -221,9 +242,6 @@ async function get<T>(
 // Funções de API pública
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Lista políticos com filtros opcionais.
- */
 export async function fetchPoliticos(
   params?: ListarPoliticosParams,
   signal?: AbortSignal,
@@ -233,10 +251,6 @@ export async function fetchPoliticos(
   assertArray<Politico>(data, "fetchPoliticos")
   return data
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Infinite scroll
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface PoliticosPage {
   readonly items: Politico[]
@@ -255,15 +269,11 @@ export async function fetchPoliticosPage(
   const data = await get<Politico[]>("/politicos/", { params: sanitized, signal })
   assertArray<Politico>(data, "fetchPoliticosPage")
 
-  return {
-    items: data,
-    hasMore: data.length >= limit,
-    offset,
-  }
+  return { items: data, hasMore: data.length >= limit, offset }
 }
 
 /**
- * Retorna o detalhe de um político pelo ID interno.
+ * Retorna o detalhe de um político pelo ID numérico.
  */
 export async function fetchPoliticoDetalhe(
   id: number,
@@ -274,12 +284,22 @@ export async function fetchPoliticoDetalhe(
 }
 
 /**
- * Retorna as estatísticas gerais de um político.
+ * Retorna o detalhe de um político pelo slug do nome.
  *
- * @param id     - ID inteiro positivo do político
- * @param ano    - Quando fornecido, filtra pelo ano — permite comparação na timeline
- * @param signal - AbortSignal para cancelamento
+ * Requer endpoint no backend: GET /politicos/slug/:slug
+ * Exemplo: GET /politicos/slug/joao-silva-neto
+ *
+ * Se o seu backend ainda não tiver esse endpoint, veja o fallback
+ * em `obterPoliticoDetalheService` no service.
  */
+export async function fetchPoliticoDetalheBySlug(
+  slug: string,
+  signal?: AbortSignal,
+): Promise<PoliticoDetalhe> {
+  assertSlug(slug)
+  return get<PoliticoDetalhe>(`/politicos/slug/${slug}`, { signal })
+}
+
 export async function fetchPoliticoEstatisticas(
   id: number,
   ano?: number | null,
@@ -292,13 +312,6 @@ export async function fetchPoliticoEstatisticas(
   return get<PoliticoEstatisticas>(`/politicos/${id}/estatisticas`, { params, signal })
 }
 
-/**
- * Retorna o score de performance parlamentar de um político.
- *
- * @param id     - ID inteiro positivo do político
- * @param ano    - Quando fornecido, calcula o score apenas para aquele ano
- * @param signal - AbortSignal para cancelamento
- */
 export async function fetchPoliticoPerformance(
   id: number,
   ano?: number | null,
@@ -311,13 +324,6 @@ export async function fetchPoliticoPerformance(
   return get<PoliticoPerformance>(`/politicos/${id}/performance`, { params, signal })
 }
 
-/**
- * Retorna a linha do tempo anual completa do parlamentar.
- * Cada entrada corresponde a um ano com dados registrados no banco.
- *
- * @param id     - ID inteiro positivo do político
- * @param signal - AbortSignal para cancelamento
- */
 export async function fetchPoliticoTimeline(
   id: number,
   signal?: AbortSignal,

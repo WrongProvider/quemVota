@@ -76,6 +76,26 @@ class PoliticoService:
             )
         return PoliticoResponse.model_validate(deputado)
 
+    async def get_politico_by_slug_service(self, slug: str) -> PoliticoResponse:
+        deputado = await self._repo.get_politico_by_slug_repo(slug)
+        if not deputado:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Deputado não encontrado.",
+            )
+        return PoliticoResponse.model_validate(deputado)
+
+    async def get_politico_by_id_or_slug_service(self, id_or_slug: str) -> PoliticoResponse:
+        """
+        Resolve um deputado por ID numérico ou slug de nome.
+
+        Usado pelo endpoint unificado GET /politicos/{id_or_slug} para suportar
+        tanto URLs legadas (/politicos/1047) quanto URLs com slug (/politicos/joao-silva).
+        """
+        if id_or_slug.isdigit():
+            return await self.get_politicos_detalhe_service(int(id_or_slug))
+        return await self.get_politico_by_slug_service(id_or_slug)
+
     # ------------------------------------------------------------------
     # Votações
     # ------------------------------------------------------------------

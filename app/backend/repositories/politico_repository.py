@@ -31,7 +31,6 @@ from backend.schemas import (
 from backend.models import (
     Despesa,
     Deputado,
-    PresencaDeputado,
     ProposicaoAutor,
     Proposicao,
     Votacao,
@@ -98,6 +97,15 @@ class PoliticoRepository:
             return result.scalars().first()
         except SQLAlchemyError:
             logger.exception("Erro ao buscar deputado id=%s", deputado_id)
+            raise
+
+    async def get_politico_by_slug_repo(self, slug: str) -> Deputado | None:
+        stmt = select(Deputado).where(Deputado.slug == slug)
+        try:
+            result = await self.db.execute(stmt)
+            return result.scalars().first()
+        except SQLAlchemyError:
+            logger.exception("Erro ao buscar deputado slug=%s", slug)
             raise
 
     # ------------------------------------------------------------------

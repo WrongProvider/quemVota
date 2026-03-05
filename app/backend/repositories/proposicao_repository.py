@@ -74,7 +74,7 @@ class ProposicaoRepository:
                 for a in p.autores
             ],
             temas=[
-                TemaResumo(id=t.id, cod_tema=t.codTema, tema=t.tema)
+                TemaResumo(id=t.id, tema=t.tema)
                 for t in p.temas
             ],
         )
@@ -120,11 +120,9 @@ class ProposicaoRepository:
                 selectinload(Proposicao.autores),
                 selectinload(Proposicao.temas),
             )
-            .order_by(desc(Proposicao.dataApresentacao))
-            .limit(safe_limit)
-            .offset(safe_offset)
         )
 
+        # Filtros aplicados antes de LIMIT/OFFSET — garante paginação correta
         if q:
             stmt = stmt.where(Proposicao.ementa.ilike(f"%{q}%"))
         if sigla_tipo:
@@ -133,6 +131,8 @@ class ProposicaoRepository:
             stmt = stmt.where(Proposicao.ano == ano)
         if tema_id:
             stmt = stmt.where(Proposicao.temas.any(Tema.id == tema_id))
+
+        stmt = stmt.order_by(desc(Proposicao.dataApresentacao)).limit(safe_limit).offset(safe_offset)
 
         try:
             result = await self.db.execute(stmt)
@@ -191,7 +191,7 @@ class ProposicaoRepository:
                 for a in p.autores
             ],
             temas=[
-                TemaResumo(id=t.id, cod_tema=t.codTema, tema=t.tema)
+                TemaResumo(id=t.id, tema=t.tema)
                 for t in p.temas
             ],
             ementa_detalhada=p.ementaDetalhada,
@@ -266,6 +266,13 @@ class ProposicaoRepository:
         safe_limit  = min(abs(limit), _MAX_LIMIT_VOTACOES)
         safe_offset = max(offset, 0)
 
+        # Quando sigla_tipo é fornecido precisamos de inner join (só votações com
+        # proposição do tipo solicitado). Sem filtro usamos outerjoin para incluir
+        # votações sem proposição vinculada.
+        join_proposicao = (
+            Proposicao, Votacao.idProposicao == Proposicao.id
+        )
+
         stmt = (
             select(
                 Votacao.id,
@@ -282,18 +289,22 @@ class ProposicaoRepository:
                 Proposicao.ano.label("proposicao_ano"),
                 Proposicao.ementa.label("proposicao_ementa"),
             )
-            .outerjoin(Proposicao, Votacao.idProposicao == Proposicao.id)
-            .order_by(desc(Votacao.data))
-            .limit(safe_limit)
-            .offset(safe_offset)
         )
+
+        if sigla_tipo:
+            # inner join — exclui votações sem proposição, filtra pelo tipo
+            stmt = stmt.join(*join_proposicao).where(
+                Proposicao.siglaTipo == sigla_tipo.upper()[:10]
+            )
+        else:
+            stmt = stmt.outerjoin(*join_proposicao)
 
         if ano is not None:
             stmt = stmt.where(func.extract("year", Votacao.data) == ano)
         if aprovacao is not None:
             stmt = stmt.where(Votacao.aprovacao == aprovacao)
-        if sigla_tipo:
-            stmt = stmt.where(Proposicao.siglaTipo == sigla_tipo.upper()[:10])
+
+        stmt = stmt.order_by(desc(Votacao.data)).limit(safe_limit).offset(safe_offset)
 
         try:
             result = await self.db.execute(stmt)

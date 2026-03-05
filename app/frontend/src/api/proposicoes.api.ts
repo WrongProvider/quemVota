@@ -26,8 +26,8 @@ export interface AutorResumo {
 /** Tema legislativo associado a uma proposição */
 export interface TemaResumo {
   readonly id: number
-  readonly cod_tema: number | null
   readonly tema: string
+  // cod_tema removido — o backend não o retorna nas queries de proposições
 }
 
 /** Uma etapa no histórico de tramitação de uma proposição */

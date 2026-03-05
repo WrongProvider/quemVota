@@ -45,12 +45,18 @@ export interface DespesaResumoCompleto {
   readonly top_categorias: DespesaCategoria[]
 }
 
+/** Espelha o schema PoliticoVoto do backend (GET /politicos/{id}/votacoes) */
 export interface Votacao {
+  readonly id_votacao: number
   readonly data: string
-  readonly descricao: string
+  readonly proposicao_sigla: string | null
+  readonly proposicao_numero: number | null
+  readonly proposicao_ano: number | null
+  readonly ementa: string | null
   readonly voto: string
-  readonly resultado?: string
-  readonly proposicao?: string
+  readonly resultado_da_votacao: string | null
+  readonly tipo_votacao: string | null
+  readonly uri: string | null
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

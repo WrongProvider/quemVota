@@ -11,9 +11,9 @@ class PoliticoBase(BaseModel):
 class MaisPesquisadoSchema(BaseModel):
     politico_id:   int
     nome:          str
-    uf:            str
-    partido_sigla: str
-    url_foto:      Optional[str]
+    uf:            str | None = None
+    partido_sigla: str | None = None
+    url_foto:      str | None = None
     count:         int
 
     class Config:
@@ -33,6 +33,7 @@ class PoliticoResponse(PoliticoBase):
     sigla_sexo: str | None = None
     data_nascimento: date | None = None
     url_foto: str | None = None
+    slug: str | None = None
 
     email_gabinete: str | None = None
     telefone_gabinete: str | None = None
@@ -51,6 +52,7 @@ class PoliticoResponse(PoliticoBase):
                 "id":                 obj.id,
                 "id_camara":          obj.idCamara,
                 "nome":               obj.nome,
+                "slug":               obj.slug,
                 "sigla_uf":           obj.siglaUF,
                 "sigla_partido":      obj.siglaPartido,
                 "nome_civil":         obj.nomeCivil,
@@ -116,21 +118,27 @@ class PoliticoDespesaResumoCompleto(BaseModel):
 class PoliticoDespesaDetalhe(BaseModel):
     id: int
     data_documento: datetime | None = None
-    tipo_despesa: str
-    nome_fornecedor: str
-    valor_liquido: float
+    tipo_despesa: str | None = None      # tipoDespesa é Text nullable no banco
+    nome_fornecedor: str | None = None
+    valor_liquido: float | None = None
     url_documento: str | None = None
 
-    class Config:
-        from_attributes = True
-        # Mapeamento de nomes camelCase do ORM Despesa para snake_case do schema
-        fields = {
-            "data_documento":  "dataDocumento",
-            "tipo_despesa":    "tipoDespesa",
-            "nome_fornecedor": "nomeFornecedor",
-            "valor_liquido":   "valorLiquido",
-            "url_documento":   "urlDocumento",
-        }
+    model_config = {"from_attributes": True, "populate_by_name": True}
+
+    @classmethod
+    def model_validate(cls, obj, *args, **kwargs):
+        # result.mappings() retorna chaves camelCase vindas do banco;
+        # este bloco normaliza para os campos snake_case do schema.
+        if isinstance(obj, dict):
+            return cls(
+                id=obj.get("id"),
+                data_documento=obj.get("dataDocumento"),
+                tipo_despesa=obj.get("tipoDespesa"),
+                nome_fornecedor=obj.get("nomeFornecedor"),
+                valor_liquido=float(obj["valorLiquido"]) if obj.get("valorLiquido") is not None else None,
+                url_documento=obj.get("urlDocumento"),
+            )
+        return super().model_validate(obj, *args, **kwargs)
 
 
 class PoliticoFornecedor(BaseModel):
@@ -221,9 +229,11 @@ class TemaResumo(BaseModel):
     """
     Tema legislativo associado a uma proposição.
     Vem da tabela `temas` via relação many-to-many `proposicoesTemas`.
+
+    Nota: cod_tema removido — o repositório não o seleciona nas queries de
+    proposições; se precisar expô-lo, adicione o campo na query do repo.
     """
     id: int
-    cod_tema: Optional[int] = None          # campo codTema no ORM
     tema: str
 
     class Config:

@@ -11,11 +11,16 @@ Segurança (OWASP):
 from contextlib import asynccontextmanager
 
 import redis.asyncio as redis
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
-from backend.api.v1 import politico_api, ranking_api, proposicao_api
+from backend.api.v1 import politico_api, ranking_api, proposicao_api, busca_popular, sitemap
+# rate limiting (descomente para ativar)
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from backend.rate_limit import limiter
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Origens permitidas — edite aqui ao adicionar novos ambientes
@@ -48,7 +53,8 @@ ALLOWED_HEADERS: list[str] = [
 ALLOWED_METHODS: list[str] = [
     "GET",
     "HEAD",
-    "OPTIONS",   # preflight CORS — obrigatório para qualquer header customizado
+    "OPTIONS",
+    "POST" # necessário para o endpoint de registro de buscas populares
 ]
 
 
@@ -84,7 +90,12 @@ app = FastAPI(
     description="API pública de transparência legislativa",
     version="0.1.0",
     lifespan=lifespan,
+    
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CORS — deve ser adicionado ANTES dos routers
@@ -112,7 +123,8 @@ app.include_router(politico_api.router)
 app.include_router(ranking_api.router)
 app.include_router(proposicao_api.router_proposicoes)
 app.include_router(proposicao_api.router_votacoes)
-# app.include_router(busca_popular.router)
+app.include_router(busca_popular.router)
+app.include_router(sitemap.router)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Health check

@@ -13,3 +13,5 @@ alembic
 pandas
 tqdm
 numpy
+opencv-contrib-python
+slowapi

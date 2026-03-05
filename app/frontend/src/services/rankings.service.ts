@@ -147,7 +147,18 @@ export class DespesaRankingService {
  */
 export class EconomiaRankingService {
   /**
-   * Busca os políticos mais econômicos (menores gastos)
+   * Busca os políticos mais econômicos (menores gastos).
+   *
+   * ATENÇÃO: o endpoint /ranking/despesa_politico retorna sempre os MAIORES
+   * gastadores (ORDER BY total_gasto DESC). Inverter a ordem aqui produz
+   * "os menores gastos dentre os top-{limit} maiores gastadores" — não os
+   * parlamentares genuinamente mais econômicos do universo completo.
+   *
+   * Para um ranking de economia correto, use o score de economia do endpoint
+   * /ranking/performance_politicos (campo notas.economia) que considera
+   * o gasto em relação à cota de cada UF.
+   *
+   * @deprecated resultado impreciso — prefira useRankingPerformance + ordenar por notas.economia
    */
   static async getMaisEconomicos(filters: RankingFilters = {}) {
     const { searchTerm, selectedUF, limit = 100, offset = 0 } = filters
@@ -159,7 +170,7 @@ export class EconomiaRankingService {
       offset,
     })
 
-    // Inverte a ordem: menores gastos primeiro
+    // Inverte a ordem localmente — limitado ao conjunto já retornado pela API
     return data.sort((a, b) => a.total_gasto - b.total_gasto)
   }
 

@@ -39,9 +39,9 @@ export interface NotasPerformance {
 export interface RankingPerformancePolitico {
   id: number
   nome: string
-  sigla_uf: string        // era: uf
-  sigla_partido: string   // era: partido
-  url_foto: string        // era: foto
+  uf: string        // campo retornado por performance_calc.py
+  partido: string   // campo retornado por performance_calc.py
+  foto: string      // campo retornado por performance_calc.py
   score: number
   notas: NotasPerformance
 }
@@ -49,7 +49,7 @@ export interface RankingPerformancePolitico {
 export interface StatsGeral {
   media_global: number
   total_parlamentares: number
-  top_3: RankingPerformancePolitico[]
+  top_50: RankingPerformancePolitico[]  // corrigido: backend retorna top_50, não top_3
 }
 
 // ============================================
