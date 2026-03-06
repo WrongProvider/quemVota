@@ -18,11 +18,13 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from backend.models import (
     VotacaoOrientacao,
+    Voto,
     Proposicao,
     ProposicaoAutor,
     Tema,
     Tramitacao,
     Votacao,
+    Deputado,
 )
 from backend.schemas import (
     AutorResumo,
@@ -33,6 +35,7 @@ from backend.schemas import (
     TramitacaoItem,
     VotacaoDetalhe,
     VotacaoResponse,
+    VotoDeputado,
 )
 
 logger = logging.getLogger(__name__)
@@ -89,6 +92,9 @@ class ProposicaoRepository:
             tipo_votacao=row.tipo_votacao,
             descricao=row.descricao,
             aprovacao=row.aprovacao,
+            votos_sim=row.votos_sim,
+            votos_nao=row.votos_nao,
+            votos_outros=row.votos_outros,
             sigla_orgao=row.sigla_orgao,
             proposicao_id=row.proposicao_id,
             proposicao_sigla=row.proposicao_sigla,
@@ -122,7 +128,6 @@ class ProposicaoRepository:
             )
         )
 
-        # Filtros aplicados antes de LIMIT/OFFSET — garante paginação correta
         if q:
             stmt = stmt.where(Proposicao.ementa.ilike(f"%{q}%"))
         if sigla_tipo:
@@ -231,6 +236,9 @@ class ProposicaoRepository:
                 Votacao.tipoVotacao.label("tipo_votacao"),
                 Votacao.descricao,
                 Votacao.aprovacao,
+                Votacao.votosSim.label("votos_sim"),
+                Votacao.votosNao.label("votos_nao"),
+                Votacao.votosOutros.label("votos_outros"),
                 Votacao.siglaOrgao.label("sigla_orgao"),
                 Proposicao.id.label("proposicao_id"),
                 Proposicao.siglaTipo.label("proposicao_sigla"),
@@ -266,12 +274,7 @@ class ProposicaoRepository:
         safe_limit  = min(abs(limit), _MAX_LIMIT_VOTACOES)
         safe_offset = max(offset, 0)
 
-        # Quando sigla_tipo é fornecido precisamos de inner join (só votações com
-        # proposição do tipo solicitado). Sem filtro usamos outerjoin para incluir
-        # votações sem proposição vinculada.
-        join_proposicao = (
-            Proposicao, Votacao.idProposicao == Proposicao.id
-        )
+        join_proposicao = (Proposicao, Votacao.idProposicao == Proposicao.id)
 
         stmt = (
             select(
@@ -282,6 +285,9 @@ class ProposicaoRepository:
                 Votacao.tipoVotacao.label("tipo_votacao"),
                 Votacao.descricao,
                 Votacao.aprovacao,
+                Votacao.votosSim.label("votos_sim"),
+                Votacao.votosNao.label("votos_nao"),
+                Votacao.votosOutros.label("votos_outros"),
                 Votacao.siglaOrgao.label("sigla_orgao"),
                 Proposicao.id.label("proposicao_id"),
                 Proposicao.siglaTipo.label("proposicao_sigla"),
@@ -330,6 +336,9 @@ class ProposicaoRepository:
                 Votacao.tipoVotacao.label("tipo_votacao"),
                 Votacao.descricao,
                 Votacao.aprovacao,
+                Votacao.votosSim.label("votos_sim"),
+                Votacao.votosNao.label("votos_nao"),
+                Votacao.votosOutros.label("votos_outros"),
                 Votacao.siglaOrgao.label("sigla_orgao"),
                 Proposicao.id.label("proposicao_id"),
                 Proposicao.siglaTipo.label("proposicao_sigla"),
@@ -341,6 +350,7 @@ class ProposicaoRepository:
             .where(Votacao.id == votacao_id)
         )
 
+        # Orientações por bancada/partido
         stmt_orientacoes = (
             select(
                 VotacaoOrientacao.siglaBancada.label("sigla_partido_bloco"),
@@ -350,9 +360,25 @@ class ProposicaoRepository:
             .order_by(VotacaoOrientacao.siglaBancada)
         )
 
+        # Votos individuais dos deputados
+        stmt_votos = (
+            select(
+                Voto.idDeputado.label("politico_id"),
+                Deputado.nome.label("nome"),
+                Voto.siglaPartido.label("sigla_partido"),
+                Voto.siglaUF.label("sigla_uf"),
+                Voto.voto.label("voto"),
+                Voto.dataHoraVoto.label("data_hora_voto"),
+            )
+            .join(Deputado, Voto.idDeputado == Deputado.id)
+            .where(Voto.idVotacao == votacao_id)
+            .order_by(Deputado.nome)
+        )
+
         try:
             res_v = await self.db.execute(stmt_votacao)
             res_o = await self.db.execute(stmt_orientacoes)
+            res_votos = await self.db.execute(stmt_votos)
         except SQLAlchemyError:
             logger.exception("Erro ao buscar votação id=%s", votacao_id)
             raise
@@ -369,6 +395,18 @@ class ProposicaoRepository:
             for o in res_o.mappings()
         ]
 
+        votos = [
+            VotoDeputado(
+                politico_id=v.politico_id,
+                nome=v.nome,
+                sigla_partido=v.sigla_partido,
+                sigla_uf=v.sigla_uf,
+                voto=v.voto,
+                data_hora_voto=v.data_hora_voto,
+            )
+            for v in res_votos.mappings()
+        ]
+
         return VotacaoDetalhe(
             id=row.id,
             id_camara=row.id_camara,
@@ -377,6 +415,9 @@ class ProposicaoRepository:
             tipo_votacao=row.tipo_votacao,
             descricao=row.descricao,
             aprovacao=row.aprovacao,
+            votos_sim=row.votos_sim,
+            votos_nao=row.votos_nao,
+            votos_outros=row.votos_outros,
             sigla_orgao=row.sigla_orgao,
             proposicao_id=row.proposicao_id,
             proposicao_sigla=row.proposicao_sigla,
@@ -384,4 +425,5 @@ class ProposicaoRepository:
             proposicao_ano=row.proposicao_ano,
             proposicao_ementa=row.proposicao_ementa,
             orientacoes=orientacoes,
+            votos=votos,
         )

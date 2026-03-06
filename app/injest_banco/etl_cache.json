@@ -1,0 +1,58 @@
+{
+  "http://dadosabertos.camara.leg.br/arquivos/legislaturas/csv/legislaturas.csv": {
+    "etag": "\"69aa4a38-166f\"",
+    "last_modified": "Fri, 06 Mar 2026 03:30:00 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/orgaos/csv/orgaos.csv": {
+    "etag": "\"69aa4f60-1a0f55\"",
+    "last_modified": "Fri, 06 Mar 2026 03:52:00 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/deputados/csv/deputados.csv": {
+    "etag": "\"69aa5141-14e4cf\"",
+    "last_modified": "Fri, 06 Mar 2026 04:00:01 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/deputadosOcupacoes/csv/deputadosOcupacoes.csv": {
+    "etag": "\"69aa526d-4ebe3c\"",
+    "last_modified": "Fri, 06 Mar 2026 04:05:01 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/deputadosProfissoes/csv/deputadosProfissoes.csv": {
+    "etag": "\"69aa54c4-1450ce\"",
+    "last_modified": "Fri, 06 Mar 2026 04:15:00 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/frentes/csv/frentes.csv": {
+    "etag": "\"69aa45c1-15d7da\"",
+    "last_modified": "Fri, 06 Mar 2026 03:10:57 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/frentesDeputados/csv/frentesDeputados.csv": {
+    "etag": "\"69aa46f0-5d758bd\"",
+    "last_modified": "Fri, 06 Mar 2026 03:16:00 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/legislaturasMesas/csv/legislaturasMesas.csv": {
+    "etag": "\"69aa4aec-bc93\"",
+    "last_modified": "Fri, 06 Mar 2026 03:33:00 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/grupos/csv/grupos.csv": {
+    "etag": "\"69aa3afc-c4ba\"",
+    "last_modified": "Fri, 06 Mar 2026 02:25:00 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/gruposMembros/csv/gruposMembros.csv": {
+    "etag": "\"69aa3d54-17dc03\"",
+    "last_modified": "Fri, 06 Mar 2026 02:35:00 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/gruposHistorico/csv/gruposHistorico.csv": {
+    "etag": "\"69aa3c28-21b0c\"",
+    "last_modified": "Fri, 06 Mar 2026 02:30:00 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/funcionarios/csv/funcionarios.csv": {
+    "etag": "\"69aa55f3-33cc82\"",
+    "last_modified": "Fri, 06 Mar 2026 04:20:03 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/tecadCategorias/csv/tecadCategorias.csv": {
+    "etag": "\"69aa571c-1691\"",
+    "last_modified": "Fri, 06 Mar 2026 04:25:00 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/tecadTermos/csv/tecadTermos.csv": {
+    "etag": "\"69aa56c8-1435b27\"",
+    "last_modified": "Fri, 06 Mar 2026 04:23:36 GMT"
+  }
+}

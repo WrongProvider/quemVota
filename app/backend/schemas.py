@@ -40,13 +40,11 @@ class PoliticoResponse(PoliticoBase):
 
     class Config:
         from_attributes = True
-        # Mapeia os nomes camelCase do ORM para os nomes snake_case do schema
         populate_by_name = True
         alias_generator = None
 
     @classmethod
     def model_validate(cls, obj, *args, **kwargs):
-        # Suporte a ORM com campos camelCase (Deputado)
         if hasattr(obj, "__dict__") and not isinstance(obj, dict):
             data = {
                 "id":                 obj.id,
@@ -118,7 +116,7 @@ class PoliticoDespesaResumoCompleto(BaseModel):
 class PoliticoDespesaDetalhe(BaseModel):
     id: int
     data_documento: datetime | None = None
-    tipo_despesa: str | None = None      # tipoDespesa é Text nullable no banco
+    tipo_despesa: str | None = None
     nome_fornecedor: str | None = None
     valor_liquido: float | None = None
     url_documento: str | None = None
@@ -127,8 +125,6 @@ class PoliticoDespesaDetalhe(BaseModel):
 
     @classmethod
     def model_validate(cls, obj, *args, **kwargs):
-        # result.mappings() retorna chaves camelCase vindas do banco;
-        # este bloco normaliza para os campos snake_case do schema.
         if isinstance(obj, dict):
             return cls(
                 id=obj.get("id"),
@@ -229,9 +225,6 @@ class TemaResumo(BaseModel):
     """
     Tema legislativo associado a uma proposição.
     Vem da tabela `temas` via relação many-to-many `proposicoesTemas`.
-
-    Nota: cod_tema removido — o repositório não o seleciona nas queries de
-    proposições; se precisar expô-lo, adicione o campo na query do repo.
     """
     id: int
     tema: str
@@ -243,7 +236,6 @@ class TemaResumo(BaseModel):
 class TramitacaoItem(BaseModel):
     """
     Registro de tramitação de uma proposição.
-    Representa uma etapa no histórico de movimentação da matéria.
 
     Mapeamento ORM → schema:
       dataHora              → data_hora
@@ -334,7 +326,6 @@ class OrientacaoPartido(BaseModel):
     Mapeamento ORM → schema:
       siglaBancada → sigla_partido_bloco
       orientacao   → orientacao_voto
-      (cod_tipo_lideranca removido — não existe no novo modelo)
     """
     sigla_partido_bloco: Optional[str] = None
     orientacao_voto: Optional[str] = None
@@ -343,27 +334,59 @@ class OrientacaoPartido(BaseModel):
         from_attributes = True
 
 
+class VotoDeputado(BaseModel):
+    """
+    Voto individual de um deputado em uma votação.
+    Vem da tabela `votacoesVotos` com join em `deputados`.
+
+    Mapeamento ORM → schema:
+      Voto.idDeputado   → politico_id
+      Deputado.nome     → nome
+      Voto.siglaPartido → sigla_partido
+      Voto.siglaUF      → sigla_uf
+      Voto.voto         → voto             ("Sim", "Não", "Abstenção", "Obstrução", etc.)
+      Voto.dataHoraVoto → data_hora_voto
+    """
+    politico_id: int
+    nome: str
+    sigla_partido: Optional[str] = None
+    sigla_uf: Optional[str] = None
+    voto: str
+    data_hora_voto: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 class VotacaoResponse(BaseModel):
     """
     Schema de listagem de votações.
-    Retornado por GET /votacoes/ — sem orientações para manter a resposta leve.
+    Retornado por GET /votacoes/ — sem orientações/votos para manter a resposta leve.
 
     Mapeamento ORM → schema:
-      idCamara          → id_camara
+      idCamara          → id_camara   (String — ex: "2578879-38")
       dataHoraRegistro  → data_hora_registro
       tipoVotacao       → tipo_votacao
+      votosSim          → votos_sim
+      votosNao          → votos_nao
+      votosOutros       → votos_outros
       siglaOrgao        → sigla_orgao
       idProposicao      → proposicao_id
     """
     id: int
-    id_camara: str
+    id_camara: Optional[str] = None   # String no banco (ex: "2578879-38")
 
     data: Optional[date] = None
     data_hora_registro: Optional[datetime] = None
 
     tipo_votacao: Optional[str] = None
     descricao: Optional[str] = None
-    aprovacao: Optional[int] = None           # 1 aprovada, 0 rejeitada, -1 indefinido
+    aprovacao: Optional[int] = None   # 1 aprovada, 0 rejeitada, -1 indefinido
+
+    votos_sim: Optional[int] = None
+    votos_nao: Optional[int] = None
+    votos_outros: Optional[int] = None
+
     sigla_orgao: Optional[str] = None
 
     proposicao_id: Optional[int] = None
@@ -379,9 +402,14 @@ class VotacaoResponse(BaseModel):
 class VotacaoDetalhe(VotacaoResponse):
     """
     Schema de detalhe de uma votação.
-    Retornado por GET /votacoes/{id} — inclui orientações por partido.
+    Retornado por GET /votacoes/{id}.
+
+    Inclui:
+      - orientacoes: como cada partido/bloco orientou seus membros
+      - votos:       voto nominal de cada deputado presente
     """
     orientacoes: List[OrientacaoPartido] = []
+    votos: List[VotoDeputado] = []
 
     class Config:
         from_attributes = True
@@ -420,8 +448,6 @@ class ProposicaoParaPolitico(BaseModel):
     Proposição retornada no endpoint /politicos/{id}/proposicoes.
     Inclui lista de autores e temas para o frontend poder distinguir
     autor principal (proponente=True) de coautores.
-
-    Mapeamento ORM → schema: igual a ProposicaoResponse.
     """
     id: int
     id_camara: int
@@ -449,9 +475,9 @@ class VotacaoResumida(BaseModel):
     Votação na qual o deputado participou com voto nominal.
 
     Mapeamento ORM → schema:
-      Voto.voto           → voto
-      Votacao.tipoVotacao → tipo_votacao
-      Votacao.siglaOrgao  → sigla_orgao
+      Voto.voto            → voto
+      Votacao.tipoVotacao  → tipo_votacao
+      Votacao.siglaOrgao   → sigla_orgao
       Votacao.idProposicao → proposicao_id
     """
     id_votacao: int

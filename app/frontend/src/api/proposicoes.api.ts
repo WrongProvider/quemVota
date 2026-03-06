@@ -6,7 +6,7 @@
  *  - GET /proposicoes/{id}              → detalhe + tramitação + autores + temas
  *  - GET /proposicoes/{id}/votacoes     → votações de uma proposição
  *  - GET /votacoes/                     → lista paginada com filtros
- *  - GET /votacoes/{id}                 → detalhe + orientações por partido
+ *  - GET /votacoes/{id}                 → detalhe + orientações + votos individuais
  */
 
 import { api } from "./client"
@@ -27,7 +27,6 @@ export interface AutorResumo {
 export interface TemaResumo {
   readonly id: number
   readonly tema: string
-  // cod_tema removido — o backend não o retorna nas queries de proposições
 }
 
 /** Uma etapa no histórico de tramitação de uma proposição */
@@ -75,19 +74,36 @@ export interface OrientacaoPartido {
 }
 
 /**
+ * Voto individual de um deputado em uma votação.
+ * Vem da tabela `votacoesVotos` com join em `deputados`.
+ */
+export interface VotoDeputado {
+  readonly politico_id: number
+  readonly nome: string
+  readonly sigla_partido: string | null
+  readonly sigla_uf: string | null
+  readonly voto: string                     // "Sim", "Não", "Abstenção", "Obstrução"...
+  readonly data_hora_voto: string | null
+}
+
+/**
  * Votação na listagem.
  * Já inclui campos da proposição desnormalizados para evitar um segundo request.
  *
  * aprovacao: 1 = aprovada | 0 = rejeitada | -1 = indefinido | null = não disponível
+ * id_camara: string no banco (ex: "2578879-38")
  */
 export interface VotacaoResponse {
   readonly id: number
-  readonly id_camara: string
+  readonly id_camara: string | null         // ex: "2578879-38"
   readonly data: string | null
   readonly data_hora_registro: string | null
   readonly tipo_votacao: string | null      // "Nominal" ou "Simbólica"
   readonly descricao: string | null
   readonly aprovacao: 1 | 0 | -1 | null
+  readonly votos_sim: number | null
+  readonly votos_nao: number | null
+  readonly votos_outros: number | null
   readonly sigla_orgao: string | null
   // Proposição vinculada (desnormalizada)
   readonly proposicao_id: number | null
@@ -97,9 +113,14 @@ export interface VotacaoResponse {
   readonly proposicao_ementa: string | null
 }
 
-/** Votação no detalhe — herda tudo de VotacaoResponse + orientações por partido */
+/**
+ * Votação no detalhe — herda tudo de VotacaoResponse
+ * + orientações por partido/bloco
+ * + votos individuais de cada deputado
+ */
 export interface VotacaoDetalhe extends VotacaoResponse {
   readonly orientacoes: OrientacaoPartido[]
+  readonly votos: VotoDeputado[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -176,7 +197,7 @@ export async function fetchVotacoes(
   return data
 }
 
-/** Retorna o detalhe completo de uma votação (com orientações por partido) */
+/** Retorna o detalhe completo de uma votação (com orientações e votos individuais) */
 export async function fetchVotacao(
   id: number,
   signal?: AbortSignal,

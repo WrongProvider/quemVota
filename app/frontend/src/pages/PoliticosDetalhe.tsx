@@ -6,6 +6,7 @@ import {
   usePoliticoDetalheBySlug,
   usePoliticoPerformance,
   usePoliticoTimeline,
+  usePoliticoAtividade,
 } from "../hooks/usePoliticos"
 import PoliticoGraficos from "../components/PoliticoGraficos"
 import LinhaDoTempo from "../components/LinhaDoTempo"
@@ -30,8 +31,16 @@ import {
   Share2,
   Copy,
   Check,
+  Vote,
+  CheckCircle2,
+  XCircle,
+  MinusCircle,
+  ChevronDown,
+  Loader2,
 } from "lucide-react"
 import { useRegistrarBusca } from "../hooks/useBuscaPopular"
+import { useVotacao } from "../hooks/useProposicoes"
+import type { VotacaoResumida } from "../api/politicos.api"
 
 const PATH_FOTOS = "/fotos_politicos/"
 
@@ -705,8 +714,451 @@ export default function PoliticoDetalhe() {
             </div>
             <LinhaDoTempo politicoId={data.id} />
           </section>
+
+          {/* ── HISTÓRICO DE VOTAÇÕES ── */}
+          <HistoricoVotacoes politicoId={data.id} anoSelecionado={anoSelecionado} />
         </div>
       </div>
+    </>
+  )
+}
+
+// ── HISTÓRICO DE VOTAÇÕES ──────────────────────────────────────────────────
+
+const VOTO_CONFIG: Record<string, { label: string; cls: string; clsLight: string; icon: React.ReactNode }> = {
+  "Sim":       { label: "Sim",       cls: "text-emerald-700 bg-emerald-50 border-emerald-200",  clsLight: "bg-emerald-50",  icon: <CheckCircle2 size={11} /> },
+  "Não":       { label: "Não",       cls: "text-red-600 bg-red-50 border-red-200",              clsLight: "bg-red-50",      icon: <XCircle size={11} /> },
+  "Obstrução": { label: "Obstrução", cls: "text-amber-700 bg-amber-50 border-amber-200",        clsLight: "bg-amber-50",    icon: <MinusCircle size={11} /> },
+  "Abstenção": { label: "Abstenção", cls: "text-slate-500 bg-slate-100 border-slate-200",       clsLight: "bg-slate-50",    icon: <MinusCircle size={11} /> },
+}
+
+function VotoBadge({ voto }: { voto: string }) {
+  const cfg = VOTO_CONFIG[voto] ?? { label: voto, cls: "text-slate-600 bg-slate-50 border-slate-200", icon: <MinusCircle size={11} /> }
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-semibold flex-shrink-0 ${cfg.cls}`}>
+      {cfg.icon} {cfg.label}
+    </span>
+  )
+}
+
+function ResultadoVotacaoBadge({ aprovacao }: { aprovacao: number | null | undefined }) {
+  if (aprovacao === 1) return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+      <CheckCircle2 size={9} /> Aprovada
+    </span>
+  )
+  if (aprovacao === 0) return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-red-500 font-semibold bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+      <XCircle size={9} /> Rejeitada
+    </span>
+  )
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 font-semibold bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">
+      <MinusCircle size={9} /> Indefinido
+    </span>
+  )
+}
+
+// ── PAINEL LATERAL DE DETALHE DA VOTAÇÃO ──────────────────────────────────
+
+function PainelDetalheVotacao({
+  votacaoId,
+  votoDeputado,
+  onClose,
+}: {
+  votacaoId: number
+  votoDeputado: string   // voto já conhecido — exibido imediatamente sem aguardar fetch
+  onClose: () => void
+}) {
+  const { data: votacao, isLoading } = useVotacao(votacaoId)
+  const [abaAtiva, setAbaAtiva] = useState<"orientacoes" | "votos">("orientacoes")
+
+  const formatarData = (iso: string | null | undefined) => {
+    if (!iso) return "—"
+    return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+  }
+
+  const cfg = VOTO_CONFIG[votoDeputado] ?? { cls: "text-slate-600 bg-slate-50 border-slate-200", clsLight: "bg-slate-50" }
+
+  return (
+    <>
+      {/* Overlay para fechar clicando fora */}
+      <div
+        className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px]"
+        onClick={onClose}
+      />
+
+      {/* Painel deslizante */}
+      <div
+        className="fixed right-0 top-0 h-full w-full max-w-[440px] z-50 bg-white shadow-2xl flex flex-col"
+        style={{ animation: "slideInRight 0.25s cubic-bezier(0.22, 1, 0.36, 1) both" }}
+      >
+        {/* ── Cabeçalho ── */}
+        <div className="px-6 py-5 border-b border-slate-100 flex-shrink-0">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              {votacao?.proposicao_sigla && (
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${
+                  VOTO_CONFIG[votoDeputado]?.cls ?? "text-slate-600 bg-slate-50 border-slate-200"
+                }`}>
+                  {votacao.proposicao_sigla}
+                </span>
+              )}
+              {votacao?.proposicao_numero && (
+                <span className="text-sm font-mono text-slate-500 font-medium">
+                  {votacao.proposicao_numero}/{votacao.proposicao_ano}
+                </span>
+              )}
+              {votacao && <ResultadoVotacaoBadge aprovacao={votacao.aprovacao} />}
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
+            >
+              <XCircle size={18} />
+            </button>
+          </div>
+
+          {/* Voto do deputado em destaque */}
+          <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${cfg.clsLight} border-current/10`}>
+            <div className="flex-1">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Voto do parlamentar</p>
+              <VotoBadge voto={votoDeputado} />
+            </div>
+            {votacao && (
+              <div className="text-right">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Data</p>
+                <p className="text-xs text-slate-600 font-medium">{formatarData(votacao.data)}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Conteúdo scrollável ── */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20 gap-3 text-slate-400">
+              <Loader2 size={20} className="animate-spin" />
+              <span className="text-sm">Carregando detalhes...</span>
+            </div>
+          ) : !votacao ? (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+              <Vote size={32} className="mb-3 opacity-30" />
+              <p className="text-sm">Detalhes não disponíveis.</p>
+            </div>
+          ) : (
+            <div className="px-6 py-5 space-y-5">
+              {/* Ementa */}
+              {(votacao.proposicao_ementa || votacao.descricao) && (
+                <div>
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Proposição</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">
+                    {votacao.proposicao_ementa ?? votacao.descricao}
+                  </p>
+                </div>
+              )}
+
+              {/* Placar */}
+              {(votacao.votos_sim != null || votacao.votos_nao != null) && (
+                <div>
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Placar</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                      <p className="text-xl font-bold text-emerald-700">{votacao.votos_sim ?? "—"}</p>
+                      <p className="text-[10px] text-emerald-600 font-medium mt-0.5">Sim</p>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
+                      <p className="text-xl font-bold text-red-600">{votacao.votos_nao ?? "—"}</p>
+                      <p className="text-[10px] text-red-500 font-medium mt-0.5">Não</p>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                      <p className="text-xl font-bold text-slate-600">{votacao.votos_outros ?? "—"}</p>
+                      <p className="text-[10px] text-slate-500 font-medium mt-0.5">Outros</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-abas: Orientações / Todos os votos */}
+              {(votacao.orientacoes.length > 0 || votacao.votos.length > 0) && (
+                <div>
+                  <div className="flex border-b border-slate-200 mb-3">
+                    <button
+                      onClick={() => setAbaAtiva("orientacoes")}
+                      className={`px-3 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors ${
+                        abaAtiva === "orientacoes"
+                          ? "border-blue-500 text-blue-600"
+                          : "border-transparent text-slate-400 hover:text-slate-600"
+                      }`}
+                    >
+                      Partidos ({votacao.orientacoes.length})
+                    </button>
+                    <button
+                      onClick={() => setAbaAtiva("votos")}
+                      className={`px-3 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors ${
+                        abaAtiva === "votos"
+                          ? "border-blue-500 text-blue-600"
+                          : "border-transparent text-slate-400 hover:text-slate-600"
+                      }`}
+                    >
+                      Deputados ({votacao.votos.length})
+                    </button>
+                  </div>
+
+                  {/* Orientações */}
+                  {abaAtiva === "orientacoes" && (
+                    <div className="space-y-1.5">
+                      {votacao.orientacoes.length === 0 ? (
+                        <p className="text-xs text-slate-400 py-4 text-center">Sem orientações registradas.</p>
+                      ) : (
+                        votacao.orientacoes.map((o, i) => {
+                          const oCfg = VOTO_CONFIG[o.orientacao_voto ?? ""] ?? { cls: "text-slate-600 bg-slate-50 border-slate-200" }
+                          return (
+                            <div key={i} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border border-slate-100">
+                              <span className="text-sm font-semibold text-slate-700">{o.sigla_partido_bloco ?? "—"}</span>
+                              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${oCfg.cls}`}>
+                                {o.orientacao_voto ?? "—"}
+                              </span>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+                  )}
+
+                  {/* Todos os votos */}
+                  {abaAtiva === "votos" && (
+                    <div className="space-y-0.5">
+                      {votacao.votos.length === 0 ? (
+                        <p className="text-xs text-slate-400 py-4 text-center">Sem votos nominais registrados.</p>
+                      ) : (
+                        votacao.votos.map((v, i) => {
+                          const vCfg = VOTO_CONFIG[v.voto] ?? { cls: "text-slate-600 bg-slate-50 border-slate-200" }
+                          return (
+                            <div key={i} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-slate-700 truncate">{v.nome}</p>
+                                <p className="text-[10px] text-slate-400">
+                                  {[v.sigla_partido, v.sigla_uf].filter(Boolean).join(" · ")}
+                                </p>
+                              </div>
+                              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ml-2 flex-shrink-0 ${vCfg.cls}`}>
+                                {v.voto}
+                              </span>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
+function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number; anoSelecionado: number | null }) {
+  const PAGE_SIZE = 15
+  const [offset, setOffset] = useState(0)
+  const [filtroVoto, setFiltroVoto] = useState<string>("")
+  const [votacaoAberta, setVotacaoAberta] = useState<{ id: number; voto: string } | null>(null)
+
+  // Reseta página ao trocar filtros ou ano
+  useEffect(() => { setOffset(0) }, [anoSelecionado, filtroVoto])
+
+  // Fecha painel ao trocar de página
+  useEffect(() => { setVotacaoAberta(null) }, [offset])
+
+  const { data: atividade, isLoading } = usePoliticoAtividade(politicoId, {
+    ano: anoSelecionado ?? undefined,
+    limit_votacoes: PAGE_SIZE,
+    offset_votacoes: offset,
+  })
+
+  const votacoes: VotacaoResumida[] = atividade?.votacoes ?? []
+  const total = atividade?.total_votacoes ?? 0
+
+  const votacoesFiltradas = filtroVoto
+    ? votacoes.filter((v) => v.voto === filtroVoto)
+    : votacoes
+
+  const pagina = Math.floor(offset / PAGE_SIZE) + 1
+  const temAnterior = offset > 0
+  const temProxima = votacoes.length === PAGE_SIZE
+
+  const formatarData = (iso: string | null | undefined) => {
+    if (!iso) return "—"
+    return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
+  }
+
+  return (
+    <>
+      {/* Keyframe de animação do painel */}
+      <style>{`
+        @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to   { transform: translateX(0);    opacity: 1; }
+        }
+      `}</style>
+
+      <section className="section-fade">
+        <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Vote size={18} className="text-blue-500" />
+            <h2 className="display-font text-xl font-bold text-slate-800">Histórico de Votações</h2>
+            {total > 0 && (
+              <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                {total.toLocaleString("pt-BR")} registros
+              </span>
+            )}
+          </div>
+
+          <div className="relative">
+            <select
+              value={filtroVoto}
+              onChange={(e) => setFiltroVoto(e.target.value)}
+              className="appearance-none text-sm border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all cursor-pointer"
+            >
+              <option value="">Todos os votos</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+              <option value="Obstrução">Obstrução</option>
+              <option value="Abstenção">Abstenção</option>
+            </select>
+            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16 gap-3 text-slate-400">
+              <Loader2 size={20} className="animate-spin" />
+              <span className="text-sm">Carregando votações...</span>
+            </div>
+          ) : votacoesFiltradas.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+              <Vote size={32} className="mb-3 opacity-30" />
+              <p className="text-sm">
+                {filtroVoto
+                  ? `Nenhum voto "${filtroVoto}" encontrado${anoSelecionado ? ` em ${anoSelecionado}` : ""}.`
+                  : `Sem votações registradas${anoSelecionado ? ` em ${anoSelecionado}` : ""}.`}
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Cabeçalho da tabela */}
+              <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-5 py-3 border-b border-slate-100 bg-slate-50">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Proposição / Ementa</span>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Data</span>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Resultado</span>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Voto</span>
+                <span /> {/* coluna do chevron */}
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {votacoesFiltradas.map((v, i) => {
+                  const ativo = votacaoAberta?.id === v.id_votacao
+                  return (
+                    <button
+                      key={`${v.id_votacao}-${i}`}
+                      onClick={() => setVotacaoAberta(ativo ? null : { id: v.id_votacao, voto: v.voto })}
+                      className={`w-full text-left px-5 py-3.5 transition-colors group ${
+                        ativo
+                          ? "bg-blue-50 border-l-2 border-l-blue-500"
+                          : "hover:bg-slate-50 border-l-2 border-l-transparent"
+                      }`}
+                    >
+                      {/* Layout mobile */}
+                      <div className="md:hidden space-y-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            {(v.proposicao_sigla || v.proposicao_numero) && (
+                              <span className="text-[11px] font-semibold text-blue-600 font-mono">
+                                {v.proposicao_sigla} {v.proposicao_numero}/{v.proposicao_ano}
+                              </span>
+                            )}
+                            <p className="text-sm text-slate-700 leading-snug mt-0.5 line-clamp-2">
+                              {v.proposicao_ementa ?? v.tipo_votacao ?? "—"}
+                            </p>
+                          </div>
+                          <VotoBadge voto={v.voto} />
+                        </div>
+                        <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                          <span>{formatarData(v.data)}</span>
+                          <ResultadoVotacaoBadge aprovacao={v.aprovacao} />
+                          {v.sigla_orgao && (
+                            <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">{v.sigla_orgao}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Layout desktop */}
+                      <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 items-center">
+                        <div className="min-w-0">
+                          {(v.proposicao_sigla || v.proposicao_numero) && (
+                            <span className="text-[11px] font-semibold text-blue-600 font-mono mr-2">
+                              {v.proposicao_sigla} {v.proposicao_numero}/{v.proposicao_ano}
+                            </span>
+                          )}
+                          <p className="text-sm text-slate-700 leading-snug truncate">
+                            {v.proposicao_ementa ?? v.tipo_votacao ?? "—"}
+                          </p>
+                          {v.sigla_orgao && (
+                            <span className="text-[10px] text-slate-400 mt-0.5 inline-block">{v.sigla_orgao}</span>
+                          )}
+                        </div>
+                        <span className="text-sm text-slate-500 whitespace-nowrap">{formatarData(v.data)}</span>
+                        <ResultadoVotacaoBadge aprovacao={v.aprovacao} />
+                        <VotoBadge voto={v.voto} />
+                        <ChevronRight
+                          size={14}
+                          className={`transition-colors flex-shrink-0 ${
+                            ativo ? "text-blue-500" : "text-slate-300 group-hover:text-slate-500"
+                          }`}
+                        />
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Paginação */}
+              {(temAnterior || temProxima) && (
+                <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/60">
+                  <button
+                    disabled={!temAnterior}
+                    onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+                    className="text-xs text-slate-500 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed font-medium flex items-center gap-1 transition-colors"
+                  >
+                    <ArrowLeft size={12} /> Anterior
+                  </button>
+                  <span className="text-xs text-slate-400">Página {pagina}</span>
+                  <button
+                    disabled={!temProxima}
+                    onClick={() => setOffset(offset + PAGE_SIZE)}
+                    className="text-xs text-slate-500 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed font-medium flex items-center gap-1 transition-colors"
+                  >
+                    Próxima <ChevronRight size={12} />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* Painel lateral de detalhe — renderizado fora do section para cobrir a tela toda */}
+      {votacaoAberta && (
+        <PainelDetalheVotacao
+          votacaoId={votacaoAberta.id}
+          votoDeputado={votacaoAberta.voto}
+          onClose={() => setVotacaoAberta(null)}
+        />
+      )}
     </>
   )
 }

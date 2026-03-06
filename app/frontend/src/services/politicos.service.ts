@@ -30,6 +30,9 @@ import {
   type PoliticoEstatisticas,
   type PoliticoPerformance,
   type TimelineEntrada,
+  type AtividadeLegislativaParams,
+  type AtividadeLegislativaResponse,
+  fetchPoliticoAtividade,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -253,3 +256,16 @@ export async function obterPoliticoTimelineService(
 
 // Re-exporta para que componentes importem só daqui
 export { nomeParaSlug }
+
+
+export async function obterPoliticoAtividadeService(
+  id: number,
+  params?: AtividadeLegislativaParams,
+  signal?: AbortSignal,
+): Promise<AtividadeLegislativaResponse> {
+  try {
+    return await fetchPoliticoAtividade(id, params, signal)
+  } catch (error) {
+    throw normalizeError(error, "obterPoliticoAtividadeService")
+  }
+}

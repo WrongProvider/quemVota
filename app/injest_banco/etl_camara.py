@@ -25,10 +25,12 @@ import io
 import json
 import logging
 import os
+import re
 import sys
 import time
+import unicodedata
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -97,6 +99,63 @@ _CACHE_HIT = object()
 # Helpers de download
 # ===========================================================================
 
+# ---------------------------------------------------------------------------
+# Padrão de início de registro dos CSVs da Câmara.
+# Cobre os dois formatos conhecidos de ID:
+#   • votações  → "2485383-7;"   (dígitos, hífen, dígitos, ponto-e-vírgula)
+#   • demais    → "220593;"      (apenas dígitos, ponto-e-vírgula)
+# A linha de cabeçalho também passa porque começa com letras.
+# ---------------------------------------------------------------------------
+_RE_RECORD_START = re.compile(r'^(?:\d+(?:-\d+)?;|[A-Za-z\u00C0-\u00FF])')
+
+
+def _fix_multiline_csv(raw_text: str) -> str:
+    """
+    Reconstrói registros quebrados por '\\n' internos em campos de texto longo
+    (ementas, pareceres) dos CSVs da Câmara dos Deputados.
+
+    Dois cenários são tratados:
+
+    1. Campo SEM aspas com quebra de linha interna (ex: votacoes-AAAA.csv):
+       Linhas de continuação — aquelas que não iniciam com o padrão de ID ou
+       cabeçalho — são colapsadas na linha anterior com um espaço simples.
+
+    2. Campo COM aspas e conteúdo entre aspas duplas (ex: votacoesProposicoes):
+       Enquanto o número de aspas duplas acumuladas for ímpar, o parser ainda
+       está dentro de um campo quoted; essas linhas são colapsadas sem abrir
+       um novo registro, independentemente do padrão de ID.
+    """
+    lines = raw_text.splitlines()
+    if not lines:
+        return raw_text
+
+    merged: list[str] = [lines[0]]
+    broken = 0
+    # Conta aspas na primeira linha para inicializar o estado
+    open_quotes = lines[0].count('"') % 2 == 1  # True = dentro de campo quoted
+
+    for line in lines[1:]:
+        if open_quotes:
+            # Ainda dentro de um campo delimitado por aspas: sempre colapsa
+            merged[-1] = merged[-1] + " " + line
+            broken += 1
+        elif _RE_RECORD_START.match(line):
+            # Nova linha que parece início de registro: adiciona normalmente
+            merged.append(line)
+        else:
+            # Linha de continuação sem aspas: colapsa na anterior
+            merged[-1] = merged[-1] + " " + line.strip()
+            broken += 1
+
+        # Atualiza estado de aspas após processar a linha
+        open_quotes = merged[-1].count('"') % 2 == 1
+
+    if broken:
+        log.debug("_fix_multiline_csv: %d linha(s) de continuação colapsada(s)", broken)
+
+    return "\n".join(merged)
+
+
 def _download_csv(url: str, cache: Optional[dict] = None) -> Optional[pd.DataFrame]:
     headers = {}
     if cache is not None:
@@ -124,9 +183,15 @@ def _download_csv(url: str, cache: Optional[dict] = None) -> Optional[pd.DataFra
                     entry["last_modified"] = resp.headers["Last-Modified"]
                 if entry:
                     cache[url] = entry
+            raw_text = resp.content.decode("utf-8-sig", errors="replace")
+            raw_text = _fix_multiline_csv(raw_text)
             df = pd.read_csv(
-                io.StringIO(resp.content.decode("utf-8-sig", errors="replace")),
-                sep=";", dtype=str, low_memory=False,
+                io.StringIO(raw_text),
+                sep=";",
+                dtype=str,
+                low_memory=False,
+                quotechar='"',
+                doublequote=True,
             )
             log.info("✔ %s (%d linhas)", url.split("/")[-1], len(df))
             return df
@@ -747,7 +812,7 @@ def _download_csv_zip(url: str, cache: Optional[dict] = None) -> Optional[pd.Dat
 #   numRessarcimento | datPagamentoRestituicao | vlrRestituicao
 #   nuDeputadoId | ideDocumento | urlDocumento
 _COTA_COL_MAP = {
-    "nuDeputadoId":            "idDeputadoCamara",   # FK resolvida em _resolve_and_insert
+    "ideCadastro":            "idDeputadoCamara",   # FK resolvida em _resolve_and_insert
     "numAno":                  "ano",
     "numMes":                  "mes",
     "txtDescricao":            "tipoDespesa",
@@ -779,7 +844,7 @@ def t_cotas(df: pd.DataFrame) -> list[dict]:
     (ex: linhas de lideranças como "LID.GOV-CD" sem nuDeputadoId válido).
 
     Campos principais (CSV → modelo):
-        nuDeputadoId  → idDeputadoCamara  (temporário; substituído por idDeputado no resolve)
+        ideCadastro  → idDeputadoCamara  (temporário; substituído por idDeputado no resolve)
         ideDocumento  → codDocumento
         datEmissao    → dataDocumento
         vlrLiquido    → valorLiquido
@@ -1213,11 +1278,257 @@ def _resolve_and_insert(engine, raw_table: str, records: list[dict]):
                 ), row)
 
 
+
+
+# ===========================================================================
+# Backfill de detalhes de deputados — GET /deputados/{id}
+# ===========================================================================
+#
+# Preenche campos que não estão disponíveis no CSV de listagem:
+#   nomeCivil, dataNascimento, siglaSexo, escolaridade, situacao,
+#   condicaoEleitoral, siglaUF, siglaPartido, urlFoto,
+#   emailGabinete, telefoneGabinete, slug, cpf
+#
+# A API REST da Câmara é usada diretamente via requests (sem depender
+# do módulo camara_get do projeto injest_banco).
+
+_API_REST_BASE        = "https://dadosabertos.camara.leg.br/api/v2"
+_BACKFILL_BATCH       = 50      # commit parcial a cada N deputados
+_BACKFILL_SLEEP       = 0.25    # segundos entre chamadas (rate limit)
+_BACKFILL_MAX_RETRY   = 3
+
+
+def _bf_get(path: str) -> Optional[dict]:
+    """GET na API REST da Câmara com retry automático. Retorna o JSON ou None."""
+    url = f"{_API_REST_BASE}{path}"
+    for attempt in range(1, _BACKFILL_MAX_RETRY + 1):
+        try:
+            resp = requests.get(url, timeout=REQUEST_TIMEOUT)
+            if resp.status_code == 404:
+                return None
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as exc:
+            log.warning("backfill GET tentativa %d/%d falhou (%s): %s", attempt, _BACKFILL_MAX_RETRY, url, exc)
+            if attempt < _BACKFILL_MAX_RETRY:
+                time.sleep(RETRY_DELAY * attempt)
+    return None
+
+
+def _bf_parse_date(valor: Optional[str]) -> Optional[date]:
+    """Converte string ISO para date. Aceita 'YYYY-MM-DD' e variantes com hora."""
+    if not valor:
+        return None
+    try:
+        return date.fromisoformat(valor[:10])
+    except ValueError:
+        return None
+
+
+def _bf_generate_slug(text: Optional[str]) -> Optional[str]:
+    if not text:
+        return None
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("utf-8").lower()
+    text = re.sub(r"[^a-z0-9]+", "-", text).strip("-")
+    return text
+
+
+def _bf_is_incompleto(row: dict) -> bool:
+    """Retorna True se o deputado ainda precisa de enriquecimento via API REST."""
+    return any([
+        not row.get("urlFoto"),
+        not row.get("nomeCivil"),
+        not row.get("escolaridade"),
+        not row.get("situacao"),
+        not row.get("emailGabinete"),
+        not row.get("slug"),
+        not row.get("cpf"),
+    ])
+
+
+def _bf_build_updates(dados: dict) -> dict:
+    """Monta o dict de atualizações a partir da resposta da API REST."""
+    status   = dados.get("ultimoStatus") or {}
+    gabinete = status.get("gabinete") or {}
+    nome_display = status.get("nome") or dados.get("nomeCivil")
+    return {
+        "nomeCivil":         dados.get("nomeCivil"),
+        "dataNascimento":    _bf_parse_date(dados.get("dataNascimento")),
+        "siglaSexo":         dados.get("sexo"),
+        "escolaridade":      dados.get("escolaridade"),
+        "situacao":          status.get("situacao"),
+        "condicaoEleitoral": status.get("condicaoEleitoral"),
+        "siglaUF":           status.get("siglaUf"),
+        "siglaPartido":      status.get("siglaPartido"),
+        "urlFoto":           status.get("urlFoto"),
+        "emailGabinete":     gabinete.get("email") or status.get("email"),
+        "telefoneGabinete":  gabinete.get("telefone"),
+        "slug":              _bf_generate_slug(nome_display),
+        "cpf":               dados.get("cpf"),
+    }
+
+
+def _bf_resolve_slug(slug_base: str, id_camara: int, slugs_em_uso: set) -> str:
+    """
+    Garante unicidade do slug: se já existe no set, adiciona -{idCamara} como sufixo.
+    Atualiza slugs_em_uso com o slug final escolhido.
+    """
+    slug = slug_base
+    if slug in slugs_em_uso:
+        slug = f"{slug_base}-{id_camara}"
+        log.warning("⚠️  Slug duplicado — usando sufixo: %s", slug)
+    slugs_em_uso.add(slug)
+    return slug
+
+
+def run_backfill_deputados(engine, *, force: bool = False, slug_only: bool = False) -> None:
+    """
+    Percorre todos os deputados na tabela e preenche os campos de detalhe
+    via GET /deputados/{idCamara}.
+
+    Args:
+        engine:    SQLAlchemy engine conectado ao banco.
+        force:     Se True, processa todos; caso contrário só os incompletos.
+        slug_only: Se True, apenas regera slugs a partir do nome — sem chamar a API.
+    """
+    log.info("🚀 Backfill de deputados iniciado  [force=%s | slug_only=%s]", force, slug_only)
+
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text('SELECT id, "idCamara", nome, "nomeCivil", "urlFoto", "escolaridade", '
+                 '"situacao", "emailGabinete", slug, cpf FROM deputados ORDER BY "idCamara"')
+        ).mappings().all()
+
+    todos = [dict(r) for r in rows]
+    log.info("📋 Total de deputados no banco: %d", len(todos))
+
+    # Set global de slugs já em uso — alimentado com os slugs existentes no banco
+    # para evitar UniqueViolation tanto no slug_only quanto no fluxo principal.
+    slugs_em_uso: set[str] = {d["slug"] for d in todos if d.get("slug")}
+
+    # ── Modo slug_only ────────────────────────────────────────────────────────
+    if slug_only:
+        log.info("⚡ Modo slug_only: gerando slugs sem chamar a API")
+        # Limpa o set: vamos reger todos, então não queremos conflitar com os próprios valores atuais
+        slugs_em_uso.clear()
+        updates: list[dict] = []
+        for dep in todos:
+            slug_base = _bf_generate_slug(dep.get("nome"))
+            slug = _bf_resolve_slug(slug_base, dep["idCamara"], slugs_em_uso)
+            updates.append({"_pk": dep["id"], "slug": slug})
+
+        with engine.begin() as conn:
+            for u in updates:
+                conn.execute(text('UPDATE deputados SET slug=:slug WHERE id=:_pk'), u)
+        log.info("✅ %d slugs atualizados.", len(updates))
+        return
+
+    # ── Seleção do alvo ───────────────────────────────────────────────────────
+    alvo = todos if force else [d for d in todos if _bf_is_incompleto(d)]
+    log.info(
+        "%s %d/%d deputados selecionados para backfill",
+        "⚡ force=" if force else "🔍 incompletos:",
+        len(alvo), len(todos),
+    )
+
+    if not alvo:
+        log.info("✅ Nada a fazer — todos os deputados já estão completos.")
+        return
+
+    # No modo force, regera todos os slugs do zero — limpa o set para não
+    # colidir consigo mesmo ao reprocessar deputados já salvos.
+    if force:
+        slugs_em_uso.clear()
+
+    processados = atualizados = erros = sem_dados = 0
+
+    def _flush_one(diff: dict) -> bool:
+        """
+        Persiste um único deputado em sua própria transaction.
+        Retorna True em caso de sucesso, False se houve erro.
+        """
+        pk = diff.pop("_pk")
+        set_clause = ", ".join(f'"{k}"=:{k}' for k in diff)
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(f'UPDATE deputados SET {set_clause} WHERE id=:_pk'),
+                    {**diff, "_pk": pk},
+                )
+            return True
+        except Exception:
+            log.exception(
+                "❌ Falha ao salvar deputado id=%s — slug=%s",
+                pk, diff.get("slug"),
+            )
+            return False
+
+    for dep in alvo:
+        try:
+            resposta = _bf_get(f"/deputados/{dep['idCamara']}")
+            dados    = (resposta or {}).get("dados") or {}
+
+            if not dados:
+                log.warning("⚠️  Sem dados para idCamara=%s (%s)", dep["idCamara"], dep.get("nome"))
+                sem_dados += 1
+                continue
+
+            updates = _bf_build_updates(dados)
+
+            # Resolve slug com deduplicação antes de comparar com o banco
+            if updates.get("slug"):
+                updates["slug"] = _bf_resolve_slug(updates["slug"], dep["idCamara"], slugs_em_uso)
+
+            # Filtra apenas os campos que mudaram
+            diff = {k: v for k, v in updates.items() if v is not None and dep.get(k) != v}
+
+            if diff:
+                diff["_pk"] = dep["id"]
+                if _flush_one(diff):
+                    atualizados += 1
+                else:
+                    erros += 1
+                    continue
+
+            processados += 1
+
+            if processados % _BACKFILL_BATCH == 0:
+                log.info("🔄 %d/%d processados | %d atualizados | %d erros",
+                         processados, len(alvo), atualizados, erros)
+
+            time.sleep(_BACKFILL_SLEEP)
+
+        except Exception:
+            erros += 1
+            log.exception("❌ Erro ao processar idCamara=%s (%s)", dep.get("idCamara"), dep.get("nome"))
+
+    log.info("═" * 60)
+    log.info("🏁 Backfill de deputados concluído")
+    log.info("   Alvo        : %d", len(alvo))
+    log.info("   Processados : %d", processados)
+    log.info("   Atualizados : %d", atualizados)
+    log.info("   Sem dados   : %d", sem_dados)
+    log.info("   Erros       : %d", erros)
+    log.info("═" * 60)
+
+    if erros:
+        log.warning("⚠️  %d erros. Rode sem --backfill-force para retentar apenas os incompletos.", erros)
+
+
 # ===========================================================================
 # Pipeline
 # ===========================================================================
 
-def run_etl(datasets: list[Dataset], engine, *, force: bool = False, skip_historical: bool = False):
+def run_etl(
+    datasets: list[Dataset],
+    engine,
+    *,
+    force: bool = False,
+    skip_historical: bool = False,
+    backfill_deputados: bool = False,
+    backfill_force: bool = False,
+    backfill_slug_only: bool = False,
+):
     cache = {} if force else _cache_load()
     erros = []
     pulados_historico = 0
@@ -1267,6 +1578,18 @@ def run_etl(datasets: list[Dataset], engine, *, force: bool = False, skip_histor
                 log.error("Upsert error [%s]: %s", ds.nome, exc)
                 erros.append(ds.nome)
 
+        # ── Backfill de deputados: dispara imediatamente após o upsert do CSV ──
+        # Garante que todos os outros datasets (ocupações, cotas, votos…) já
+        # encontrem a tabela deputados completamente enriquecida ao resolver FKs.
+        if ds.nome == "deputados" and (backfill_deputados or backfill_force or backfill_slug_only):
+            if not force:
+                _cache_save(cache)  # persiste progresso antes de pausar para o backfill
+            run_backfill_deputados(
+                engine,
+                force=backfill_force,
+                slug_only=backfill_slug_only,
+            )
+
     if not force:
         _cache_save(cache)
 
@@ -1295,7 +1618,7 @@ def _get_legislaturas(engine) -> list[int]:
 def main():
     parser = argparse.ArgumentParser(description="ETL — Dados Abertos da Câmara dos Deputados")
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--full",    action="store_true", help="Carga histórica completa (2019–hoje)")
+    mode.add_argument("--full",    action="store_true", help="Carga histórica completa (2008–hoje)")
     mode.add_argument("--update",  action="store_true", help="Apenas o ano corrente (pula histórico automaticamente)")
     mode.add_argument("--dataset", type=str,            help="Prefixo do dataset (ex: votacoes, eventos)")
     parser.add_argument("--anos",  type=int, nargs="+", help="Anos específicos")
@@ -1303,6 +1626,24 @@ def main():
                         help="Ignora cache de ETag e reprocessa tudo (inclui anos históricos)")
     parser.add_argument("--cache-file", type=str, default=None,
                         help="Caminho do arquivo de cache (padrão: etl_cache.json)")
+
+    # ── Backfill de detalhes via API REST ──────────────────────────────────
+    backfill_grp = parser.add_argument_group(
+        "backfill",
+        "Enriquecimento de deputados via GET /deputados/{id} (roda após o ETL principal)",
+    )
+    backfill_grp.add_argument(
+        "--backfill-deputados", action="store_true", default=False,
+        help="Preenche campos de detalhe dos deputados incompletos após o ETL.",
+    )
+    backfill_grp.add_argument(
+        "--backfill-force", action="store_true", default=False,
+        help="Reprocessa TODOS os deputados, não só os incompletos (implica --backfill-deputados).",
+    )
+    backfill_grp.add_argument(
+        "--backfill-slug-only", action="store_true", default=False,
+        help="Apenas regera slugs a partir do nome — sem chamar a API REST.",
+    )
     args = parser.parse_args()
 
     if args.cache_file:
@@ -1334,7 +1675,15 @@ def main():
 
     log.info("Iniciando ETL: %d datasets | anos=%s | legislaturas=%s",
              len(catalog), anos, legislaturas)
-    run_etl(catalog, engine, force=args.force, skip_historical=skip_historical)
+    run_etl(
+        catalog,
+        engine,
+        force=args.force,
+        skip_historical=skip_historical,
+        backfill_deputados=args.backfill_deputados,
+        backfill_force=args.backfill_force,
+        backfill_slug_only=args.backfill_slug_only,
+    )
 
 
 if __name__ == "__main__":

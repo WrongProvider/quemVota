@@ -204,7 +204,7 @@ class ProposicaoService:
         """
         Retorna o detalhe completo de uma votação.
 
-        Inclui orientações por partido/bloco.
+        Inclui orientações por partido/bloco e votos individuais dos deputados.
         Lança HTTP 404 se a votação não existir.
         """
         logger.info("Detalhe da votação id=%s", votacao_id)

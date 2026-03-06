@@ -1,266 +1,737 @@
-2026-03-05 19:41:08,083 [INFO] etl_camara — Banco: localhost:5432/quemvota_teste
-2026-03-05 19:41:08,083 [INFO] etl_camara — Cache: etl_cache.json
-2026-03-05 19:41:08,096 [INFO] etl_camara — Iniciando ETL: 394 datasets | anos=[2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026] | legislaturas=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
-2026-03-05 19:41:08,321 [INFO] etl_camara — ✔ legislaturas.csv (57 linhas)
-2026-03-05 19:41:08,372 [INFO] etl_camara —   upsert legislaturas → 57 registros
-2026-03-05 19:41:08,883 [INFO] etl_camara — ✔ orgaos.csv (3804 linhas)
-2026-03-05 19:41:09,887 [INFO] etl_camara —   upsert orgaos → 3804 registros
-2026-03-05 19:41:10,337 [INFO] etl_camara — ✔ deputados.csv (7878 linhas)
-2026-03-05 19:41:12,210 [INFO] etl_camara —   upsert deputados → 7878 registros
-2026-03-05 19:41:12,936 [INFO] etl_camara — ✔ deputadosOcupacoes.csv (37445 linhas)
-2026-03-05 19:41:24,339 [INFO] etl_camara —   FK-insert _raw_deputadosOcupacoes → 33008 registros
-2026-03-05 19:41:24,818 [INFO] etl_camara — ✔ deputadosProfissoes.csv (12578 linhas)
-2026-03-05 19:41:28,841 [INFO] etl_camara —   FK-insert _raw_deputadosProfissoes → 12578 registros
-2026-03-05 19:41:29,245 [INFO] etl_camara — ✔ frentes.csv (1437 linhas)
-2026-03-05 19:41:30,866 [INFO] etl_camara —   FK-insert _raw_frentes → 1437 registros
-2026-03-05 19:41:34,712 [INFO] etl_camara — ✔ frentesDeputados.csv (261026 linhas)
-2026-03-05 19:47:53,039 [INFO] etl_camara —   FK-insert _raw_frentesDeputados → 261026 registros
-2026-03-05 19:47:53,421 [INFO] etl_camara — ✔ legislaturasMesas.csv (177 linhas)
-2026-03-05 19:47:53,548 [INFO] etl_camara —   upsert legislaturasMesas → 177 registros
-2026-03-05 19:47:53,785 [INFO] etl_camara — ✔ grupos.csv (118 linhas)
-2026-03-05 19:47:53,853 [INFO] etl_camara —   upsert grupos → 118 registros
-2026-03-05 19:47:54,403 [INFO] etl_camara — ✔ gruposMembros.csv (7086 linhas)
-2026-03-05 19:47:57,209 [INFO] etl_camara —   FK-insert _raw_gruposMembros → 7086 registros
-2026-03-05 19:47:57,474 [INFO] etl_camara — ✔ gruposHistorico.csv (408 linhas)
-2026-03-05 19:47:57,660 [INFO] etl_camara —   FK-insert _raw_gruposHistorico → 408 registros
-2026-03-05 19:47:58,246 [INFO] etl_camara — ✔ funcionarios.csv (14992 linhas)
-2026-03-05 19:48:01,150 [INFO] etl_camara —   upsert funcionarios → 14988 registros
-2026-03-05 19:48:01,331 [INFO] etl_camara — ✔ tecadCategorias.csv (79 linhas)
-2026-03-05 19:48:01,358 [INFO] etl_camara —   upsert tecadCategorias → 79 registros
-2026-03-05 19:48:02,474 [INFO] etl_camara — ✔ tecadTermos.csv (78615 linhas)
-2026-03-05 19:48:18,138 [INFO] etl_camara —   upsert tecadTermos → 78615 registros
-2026-03-05 19:48:18,606 [INFO] etl_camara — ✔ eventos-2008.csv (1967 linhas)
-2026-03-05 19:48:19,177 [INFO] etl_camara —   upsert eventos → 1967 registros
-2026-03-05 19:48:19,533 [INFO] etl_camara — ✔ eventosOrgaos-2008.csv (2051 linhas)
-2026-03-05 19:48:20,436 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 2051 registros
-2026-03-05 19:48:20,631 [INFO] etl_camara — ✔ eventosRequerimentos-2008.csv (215 linhas)
-2026-03-05 19:48:20,725 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 215 registros
-2026-03-05 19:48:21,593 [INFO] etl_camara — ✔ eventosPresencaDeputados-2008.csv (98816 linhas)
-2026-03-05 19:49:07,279 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 98816 registros
-2026-03-05 19:49:08,909 [INFO] etl_camara — ✔ proposicoes-2008.csv (30314 linhas)
-2026-03-05 19:49:25,862 [INFO] etl_camara —   upsert proposicoes → 30314 registros
-2026-03-05 19:49:27,259 [INFO] etl_camara — ✔ proposicoesAutores-2008.csv (128554 linhas)
-2026-03-05 19:52:29,281 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 128554 registros
-2026-03-05 19:52:29,708 [INFO] etl_camara — ✔ proposicoesTemas-2008.csv (9164 linhas)
-2026-03-05 19:52:34,918 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 9164 registros
-2026-03-05 19:52:35,611 [INFO] etl_camara — ✔ votacoes-2008.csv (7187 linhas)
-2026-03-05 19:52:40,782 [INFO] etl_camara —   FK-insert _raw_votacoes → 7187 registros
-2026-03-05 19:52:41,481 [INFO] etl_camara — ✔ votacoesVotos-2008.csv (32110 linhas)
-2026-03-05 19:52:58,101 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 32110 registros
-2026-03-05 19:52:58,473 [INFO] etl_camara — ✔ votacoesOrientacoes-2008.csv (1251 linhas)
-2026-03-05 19:52:58,901 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 1251 registros
-2026-03-05 19:52:59,471 [INFO] etl_camara — ✔ votacoesProposicoes-2008.csv (5447 linhas)
-2026-03-05 19:53:01,720 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 5447 registros
-2026-03-05 19:53:01,959 [INFO] etl_camara — ✔ licitacoes-2008.csv (277 linhas)
-2026-03-05 19:53:02,054 [INFO] etl_camara —   upsert licitacoes → 277 registros
-2026-03-05 19:53:02,361 [INFO] etl_camara — ✔ licitacoesPedidos-2008.csv (252 linhas)
-2026-03-05 19:53:02,478 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 252 registros
-2026-03-05 19:53:02,740 [INFO] etl_camara — ✔ licitacoesPropostas-2008.csv (824 linhas)
-2026-03-05 19:53:03,114 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 824 registros
-2026-03-05 19:53:03,652 [INFO] etl_camara — ✔ licitacoesItens-2008.csv (4719 linhas)
-2026-03-05 19:53:05,865 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 4719 registros
-2026-03-05 19:53:06,345 [INFO] etl_camara — ✔ licitacoesContratos-2008.csv (1828 linhas)
-2026-03-05 19:53:07,250 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1828 registros
-2026-03-05 19:53:07,717 [INFO] etl_camara — ✔ eventos-2009.csv (2762 linhas)
-2026-03-05 19:53:08,389 [INFO] etl_camara —   upsert eventos → 2762 registros
-2026-03-05 19:53:08,731 [INFO] etl_camara — ✔ eventosOrgaos-2009.csv (2900 linhas)
-2026-03-05 19:53:09,940 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 2900 registros
-2026-03-05 19:53:10,165 [INFO] etl_camara — ✔ eventosRequerimentos-2009.csv (381 linhas)
-2026-03-05 19:53:10,295 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 381 registros
-2026-03-05 19:53:11,172 [INFO] etl_camara — ✔ eventosPresencaDeputados-2009.csv (113720 linhas)
-2026-03-05 19:54:02,996 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 113720 registros
-2026-03-05 19:54:04,187 [INFO] etl_camara — ✔ proposicoes-2009.csv (31690 linhas)
-2026-03-05 19:54:21,120 [INFO] etl_camara —   upsert proposicoes → 31690 registros
-2026-03-05 19:54:21,833 [INFO] etl_camara — ✔ proposicoesAutores-2009.csv (43779 linhas)
-2026-03-05 19:55:15,842 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 43779 registros
-2026-03-05 19:55:16,337 [INFO] etl_camara — ✔ proposicoesTemas-2009.csv (9783 linhas)
-2026-03-05 19:55:21,900 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 9783 registros
-2026-03-05 19:55:22,646 [INFO] etl_camara — ✔ votacoes-2009.csv (8896 linhas)
-2026-03-05 19:55:29,074 [INFO] etl_camara —   FK-insert _raw_votacoes → 8896 registros
-2026-03-05 19:55:30,194 [INFO] etl_camara — ✔ votacoesVotos-2009.csv (45908 linhas)
-2026-03-05 19:55:54,353 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 45908 registros
-2026-03-05 19:55:54,769 [INFO] etl_camara — ✔ votacoesOrientacoes-2009.csv (1876 linhas)
-2026-03-05 19:55:55,436 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 1876 registros
-2026-03-05 19:55:56,197 [INFO] etl_camara — ✔ votacoesProposicoes-2009.csv (6697 linhas)
-2026-03-05 19:55:58,961 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 6697 registros
-2026-03-05 19:55:59,185 [INFO] etl_camara — ✔ licitacoes-2009.csv (259 linhas)
-2026-03-05 19:55:59,309 [INFO] etl_camara —   upsert licitacoes → 259 registros
-2026-03-05 19:55:59,711 [INFO] etl_camara — ✔ licitacoesPedidos-2009.csv (230 linhas)
-2026-03-05 19:55:59,836 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 230 registros
-2026-03-05 19:56:00,189 [INFO] etl_camara — ✔ licitacoesPropostas-2009.csv (889 linhas)
-2026-03-05 19:56:00,627 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 889 registros
-2026-03-05 19:56:01,360 [INFO] etl_camara — ✔ licitacoesItens-2009.csv (3068 linhas)
-2026-03-05 19:56:02,835 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 3068 registros
-2026-03-05 19:56:03,217 [INFO] etl_camara — ✔ licitacoesContratos-2009.csv (1750 linhas)
-2026-03-05 19:56:04,113 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1750 registros
-2026-03-05 19:56:04,516 [INFO] etl_camara — ✔ eventos-2010.csv (1550 linhas)
-2026-03-05 19:56:04,953 [INFO] etl_camara —   upsert eventos → 1550 registros
-2026-03-05 19:56:05,269 [INFO] etl_camara — ✔ eventosOrgaos-2010.csv (1591 linhas)
-2026-03-05 19:56:05,947 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 1591 registros
-2026-03-05 19:56:06,180 [INFO] etl_camara — ✔ eventosRequerimentos-2010.csv (209 linhas)
-2026-03-05 19:56:06,299 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 209 registros
-2026-03-05 19:56:06,986 [INFO] etl_camara — ✔ eventosPresencaDeputados-2010.csv (65406 linhas)
-2026-03-05 19:56:36,966 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 65406 registros
-2026-03-05 19:56:37,898 [INFO] etl_camara — ✔ proposicoes-2010.csv (18857 linhas)
-2026-03-05 19:56:48,095 [INFO] etl_camara —   upsert proposicoes → 18857 registros
-2026-03-05 19:56:48,714 [INFO] etl_camara — ✔ proposicoesAutores-2010.csv (21891 linhas)
-2026-03-05 19:57:13,017 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 21891 registros
-2026-03-05 19:57:13,409 [INFO] etl_camara — ✔ proposicoesTemas-2010.csv (5239 linhas)
-2026-03-05 19:57:16,376 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 5239 registros
-2026-03-05 19:57:16,965 [INFO] etl_camara — ✔ votacoes-2010.csv (5422 linhas)
-2026-03-05 19:57:20,958 [INFO] etl_camara —   FK-insert _raw_votacoes → 5422 registros
-2026-03-05 19:57:21,698 [INFO] etl_camara — ✔ votacoesVotos-2010.csv (22295 linhas)
-2026-03-05 19:57:33,423 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 22295 registros
-2026-03-05 19:57:33,728 [INFO] etl_camara — ✔ votacoesOrientacoes-2010.csv (1003 linhas)
-2026-03-05 19:57:34,078 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 1003 registros
-2026-03-05 19:57:34,602 [INFO] etl_camara — ✔ votacoesProposicoes-2010.csv (4508 linhas)
-2026-03-05 19:57:36,473 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 4508 registros
-2026-03-05 19:57:36,732 [INFO] etl_camara — ✔ licitacoes-2010.csv (360 linhas)
-2026-03-05 19:57:36,852 [INFO] etl_camara —   upsert licitacoes → 360 registros
-2026-03-05 19:57:37,235 [INFO] etl_camara — ✔ licitacoesPedidos-2010.csv (317 linhas)
-2026-03-05 19:57:37,383 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 317 registros
-2026-03-05 19:57:37,663 [INFO] etl_camara — ✔ licitacoesPropostas-2010.csv (788 linhas)
-2026-03-05 19:57:38,028 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 788 registros
-2026-03-05 19:57:38,558 [INFO] etl_camara — ✔ licitacoesItens-2010.csv (4283 linhas)
-2026-03-05 19:57:40,569 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 4283 registros
-2026-03-05 19:57:41,028 [INFO] etl_camara — ✔ licitacoesContratos-2010.csv (1677 linhas)
-2026-03-05 19:57:41,909 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1677 registros
-2026-03-05 19:57:42,416 [INFO] etl_camara — ✔ eventos-2011.csv (2628 linhas)
-2026-03-05 19:57:43,053 [INFO] etl_camara —   upsert eventos → 2628 registros
-2026-03-05 19:57:43,405 [INFO] etl_camara — ✔ eventosOrgaos-2011.csv (2707 linhas)
-2026-03-05 19:57:44,603 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 2707 registros
-2026-03-05 19:57:44,834 [INFO] etl_camara — ✔ eventosRequerimentos-2011.csv (396 linhas)
-2026-03-05 19:57:44,982 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 396 registros
-2026-03-05 19:57:45,963 [INFO] etl_camara — ✔ eventosPresencaDeputados-2011.csv (111966 linhas)
-2026-03-05 19:58:38,403 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 111966 registros
-2026-03-05 19:58:39,655 [INFO] etl_camara — ✔ proposicoes-2011.csv (33594 linhas)
-2026-03-05 19:58:57,967 [INFO] etl_camara —   upsert proposicoes → 33594 registros
-2026-03-05 19:58:58,707 [INFO] etl_camara — ✔ proposicoesAutores-2011.csv (39850 linhas)
-2026-03-05 19:59:51,845 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 39850 registros
-2026-03-05 19:59:52,329 [INFO] etl_camara — ✔ proposicoesTemas-2011.csv (9751 linhas)
-2026-03-05 19:59:57,886 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 9751 registros
-2026-03-05 19:59:58,462 [INFO] etl_camara — ✔ votacoes-2011.csv (6268 linhas)
-2026-03-05 20:00:02,965 [INFO] etl_camara —   FK-insert _raw_votacoes → 6268 registros
-2026-03-05 20:00:03,743 [INFO] etl_camara — ✔ votacoesVotos-2011.csv (33235 linhas)
-2026-03-05 20:00:21,180 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 33235 registros
-2026-03-05 20:00:21,581 [INFO] etl_camara — ✔ votacoesOrientacoes-2011.csv (1283 linhas)
-2026-03-05 20:00:22,033 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 1283 registros
-2026-03-05 20:00:22,607 [INFO] etl_camara — ✔ votacoesProposicoes-2011.csv (4169 linhas)
-2026-03-05 20:00:24,289 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 4169 registros
-2026-03-05 20:00:24,527 [INFO] etl_camara — ✔ licitacoes-2011.csv (287 linhas)
-2026-03-05 20:00:24,675 [INFO] etl_camara —   upsert licitacoes → 287 registros
-2026-03-05 20:00:24,991 [INFO] etl_camara — ✔ licitacoesPedidos-2011.csv (241 linhas)
-2026-03-05 20:00:25,110 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 241 registros
-2026-03-05 20:00:25,379 [INFO] etl_camara — ✔ licitacoesPropostas-2011.csv (723 linhas)
-2026-03-05 20:00:25,719 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 723 registros
-2026-03-05 20:00:26,335 [INFO] etl_camara — ✔ licitacoesItens-2011.csv (4358 linhas)
-2026-03-05 20:00:28,378 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 4358 registros
-2026-03-05 20:00:28,749 [INFO] etl_camara — ✔ licitacoesContratos-2011.csv (1561 linhas)
-2026-03-05 20:00:29,526 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1561 registros
-2026-03-05 20:00:29,973 [INFO] etl_camara — ✔ eventos-2012.csv (2251 linhas)
-2026-03-05 20:00:30,493 [INFO] etl_camara —   upsert eventos → 2251 registros
-2026-03-05 20:00:30,853 [INFO] etl_camara — ✔ eventosOrgaos-2012.csv (2317 linhas)
-2026-03-05 20:00:31,812 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 2317 registros
-2026-03-05 20:00:32,068 [INFO] etl_camara — ✔ eventosRequerimentos-2012.csv (359 linhas)
-2026-03-05 20:00:32,200 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 359 registros
-2026-03-05 20:00:32,972 [INFO] etl_camara — ✔ eventosPresencaDeputados-2012.csv (94138 linhas)
-2026-03-05 20:01:15,802 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 94138 registros
-2026-03-05 20:01:17,036 [INFO] etl_camara — ✔ proposicoes-2012.csv (23491 linhas)
-2026-03-05 20:01:30,383 [INFO] etl_camara —   upsert proposicoes → 23491 registros
-2026-03-05 20:01:30,995 [INFO] etl_camara — ✔ proposicoesAutores-2012.csv (27924 linhas)
-2026-03-05 20:02:07,155 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 27924 registros
-2026-03-05 20:02:07,703 [INFO] etl_camara — ✔ proposicoesTemas-2012.csv (5503 linhas)
-2026-03-05 20:02:10,891 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 5503 registros
-2026-03-05 20:02:11,492 [INFO] etl_camara — ✔ votacoes-2012.csv (5434 linhas)
-2026-03-05 20:02:15,236 [INFO] etl_camara —   FK-insert _raw_votacoes → 5434 registros
-2026-03-05 20:02:15,937 [INFO] etl_camara — ✔ votacoesVotos-2012.csv (22729 linhas)
-2026-03-05 20:02:27,622 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 22729 registros
-2026-03-05 20:02:27,969 [INFO] etl_camara — ✔ votacoesOrientacoes-2012.csv (1057 linhas)
-2026-03-05 20:02:28,326 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 1057 registros
-2026-03-05 20:02:28,848 [INFO] etl_camara — ✔ votacoesProposicoes-2012.csv (3711 linhas)
-2026-03-05 20:02:30,325 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 3711 registros
-2026-03-05 20:02:30,576 [INFO] etl_camara — ✔ licitacoes-2012.csv (282 linhas)
-2026-03-05 20:02:30,674 [INFO] etl_camara —   upsert licitacoes → 282 registros
-2026-03-05 20:02:31,015 [INFO] etl_camara — ✔ licitacoesPedidos-2012.csv (267 linhas)
-2026-03-05 20:02:31,135 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 267 registros
-2026-03-05 20:02:31,444 [INFO] etl_camara — ✔ licitacoesPropostas-2012.csv (678 linhas)
-2026-03-05 20:02:31,771 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 678 registros
-2026-03-05 20:02:32,511 [INFO] etl_camara — ✔ licitacoesItens-2012.csv (3188 linhas)
-2026-03-05 20:02:34,009 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 3188 registros
-2026-03-05 20:02:34,338 [INFO] etl_camara — ✔ licitacoesContratos-2012.csv (1445 linhas)
-2026-03-05 20:02:35,051 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1445 registros
-2026-03-05 20:02:35,525 [INFO] etl_camara — ✔ eventos-2013.csv (3299 linhas)
-2026-03-05 20:02:36,307 [INFO] etl_camara —   upsert eventos → 3299 registros
-2026-03-05 20:02:36,700 [INFO] etl_camara — ✔ eventosOrgaos-2013.csv (3416 linhas)
-2026-03-05 20:02:38,150 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 3416 registros
-2026-03-05 20:02:38,430 [INFO] etl_camara — ✔ eventosRequerimentos-2013.csv (665 linhas)
-2026-03-05 20:02:38,652 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 665 registros
-2026-03-05 20:02:39,529 [INFO] etl_camara — ✔ eventosPresencaDeputados-2013.csv (123554 linhas)
-2026-03-05 20:03:37,734 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 123554 registros
-2026-03-05 20:03:38,928 [INFO] etl_camara — ✔ proposicoes-2013.csv (29162 linhas)
-2026-03-05 20:03:55,419 [INFO] etl_camara —   upsert proposicoes → 29162 registros
-2026-03-05 20:03:56,172 [INFO] etl_camara — ✔ proposicoesAutores-2013.csv (42882 linhas)
-2026-03-05 20:04:52,551 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 42882 registros
-2026-03-05 20:04:53,002 [INFO] etl_camara — ✔ proposicoesTemas-2013.csv (7782 linhas)
-2026-03-05 20:04:57,452 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 7782 registros
-2026-03-05 20:04:58,127 [INFO] etl_camara — ✔ votacoes-2013.csv (7256 linhas)
-2026-03-05 20:05:03,392 [INFO] etl_camara —   FK-insert _raw_votacoes → 7256 registros
-2026-03-05 20:05:04,380 [INFO] etl_camara — ✔ votacoesVotos-2013.csv (43597 linhas)
-2026-03-05 20:05:27,375 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 43597 registros
-2026-03-05 20:05:27,829 [INFO] etl_camara — ✔ votacoesOrientacoes-2013.csv (2403 linhas)
-2026-03-05 20:05:28,641 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 2403 registros
-2026-03-05 20:05:29,146 [INFO] etl_camara — ✔ votacoesProposicoes-2013.csv (4801 linhas)
-2026-03-05 20:05:31,089 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 4801 registros
-2026-03-05 20:05:31,342 [INFO] etl_camara — ✔ licitacoes-2013.csv (279 linhas)
-2026-03-05 20:05:31,448 [INFO] etl_camara —   upsert licitacoes → 279 registros
-2026-03-05 20:05:31,830 [INFO] etl_camara — ✔ licitacoesPedidos-2013.csv (253 linhas)
-2026-03-05 20:05:31,954 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 253 registros
-2026-03-05 20:05:32,258 [INFO] etl_camara — ✔ licitacoesPropostas-2013.csv (683 linhas)
-2026-03-05 20:05:32,594 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 683 registros
-2026-03-05 20:05:33,146 [INFO] etl_camara — ✔ licitacoesItens-2013.csv (3308 linhas)
-2026-03-05 20:05:34,795 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 3308 registros
-2026-03-05 20:05:35,156 [INFO] etl_camara — ✔ licitacoesContratos-2013.csv (1334 linhas)
-2026-03-05 20:05:35,848 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1334 registros
-2026-03-05 20:05:36,277 [INFO] etl_camara — ✔ eventos-2014.csv (2143 linhas)
-2026-03-05 20:05:36,794 [INFO] etl_camara —   upsert eventos → 2143 registros
-2026-03-05 20:05:37,143 [INFO] etl_camara — ✔ eventosOrgaos-2014.csv (2188 linhas)
-2026-03-05 20:05:38,132 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 2188 registros
-2026-03-05 20:05:38,416 [INFO] etl_camara — ✔ eventosRequerimentos-2014.csv (591 linhas)
-2026-03-05 20:05:38,601 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 591 registros
-2026-03-05 20:05:39,344 [INFO] etl_camara — ✔ eventosPresencaDeputados-2014.csv (75134 linhas)
-2026-03-05 20:06:13,984 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 75134 registros
-2026-03-05 20:06:14,926 [INFO] etl_camara — ✔ proposicoes-2014.csv (17403 linhas)
-2026-03-05 20:06:24,618 [INFO] etl_camara —   upsert proposicoes → 17403 registros
-2026-03-05 20:06:25,247 [INFO] etl_camara — ✔ proposicoesAutores-2014.csv (21271 linhas)
-2026-03-05 20:06:54,017 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 21271 registros
-2026-03-05 20:06:54,396 [INFO] etl_camara — ✔ proposicoesTemas-2014.csv (4101 linhas)
-2026-03-05 20:06:56,665 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 4101 registros
-2026-03-05 20:06:57,162 [INFO] etl_camara — ✔ votacoes-2014.csv (3525 linhas)
-2026-03-05 20:06:59,591 [INFO] etl_camara —   FK-insert _raw_votacoes → 3525 registros
-2026-03-05 20:07:00,502 [INFO] etl_camara — ✔ votacoesVotos-2014.csv (25213 linhas)
-2026-03-05 20:07:13,486 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 25213 registros
-2026-03-05 20:07:13,996 [INFO] etl_camara — ✔ votacoesOrientacoes-2014.csv (1429 linhas)
-2026-03-05 20:07:14,473 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 1429 registros
-2026-03-05 20:07:14,929 [INFO] etl_camara — ✔ votacoesProposicoes-2014.csv (2373 linhas)
-2026-03-05 20:07:15,920 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 2373 registros
-2026-03-05 20:07:16,192 [INFO] etl_camara — ✔ licitacoes-2014.csv (265 linhas)
-2026-03-05 20:07:16,291 [INFO] etl_camara —   upsert licitacoes → 265 registros
-2026-03-05 20:07:16,658 [INFO] etl_camara — ✔ licitacoesPedidos-2014.csv (263 linhas)
-2026-03-05 20:07:16,787 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 263 registros
-2026-03-05 20:07:17,080 [INFO] etl_camara — ✔ licitacoesPropostas-2014.csv (683 linhas)
-2026-03-05 20:07:17,396 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 683 registros
-2026-03-05 20:07:18,058 [INFO] etl_camara — ✔ licitacoesItens-2014.csv (3649 linhas)
-2026-03-05 20:07:19,782 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 3649 registros
-2026-03-05 20:07:20,287 [INFO] etl_camara — ✔ licitacoesContratos-2014.csv (1204 linhas)
-2026-03-05 20:07:20,873 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 1204 registros
-2026-03-05 20:07:21,387 [INFO] etl_camara — ✔ eventos-2015.csv (3937 linhas)
-2026-03-05 20:07:22,314 [INFO] etl_camara —   upsert eventos → 3937 registros
-2026-03-05 20:07:22,679 [INFO] etl_camara — ✔ eventosOrgaos-2015.csv (4085 linhas)
-2026-03-05 20:07:24,427 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 4085 registros
-2026-03-05 20:07:24,896 [INFO] etl_camara — ✔ eventosRequerimentos-2015.csv (2414 linhas)
-2026-03-05 20:07:25,661 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 2414 registros
-2026-03-05 20:07:26,814 [INFO] etl_camara — ✔ eventosPresencaDeputados-2015.csv (181413 linhas)
-2026-03-05 20:08:49,290 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 181413 registros
-2026-03-05 20:08:50,989 [INFO] etl_camara — ✔ proposicoes-2015.csv (39659 linhas)
-2026-03-05 20:09:12,788 [INFO] etl_camara —   upsert proposicoes → 39659 registros
-2026-03-05 20:09:13,936 [INFO] etl_camara — ✔ proposicoesAutores-2015.csv (55740 linhas)
+2026-03-06 12:00:22,004 [INFO] etl_camara — Banco: localhost:5432/quemvota_teste
+2026-03-06 12:00:22,004 [INFO] etl_camara — Cache: etl_cache.json
+2026-03-06 12:00:22,018 [INFO] etl_camara — Iniciando ETL: 88 datasets | anos=[2026] | legislaturas=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
+2026-03-06 12:00:22,280 [INFO] etl_camara — ✔ legislaturas.csv (57 linhas)
+2026-03-06 12:00:22,333 [INFO] etl_camara —   upsert legislaturas → 57 registros
+2026-03-06 12:00:22,882 [INFO] etl_camara — ✔ orgaos.csv (3804 linhas)
+2026-03-06 12:00:23,850 [INFO] etl_camara —   upsert orgaos → 3804 registros
+2026-03-06 12:00:24,349 [INFO] etl_camara — ✔ deputados.csv (7878 linhas)
+2026-03-06 12:00:26,214 [INFO] etl_camara —   upsert deputados → 7878 registros
+2026-03-06 12:00:26,214 [INFO] etl_camara — 🚀 Backfill de deputados iniciado  [force=True | slug_only=False]
+2026-03-06 12:00:26,283 [INFO] etl_camara — 📋 Total de deputados no banco: 7878
+2026-03-06 12:00:26,283 [INFO] etl_camara — ⚡ force= 7878/7878 deputados selecionados para backfill
+2026-03-06 12:00:48,845 [INFO] etl_camara — 🔄 50/7878 processados | 50 atualizados | 0 erros
+2026-03-06 12:01:11,554 [INFO] etl_camara — 🔄 100/7878 processados | 100 atualizados | 0 erros
+2026-03-06 12:01:32,949 [INFO] etl_camara — 🔄 150/7878 processados | 150 atualizados | 0 erros
+2026-03-06 12:01:39,740 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pires-ferreira-256
+2026-03-06 12:01:40,115 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pereira-de-brito-257
+2026-03-06 12:01:53,216 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: galvao-293
+2026-03-06 12:01:53,598 [INFO] etl_camara — 🔄 200/7878 processados | 200 atualizados | 0 erros
+2026-03-06 12:02:05,494 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: maciel-monteiro-324
+2026-03-06 12:02:14,337 [INFO] etl_camara — 🔄 250/7878 processados | 250 atualizados | 0 erros
+2026-03-06 12:02:19,136 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pedreira-357
+2026-03-06 12:02:33,527 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: lopes-gama-394
+2026-03-06 12:02:35,017 [INFO] etl_camara — 🔄 300/7878 processados | 300 atualizados | 0 erros
+2026-03-06 12:02:37,845 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: gomes-de-campos-403
+2026-03-06 12:02:39,876 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: cajueiro-409
+2026-03-06 12:02:44,260 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: wanderley-419
+2026-03-06 12:02:48,887 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: barbosa-431
+2026-03-06 12:02:51,714 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: lima-e-silva-438
+2026-03-06 12:02:52,897 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: monteiro-de-barros-441
+2026-03-06 12:02:56,316 [INFO] etl_camara — 🔄 350/7878 processados | 350 atualizados | 0 erros
+2026-03-06 12:02:58,496 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: paes-de-andrade-455
+2026-03-06 12:03:06,779 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: junqueira-475
+2026-03-06 12:03:09,447 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: fernandes-de-barros-481
+2026-03-06 12:03:17,762 [INFO] etl_camara — 🔄 400/7878 processados | 400 atualizados | 0 erros
+2026-03-06 12:03:34,391 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carneiro-de-campos-543
+2026-03-06 12:03:37,065 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: macedo-549
+2026-03-06 12:03:39,138 [INFO] etl_camara — 🔄 450/7878 processados | 450 atualizados | 0 erros
+2026-03-06 12:03:39,565 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: paranhos-555
+2026-03-06 12:03:51,105 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: silva-guimaraes-571
+2026-03-06 12:04:04,926 [INFO] etl_camara — 🔄 500/7878 processados | 500 atualizados | 0 erros
+2026-03-06 12:04:19,008 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: araujo-lima-625
+2026-03-06 12:04:30,821 [INFO] etl_camara — 🔄 550/7878 processados | 550 atualizados | 0 erros
+2026-03-06 12:04:34,250 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: freitas-663
+2026-03-06 12:04:42,593 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: dantas-684
+2026-03-06 12:04:45,916 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: araujo-lima-693
+2026-03-06 12:04:47,907 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: fernandes-vieira-698
+2026-03-06 12:04:48,333 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: ribeiro-700
+2026-03-06 12:04:51,618 [INFO] etl_camara — 🔄 600/7878 processados | 600 atualizados | 0 erros
+2026-03-06 12:04:58,500 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: rocha-franco-726
+2026-03-06 12:05:04,624 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carneiro-da-cunha-742
+2026-03-06 12:05:07,534 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: garcia-de-almeida-749
+2026-03-06 12:05:12,168 [INFO] etl_camara — 🔄 650/7878 processados | 650 atualizados | 0 erros
+2026-03-06 12:05:13,407 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: costa-pinto-764
+2026-03-06 12:05:13,805 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: gaviao-peixoto-765
+2026-03-06 12:05:17,707 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: tavares-bastos-775
+2026-03-06 12:05:19,324 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: junqueira-779
+2026-03-06 12:05:23,671 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: ferreira-da-veiga-789
+2026-03-06 12:05:26,256 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carneiro-da-cunha-795
+2026-03-06 12:05:26,655 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: silveira-da-mota-796
+2026-03-06 12:05:28,659 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: sousa-mendes-802
+2026-03-06 12:05:29,091 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: raposo-da-camara-803
+2026-03-06 12:05:31,085 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: lessa-808
+2026-03-06 12:05:33,153 [INFO] etl_camara — 🔄 700/7878 processados | 700 atualizados | 0 erros
+2026-03-06 12:05:35,601 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: souto-819
+2026-03-06 12:05:36,406 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: figueiredo-821
+2026-03-06 12:05:38,156 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: vasconcelos-825
+2026-03-06 12:05:42,645 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: limpo-de-abreu-836
+2026-03-06 12:05:45,575 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: godoi-843
+2026-03-06 12:05:45,970 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pereira-de-brito-844
+2026-03-06 12:05:51,712 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: macedo-858
+2026-03-06 12:05:54,313 [INFO] etl_camara — 🔄 750/7878 processados | 750 atualizados | 0 erros
+2026-03-06 12:05:54,687 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: paula-souza-866
+2026-03-06 12:06:05,420 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: felicio-dos-santos-892
+2026-03-06 12:06:05,803 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: melo-franco-893
+2026-03-06 12:06:11,947 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: batista-pereira-908
+2026-03-06 12:06:13,573 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: morais-costa-912
+2026-03-06 12:06:14,754 [INFO] etl_camara — 🔄 800/7878 processados | 800 atualizados | 0 erros
+2026-03-06 12:06:19,021 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: figueiredo-rocha-927
+2026-03-06 12:06:19,429 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: goncalves-da-silva-928
+2026-03-06 12:06:21,767 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: fontes-934
+2026-03-06 12:06:23,037 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: almeida-e-albuquerque-937
+2026-03-06 12:06:23,889 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: melo-matos-940
+2026-03-06 12:06:26,761 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: paranhos-947
+2026-03-06 12:06:27,536 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: benjamim-949
+2026-03-06 12:06:33,892 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: assis-rocha-965
+2026-03-06 12:06:34,769 [INFO] etl_camara — 🔄 850/7878 processados | 850 atualizados | 0 erros
+2026-03-06 12:06:35,147 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: correia-968
+2026-03-06 12:06:36,316 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: barros-barreto-971
+2026-03-06 12:06:41,199 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: azambuja-985
+2026-03-06 12:06:42,815 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: belisario-989
+2026-03-06 12:06:45,094 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: galvao-994
+2026-03-06 12:06:54,073 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carneiro-leao-1017
+2026-03-06 12:06:55,245 [INFO] etl_camara — 🔄 900/7878 processados | 900 atualizados | 0 erros
+2026-03-06 12:07:06,402 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: rocha-1049
+2026-03-06 12:07:11,082 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pires-ferreira-1061
+2026-03-06 12:07:15,092 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: almeida-couto-1071
+2026-03-06 12:07:16,107 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: bulcao-1072
+2026-03-06 12:07:16,112 [INFO] etl_camara — 🔄 950/7878 processados | 950 atualizados | 0 erros
+2026-03-06 12:07:24,900 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: lemos-1094
+2026-03-06 12:07:26,079 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: melo-franco-1097
+2026-03-06 12:07:34,589 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: freitas-1118
+2026-03-06 12:07:36,526 [INFO] etl_camara — 🔄 1000/7878 processados | 1000 atualizados | 0 erros
+2026-03-06 12:07:38,124 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-carlos-1128
+2026-03-06 12:07:39,713 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: barros-pimentel-1133
+2026-03-06 12:07:45,695 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: monjardim-1148
+2026-03-06 12:07:56,866 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: peretti-1176
+2026-03-06 12:07:56,871 [INFO] etl_camara — 🔄 1050/7878 processados | 1050 atualizados | 0 erros
+2026-03-06 12:07:57,241 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: rego-barros-1177
+2026-03-06 12:07:57,615 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: castelo-branco-1178
+2026-03-06 12:08:05,014 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: ribeiro-da-luz-1197
+2026-03-06 12:08:06,193 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: leitao-da-cunha-1200
+2026-03-06 12:08:07,379 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: correia-de-araujo-1203
+2026-03-06 12:08:08,934 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joaquim-pedro-1207
+2026-03-06 12:08:10,121 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: castrioto-1210
+2026-03-06 12:08:10,496 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: valdetaro-1211
+2026-03-06 12:08:16,963 [INFO] etl_camara — 🔄 1100/7878 processados | 1100 atualizados | 0 erros
+2026-03-06 12:08:17,340 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: matoso-camara-1229
+2026-03-06 12:08:18,483 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: domingues-da-silva-1232
+2026-03-06 12:08:21,696 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pedro-brandao-1241
+2026-03-06 12:08:22,082 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: costa-aguiar-1242
+2026-03-06 12:08:25,601 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: miranda-ribeiro-1252
+2026-03-06 12:08:26,936 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: silva-tavares-1255
+2026-03-06 12:08:28,497 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pedro-luis-1259
+2026-03-06 12:08:32,835 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: martim-francisco-1272
+2026-03-06 12:08:34,514 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: goncalves-martins-1276
+2026-03-06 12:08:35,279 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: nabuco-de-araujo-1278
+2026-03-06 12:08:36,866 [INFO] etl_camara — 🔄 1150/7878 processados | 1150 atualizados | 0 erros
+2026-03-06 12:08:56,718 [INFO] etl_camara — 🔄 1200/7878 processados | 1200 atualizados | 0 erros
+2026-03-06 12:09:07,307 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-carlos-1588
+2026-03-06 12:09:16,762 [INFO] etl_camara — 🔄 1250/7878 processados | 1250 atualizados | 0 erros
+2026-03-06 12:09:19,581 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: liberato-barroso-1634
+2026-03-06 12:09:20,537 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: figueiredo-1637
+2026-03-06 12:09:31,439 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: correia-rabelo-1675
+2026-03-06 12:09:31,855 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: costa-machado-1676
+2026-03-06 12:09:37,566 [INFO] etl_camara — 🔄 1300/7878 processados | 1300 atualizados | 0 erros
+2026-03-06 12:09:54,887 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: almeida-pereira-1762
+2026-03-06 12:09:57,312 [INFO] etl_camara — 🔄 1350/7878 processados | 1350 atualizados | 0 erros
+2026-03-06 12:09:58,505 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: viriato-de-medeiros-1774
+2026-03-06 12:10:09,464 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: rodrigues-lima-1817
+2026-03-06 12:10:13,058 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-de-siqueira-1828
+2026-03-06 12:10:17,618 [INFO] etl_camara — 🔄 1400/7878 processados | 1400 atualizados | 0 erros
+2026-03-06 12:10:21,330 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: lima-duarte-1853
+2026-03-06 12:10:22,538 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: monteiro-de-barros-1857
+2026-03-06 12:10:23,340 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: otoni-1860
+2026-03-06 12:10:35,224 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: costa-azevedo-1907
+2026-03-06 12:10:36,019 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: euzebio-de-queiroz-1909
+2026-03-06 12:10:38,049 [INFO] etl_camara — 🔄 1450/7878 processados | 1450 atualizados | 0 erros
+2026-03-06 12:10:41,657 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: oliveira-braga-1934
+2026-03-06 12:10:58,109 [INFO] etl_camara — 🔄 1500/7878 processados | 1500 atualizados | 0 erros
+2026-03-06 12:11:00,052 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pereira-dos-santos-2001
+2026-03-06 12:11:06,405 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: ferreira-franca-2027
+2026-03-06 12:11:13,915 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: esperidiao-2047
+2026-03-06 12:11:14,675 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: felicio-dos-santos-2049
+2026-03-06 12:11:19,853 [INFO] etl_camara — 🔄 1550/7878 processados | 1550 atualizados | 0 erros
+2026-03-06 12:11:26,562 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pereira-lima-2090
+2026-03-06 12:11:35,245 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: melo-matos-2125
+2026-03-06 12:11:38,331 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: dias-vieira-2131
+2026-03-06 12:11:42,170 [INFO] etl_camara — 🔄 1600/7878 processados | 1600 atualizados | 0 erros
+2026-03-06 12:11:46,425 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: julio-de-melo-2158
+2026-03-06 12:11:49,311 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: alvares-de-azevedo-2168
+2026-03-06 12:11:51,326 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: borges-monteiro-2174
+2026-03-06 12:11:53,480 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: ferreira-braga-2183
+2026-03-06 12:11:57,055 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: ferreira-pena-2192
+2026-03-06 12:11:58,222 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: leao-veloso-2195
+2026-03-06 12:12:00,887 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: figueiredo-rocha-2208
+2026-03-06 12:12:04,102 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-penido-2220
+2026-03-06 12:12:04,545 [INFO] etl_camara — 🔄 1650/7878 processados | 1650 atualizados | 0 erros
+2026-03-06 12:12:14,941 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: costa-pinto-2263
+2026-03-06 12:12:23,187 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: paulino-de-sousa-2288
+2026-03-06 12:12:27,623 [INFO] etl_camara — 🔄 1700/7878 processados | 1700 atualizados | 0 erros
+2026-03-06 12:12:36,281 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: moreira-da-rocha-2335
+2026-03-06 12:12:42,308 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: mata-machado-2352
+2026-03-06 12:12:46,299 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: cunha-vasconcelos-2364
+2026-03-06 12:12:47,893 [INFO] etl_camara — 🔄 1750/7878 processados | 1750 atualizados | 0 erros
+2026-03-06 12:13:01,644 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pedro-luis-2421
+2026-03-06 12:13:02,423 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: castelo-branco-2424
+2026-03-06 12:13:03,986 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: costa-ribeiro-2430
+2026-03-06 12:13:07,254 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antunes-maciel-2438
+2026-03-06 12:13:08,074 [INFO] etl_camara — 🔄 1800/7878 processados | 1800 atualizados | 0 erros
+2026-03-06 12:13:09,259 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: ponce-de-leon-2445
+2026-03-06 12:13:12,492 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: castro-rebelo-2455
+2026-03-06 12:13:22,831 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: albuquerque-maranhao-2485
+2026-03-06 12:13:24,060 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: correia-de-brito-2490
+2026-03-06 12:13:26,564 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: azevedo-sodre-2497
+2026-03-06 12:13:28,153 [INFO] etl_camara — 🔄 1850/7878 processados | 1850 atualizados | 0 erros
+2026-03-06 12:13:32,885 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: francisco-campos-2518
+2026-03-06 12:13:43,553 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: rego-barros-2557
+2026-03-06 12:13:45,070 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joaquim-de-mello-2567
+2026-03-06 12:13:47,793 [INFO] etl_camara — 🔄 1900/7878 processados | 1900 atualizados | 0 erros
+2026-03-06 12:14:02,516 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: araujo-lima-2638
+2026-03-06 12:14:07,733 [INFO] etl_camara — 🔄 1950/7878 processados | 1950 atualizados | 0 erros
+2026-03-06 12:14:18,242 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: leitao-da-cunha-2710
+2026-03-06 12:14:22,165 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: generoso-ponce-2729
+2026-03-06 12:14:23,751 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: melo-franco-2741
+2026-03-06 12:14:27,815 [INFO] etl_camara — 🔄 2000/7878 processados | 2000 atualizados | 0 erros
+2026-03-06 12:14:32,567 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: lacerda-werneck-2798
+2026-03-06 12:14:33,366 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: rodrigues-alves-2802
+2026-03-06 12:14:34,506 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: deodato-maia-2807
+2026-03-06 12:14:43,827 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: alencar-araripe-2848
+2026-03-06 12:14:47,166 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-henrique-2874
+2026-03-06 12:14:48,364 [INFO] etl_camara — 🔄 2050/7878 processados | 2050 atualizados | 0 erros
+2026-03-06 12:15:08,680 [INFO] etl_camara — 🔄 2100/7878 processados | 2100 atualizados | 0 erros
+2026-03-06 12:15:25,897 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pinheiro-machado-3019
+2026-03-06 12:15:28,712 [INFO] etl_camara — 🔄 2150/7878 processados | 2150 atualizados | 0 erros
+2026-03-06 12:15:48,492 [INFO] etl_camara — 🔄 2200/7878 processados | 2200 atualizados | 0 erros
+2026-03-06 12:15:55,878 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: neto-campelo-3112
+2026-03-06 12:16:03,499 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: teofilo-otoni-3136
+2026-03-06 12:16:08,580 [INFO] etl_camara — 🔄 2250/7878 processados | 2250 atualizados | 0 erros
+2026-03-06 12:16:13,734 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: martim-francisco-3559
+2026-03-06 12:16:15,290 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: delfim-moreira-3588
+2026-03-06 12:16:20,035 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-marcelino-3629
+2026-03-06 12:16:28,376 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: tosta-3681
+2026-03-06 12:16:28,382 [INFO] etl_camara — 🔄 2300/7878 processados | 2300 atualizados | 0 erros
+2026-03-06 12:16:47,982 [INFO] etl_camara — 🔄 2350/7878 processados | 2350 atualizados | 0 erros
+2026-03-06 12:16:50,329 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: gomes-de-matos-3858
+2026-03-06 12:17:00,049 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: almeida-torres-3965
+2026-03-06 12:17:03,226 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: furtado-3988
+2026-03-06 12:17:04,418 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: alcides-lima-4002
+2026-03-06 12:17:08,075 [INFO] etl_camara — 🔄 2400/7878 processados | 2400 atualizados | 0 erros
+2026-03-06 12:17:09,626 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pires-ferreira-4043
+2026-03-06 12:17:11,587 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-pinheiro-4058
+2026-03-06 12:17:28,017 [INFO] etl_camara — 🔄 2450/7878 processados | 2450 atualizados | 0 erros
+2026-03-06 12:17:48,000 [INFO] etl_camara — 🔄 2500/7878 processados | 2500 atualizados | 0 erros
+2026-03-06 12:17:49,134 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: melo-franco-4379
+2026-03-06 12:17:55,454 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: morais-barros-4431
+2026-03-06 12:17:55,868 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pedro-borges-4432
+2026-03-06 12:18:07,891 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: simoes-lopes-4498
+2026-03-06 12:18:07,897 [INFO] etl_camara — 🔄 2550/7878 processados | 2550 atualizados | 0 erros
+2026-03-06 12:18:11,013 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-bonifacio-4512
+2026-03-06 12:18:11,775 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-paulino-4516
+2026-03-06 12:18:12,150 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pires-de-carvalho-4518
+2026-03-06 12:18:13,336 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: araujo-gois-4523
+2026-03-06 12:18:17,953 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pacheco-e-silva-4554
+2026-03-06 12:18:19,894 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: simoes-lopes-4565
+2026-03-06 12:18:20,651 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: rocha-faria-4567
+2026-03-06 12:18:26,242 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: alcantara-machado-4596
+2026-03-06 12:18:27,080 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-carlos-4598
+2026-03-06 12:18:27,464 [INFO] etl_camara — 🔄 2600/7878 processados | 2600 atualizados | 0 erros
+2026-03-06 12:18:40,458 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: barros-penteado-4668
+2026-03-06 12:18:40,852 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-carlos-4671
+2026-03-06 12:18:47,101 [INFO] etl_camara — 🔄 2650/7878 processados | 2650 atualizados | 0 erros
+2026-03-06 12:18:47,510 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pinheiro-chagas-4712
+2026-03-06 12:19:07,298 [INFO] etl_camara — 🔄 2700/7878 processados | 2700 atualizados | 0 erros
+2026-03-06 12:19:07,676 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: gama-cerqueira-4801
+2026-03-06 12:19:19,444 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-martins-4858
+2026-03-06 12:19:24,139 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: manuel-duarte-4882
+2026-03-06 12:19:26,871 [INFO] etl_camara — 🔄 2750/7878 processados | 2750 atualizados | 0 erros
+2026-03-06 12:19:46,298 [INFO] etl_camara — 🔄 2800/7878 processados | 2800 atualizados | 0 erros
+2026-03-06 12:19:59,920 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: cunha-lima-73444
+2026-03-06 12:20:05,989 [INFO] etl_camara — 🔄 2850/7878 processados | 2850 atualizados | 0 erros
+2026-03-06 12:20:09,201 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: santos-filho-73467
+2026-03-06 12:20:25,746 [INFO] etl_camara — 🔄 2900/7878 processados | 2900 atualizados | 0 erros
+2026-03-06 12:20:45,459 [INFO] etl_camara — 🔄 2950/7878 processados | 2950 atualizados | 0 erros
+2026-03-06 12:21:05,658 [INFO] etl_camara — 🔄 3000/7878 processados | 3000 atualizados | 0 erros
+2026-03-06 12:21:25,302 [INFO] etl_camara — 🔄 3050/7878 processados | 3050 atualizados | 0 erros
+2026-03-06 12:21:31,496 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-teixeira-73744
+2026-03-06 12:21:37,442 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: affonso-camargo-73765
+2026-03-06 12:21:44,841 [INFO] etl_camara — 🔄 3100/7878 processados | 3100 atualizados | 0 erros
+2026-03-06 12:21:52,777 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: roberto-franca-73804
+2026-03-06 12:22:04,491 [INFO] etl_camara — 🔄 3150/7878 processados | 3150 atualizados | 0 erros
+2026-03-06 12:22:16,287 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: paulo-gouvea-73884
+2026-03-06 12:22:24,135 [INFO] etl_camara — 🔄 3200/7878 processados | 3200 atualizados | 0 erros
+2026-03-06 12:22:33,042 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-nogueira-73927
+2026-03-06 12:22:43,575 [INFO] etl_camara — 🔄 3250/7878 processados | 3250 atualizados | 0 erros
+2026-03-06 12:23:03,517 [INFO] etl_camara — 🔄 3300/7878 processados | 3300 atualizados | 0 erros
+2026-03-06 12:23:07,198 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: costa-ferreira-74016
+2026-03-06 12:23:24,330 [INFO] etl_camara — 🔄 3350/7878 processados | 3350 atualizados | 0 erros
+2026-03-06 12:23:44,609 [INFO] etl_camara — 🔄 3400/7878 processados | 3400 atualizados | 0 erros
+2026-03-06 12:24:04,473 [INFO] etl_camara — 🔄 3450/7878 processados | 3450 atualizados | 0 erros
+2026-03-06 12:24:15,969 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-jorge-74186
+2026-03-06 12:24:19,164 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-joaquim-74194
+2026-03-06 12:24:22,232 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-alberto-74202
+2026-03-06 12:24:24,804 [INFO] etl_camara — 🔄 3500/7878 processados | 3500 atualizados | 0 erros
+2026-03-06 12:24:40,192 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: candido-mendes-74246
+2026-03-06 12:24:45,514 [INFO] etl_camara — 🔄 3550/7878 processados | 3550 atualizados | 0 erros
+2026-03-06 12:24:46,690 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-batista-74261
+2026-03-06 12:25:02,830 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: paes-de-andrade-74302
+2026-03-06 12:25:05,356 [INFO] etl_camara — 🔄 3600/7878 processados | 3600 atualizados | 0 erros
+2026-03-06 12:25:08,534 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-henrique-74316
+2026-03-06 12:25:32,007 [INFO] etl_camara — 🔄 3650/7878 processados | 3650 atualizados | 0 erros
+2026-03-06 12:25:32,437 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: sergio-carvalho-74360
+2026-03-06 12:26:04,856 [INFO] etl_camara — 🔄 3700/7878 processados | 3700 atualizados | 0 erros
+2026-03-06 12:26:24,009 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-jorge-74424
+2026-03-06 12:26:49,872 [INFO] etl_camara — 🔄 3750/7878 processados | 3750 atualizados | 0 erros
+2026-03-06 12:27:10,363 [INFO] etl_camara — 🔄 3800/7878 processados | 3800 atualizados | 0 erros
+2026-03-06 12:27:11,157 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: wilson-cunha-74531
+2026-03-06 12:27:30,508 [INFO] etl_camara — 🔄 3850/7878 processados | 3850 atualizados | 0 erros
+2026-03-06 12:27:52,706 [INFO] etl_camara — 🔄 3900/7878 processados | 3900 atualizados | 0 erros
+2026-03-06 12:28:01,275 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-sampaio-74685
+2026-03-06 12:28:07,786 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: fleury-74700
+2026-03-06 12:28:14,624 [INFO] etl_camara — 🔄 3950/7878 processados | 3950 atualizados | 0 erros
+2026-03-06 12:28:36,372 [INFO] etl_camara — 🔄 4000/7878 processados | 4000 atualizados | 0 erros
+2026-03-06 12:28:54,191 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-mendes-74849
+2026-03-06 12:28:59,195 [INFO] etl_camara — 🔄 4050/7878 processados | 4050 atualizados | 0 erros
+2026-03-06 12:29:20,760 [INFO] etl_camara — 🔄 4100/7878 processados | 4100 atualizados | 0 erros
+2026-03-06 12:29:31,016 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: atila-lira-123086
+2026-03-06 12:29:35,227 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: dionisio-cerqueira-130103
+2026-03-06 12:29:36,104 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: moreira-brandao-130105
+2026-03-06 12:29:42,028 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: gaspar-drumond-130124
+2026-03-06 12:29:42,915 [INFO] etl_camara — 🔄 4150/7878 processados | 4150 atualizados | 0 erros
+2026-03-06 12:29:43,343 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: almino-affonso-130127
+2026-03-06 12:29:51,114 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: prudente-de-morais-130150
+2026-03-06 12:29:55,091 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: vaz-de-melo-130159
+2026-03-06 12:29:58,015 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: baeta-neves-130166
+2026-03-06 12:30:05,030 [INFO] etl_camara — 🔄 4200/7878 processados | 4200 atualizados | 0 erros
+2026-03-06 12:30:17,224 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: rocha-cavalcanti-130206
+2026-03-06 12:30:24,070 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: sergio-de-oliveira-130222
+2026-03-06 12:30:29,321 [INFO] etl_camara — 🔄 4250/7878 processados | 4250 atualizados | 0 erros
+2026-03-06 12:30:38,960 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: fernando-magalhaes-130255
+2026-03-06 12:30:45,659 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: bueno-brandao-130271
+2026-03-06 12:30:52,534 [INFO] etl_camara — 🔄 4300/7878 processados | 4300 atualizados | 0 erros
+2026-03-06 12:31:00,182 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: cordeiro-de-miranda-130304
+2026-03-06 12:31:00,614 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-pinto-130305
+2026-03-06 12:31:02,021 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: costa-neto-130308
+2026-03-06 12:31:03,381 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carlos-de-campos-130310
+2026-03-06 12:31:10,498 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: batista-pereira-130326
+2026-03-06 12:31:15,097 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: afonso-de-carvalho-130338
+2026-03-06 12:31:15,505 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: bueno-brandao-130339
+2026-03-06 12:31:15,937 [INFO] etl_camara — 🔄 4350/7878 processados | 4350 atualizados | 0 erros
+2026-03-06 12:31:17,143 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: coelho-rodrigues-130343
+2026-03-06 12:31:17,579 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: castelo-branco-130344
+2026-03-06 12:31:20,139 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: sampaio-vidal-130350
+2026-03-06 12:31:27,272 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: xavier-de-oliveira-130368
+2026-03-06 12:31:36,975 [INFO] etl_camara — 🔄 4400/7878 processados | 4400 atualizados | 0 erros
+2026-03-06 12:31:47,310 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: manhaes-barreto-130418
+2026-03-06 12:31:57,647 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: lacerda-werneck-130442
+2026-03-06 12:31:58,102 [INFO] etl_camara — 🔄 4450/7878 processados | 4450 atualizados | 0 erros
+2026-03-06 12:32:03,121 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: ferreira-lima-130454
+2026-03-06 12:32:04,849 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-augusto-130458
+2026-03-06 12:32:10,958 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: leandro-maciel-130471
+2026-03-06 12:32:20,071 [INFO] etl_camara — 🔄 4500/7878 processados | 4500 atualizados | 0 erros
+2026-03-06 12:32:22,517 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: wilson-cunha-130501
+2026-03-06 12:32:26,666 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: alberto-torres-130511
+2026-03-06 12:32:32,186 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: costa-rodrigues-130523
+2026-03-06 12:32:36,288 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pereira-lima-130533
+2026-03-06 12:32:42,232 [INFO] etl_camara — 🔄 4550/7878 processados | 4550 atualizados | 0 erros
+2026-03-06 12:32:59,496 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: cunha-machado-130589
+2026-03-06 12:33:02,309 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: israel-pinheiro-130596
+2026-03-06 12:33:02,314 [INFO] etl_camara — 🔄 4600/7878 processados | 4600 atualizados | 0 erros
+2026-03-06 12:33:04,803 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: cardoso-de-mello-130602
+2026-03-06 12:33:10,154 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-alves-130615
+2026-03-06 12:33:10,558 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: flores-da-cunha-130616
+2026-03-06 12:33:11,372 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pontes-vieira-130618
+2026-03-06 12:33:22,956 [INFO] etl_camara — 🔄 4650/7878 processados | 4650 atualizados | 0 erros
+2026-03-06 12:33:28,257 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: rocha-loures-130660
+2026-03-06 12:33:36,940 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carvalho-neto-130681
+2026-03-06 12:33:40,938 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: monteiro-de-barros-130691
+2026-03-06 12:33:41,721 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: santa-rosa-130693
+2026-03-06 12:33:43,245 [INFO] etl_camara — 🔄 4700/7878 processados | 4700 atualizados | 0 erros
+2026-03-06 12:33:54,109 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: armando-monteiro-130724
+2026-03-06 12:33:54,487 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: arthur-virgilio-130725
+2026-03-06 12:33:55,747 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: munhoz-da-rocha-130728
+2026-03-06 12:34:00,878 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: bias-fortes-130741
+2026-03-06 12:34:03,708 [INFO] etl_camara — 🔄 4750/7878 processados | 4750 atualizados | 0 erros
+2026-03-06 12:34:23,919 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pimenta-da-veiga-130798
+2026-03-06 12:34:24,348 [INFO] etl_camara — 🔄 4800/7878 processados | 4800 atualizados | 0 erros
+2026-03-06 12:34:31,186 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-maria-130816
+2026-03-06 12:34:35,387 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: castro-pinto-130827
+2026-03-06 12:34:38,641 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: mario-martins-130835
+2026-03-06 12:34:39,786 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: miguel-calmon-130838
+2026-03-06 12:34:42,207 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: nestor-duarte-130844
+2026-03-06 12:34:44,593 [INFO] etl_camara — 🔄 4850/7878 processados | 4850 atualizados | 0 erros
+2026-03-06 12:34:48,607 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: souza-leao-130860
+2026-03-06 12:34:54,961 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pereira-da-silva-130876
+2026-03-06 12:34:56,262 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pereira-pinto-130879
+2026-03-06 12:34:58,262 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pereira-nunes-130884
+2026-03-06 12:35:04,901 [INFO] etl_camara — 🔄 4900/7878 processados | 4900 atualizados | 0 erros
+2026-03-06 12:35:16,681 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carlos-alberto-130928
+2026-03-06 12:35:21,771 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: moreira-da-rocha-130940
+2026-03-06 12:35:25,893 [INFO] etl_camara — 🔄 4950/7878 processados | 4950 atualizados | 0 erros
+2026-03-06 12:35:43,946 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-lisboa-130996
+2026-03-06 12:35:44,328 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-ribeiro-130997
+2026-03-06 12:35:45,978 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-mendes-131001
+2026-03-06 12:35:45,982 [INFO] etl_camara — 🔄 5000/7878 processados | 5000 atualizados | 0 erros
+2026-03-06 12:35:47,999 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carvalho-neto-131006
+2026-03-06 12:36:02,483 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: lino-machado-131043
+2026-03-06 12:36:06,477 [INFO] etl_camara — 🔄 5050/7878 processados | 5050 atualizados | 0 erros
+2026-03-06 12:36:14,639 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: costa-rego-131074
+2026-03-06 12:36:16,621 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: nilo-coelho-131079
+2026-03-06 12:36:22,565 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: baeta-neves-131094
+2026-03-06 12:36:26,760 [INFO] etl_camara — 🔄 5100/7878 processados | 5100 atualizados | 0 erros
+2026-03-06 12:36:28,435 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: plinio-costa-131108
+2026-03-06 12:36:34,604 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: vieira-de-melo-131124
+2026-03-06 12:36:40,513 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: correa-da-costa-131138
+2026-03-06 12:36:47,378 [INFO] etl_camara — 🔄 5150/7878 processados | 5150 atualizados | 0 erros
+2026-03-06 12:36:48,204 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: arruda-camara-131159
+2026-03-06 12:36:52,907 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pereira-pinto-131171
+2026-03-06 12:36:56,890 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: martins-junior-131181
+2026-03-06 12:36:57,273 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: cunha-bueno-131182
+2026-03-06 12:37:07,507 [INFO] etl_camara — 🔄 5200/7878 processados | 5200 atualizados | 0 erros
+2026-03-06 12:37:11,065 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: mata-machado-131215
+2026-03-06 12:37:28,053 [INFO] etl_camara — 🔄 5250/7878 processados | 5250 atualizados | 0 erros
+2026-03-06 12:37:30,836 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-lyra-131264
+2026-03-06 12:37:39,697 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: monteiro-de-castro-131286
+2026-03-06 12:37:48,125 [INFO] etl_camara — 🔄 5300/7878 processados | 5300 atualizados | 0 erros
+2026-03-06 12:37:52,723 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: miguel-couto-131315
+2026-03-06 12:38:07,840 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pinheiro-chagas-131339
+2026-03-06 12:38:15,225 [INFO] etl_camara — 🔄 5350/7878 processados | 5350 atualizados | 0 erros
+2026-03-06 12:38:20,322 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: simao-da-cunha-131369
+2026-03-06 12:38:34,952 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: arthur-santos-131400
+2026-03-06 12:38:38,328 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: edgard-pereira-131406
+2026-03-06 12:38:38,782 [INFO] etl_camara — 🔄 5400/7878 processados | 5400 atualizados | 0 erros
+2026-03-06 12:38:49,057 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: americo-de-souza-131429
+2026-03-06 12:38:50,260 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: tourinho-dantas-131432
+2026-03-06 12:38:58,286 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: leopoldo-peres-131451
+2026-03-06 12:38:59,564 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: luiz-braga-131453
+2026-03-06 12:39:01,177 [INFO] etl_camara — 🔄 5450/7878 processados | 5450 atualizados | 0 erros
+2026-03-06 12:39:11,014 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pedro-carneiro-131476
+2026-03-06 12:39:13,915 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: monteiro-de-barros-131483
+2026-03-06 12:39:16,419 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: vieira-de-melo-131489
+2026-03-06 12:39:16,835 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: castro-e-silva-131490
+2026-03-06 12:39:24,061 [INFO] etl_camara — 🔄 5500/7878 processados | 5500 atualizados | 0 erros
+2026-03-06 12:39:36,590 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: francisco-rocha-131538
+2026-03-06 12:39:45,118 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-pedro-131557
+2026-03-06 12:39:45,122 [INFO] etl_camara — 🔄 5550/7878 processados | 5550 atualizados | 0 erros
+2026-03-06 12:39:49,184 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-bonifacio-131567
+2026-03-06 12:39:49,592 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: gomes-do-amaral-131568
+2026-03-06 12:39:53,837 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: josias-gomes-131578
+2026-03-06 12:39:57,064 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: luiz-couto-131586
+2026-03-06 12:40:06,181 [INFO] etl_camara — 🔄 5600/7878 processados | 5600 atualizados | 0 erros
+2026-03-06 12:40:15,741 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: adalberto-camargo-131630
+2026-03-06 12:40:20,768 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: alvaro-dias-131642
+2026-03-06 12:40:23,301 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: correa-da-costa-131648
+2026-03-06 12:40:24,596 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: feu-rosa-131651
+2026-03-06 12:40:24,988 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-annibelli-131652
+2026-03-06 12:40:27,021 [INFO] etl_camara — 🔄 5650/7878 processados | 5650 atualizados | 0 erros
+2026-03-06 12:40:35,137 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: daniel-silva-131678
+2026-03-06 12:40:35,914 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: freitas-diniz-131680
+2026-03-06 12:40:39,099 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: nina-ribeiro-131688
+2026-03-06 12:40:40,268 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: fernando-goncalves-131691
+2026-03-06 12:40:47,422 [INFO] etl_camara — 🔄 5700/7878 processados | 5700 atualizados | 0 erros
+2026-03-06 12:40:55,207 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-menezes-131727
+2026-03-06 12:41:00,627 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-alves-131740
+2026-03-06 12:41:05,090 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pinheiro-machado-131750
+2026-03-06 12:41:08,285 [INFO] etl_camara — 🔄 5750/7878 processados | 5750 atualizados | 0 erros
+2026-03-06 12:41:18,114 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: oswaldo-lima-131781
+2026-03-06 12:41:27,329 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: cardoso-de-almeida-131804
+2026-03-06 12:41:27,704 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: silvio-lopes-131805
+2026-03-06 12:41:28,883 [INFO] etl_camara — 🔄 5800/7878 processados | 5800 atualizados | 0 erros
+2026-03-06 12:41:33,608 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-de-assis-131820
+2026-03-06 12:41:46,384 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-amaral-131853
+2026-03-06 12:41:48,743 [INFO] etl_camara — 🔄 5850/7878 processados | 5850 atualizados | 0 erros
+2026-03-06 12:41:50,729 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: augusto-franco-131864
+2026-03-06 12:42:08,859 [INFO] etl_camara — 🔄 5900/7878 processados | 5900 atualizados | 0 erros
+2026-03-06 12:42:10,433 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: fernando-magalhaes-131913
+2026-03-06 12:42:29,312 [INFO] etl_camara — 🔄 5950/7878 processados | 5950 atualizados | 0 erros
+2026-03-06 12:42:39,291 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-machado-131984
+2026-03-06 12:42:49,406 [INFO] etl_camara — 🔄 6000/7878 processados | 6000 atualizados | 0 erros
+2026-03-06 12:42:50,165 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: ferreira-martins-132011
+2026-03-06 12:43:07,831 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: paulo-guerra-132054
+2026-03-06 12:43:08,254 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: paulo-nogueira-132055
+2026-03-06 12:43:10,244 [INFO] etl_camara — 🔄 6050/7878 processados | 6050 atualizados | 0 erros
+2026-03-06 12:43:11,848 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: gomes-da-silva-132064
+2026-03-06 12:43:30,308 [INFO] etl_camara — 🔄 6100/7878 processados | 6100 atualizados | 0 erros
+2026-03-06 12:43:35,080 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: correia-lima-132122
+2026-03-06 12:43:44,818 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jurandyr-paixao-132146
+2026-03-06 12:43:45,608 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carvalho-leal-132148
+2026-03-06 12:43:50,375 [INFO] etl_camara — 🔄 6150/7878 processados | 6150 atualizados | 0 erros
+2026-03-06 12:44:00,406 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: mendes-ribeiro-133859
+2026-03-06 12:44:01,201 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-elias-133861
+2026-03-06 12:44:10,623 [INFO] etl_camara — 🔄 6200/7878 processados | 6200 atualizados | 0 erros
+2026-03-06 12:44:12,181 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: mario-chermont-133889
+2026-03-06 12:44:16,232 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carlos-albuquerque-133899
+2026-03-06 12:44:30,494 [INFO] etl_camara — 🔄 6250/7878 processados | 6250 atualizados | 0 erros
+2026-03-06 12:44:39,839 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: ciro-nogueira-133957
+2026-03-06 12:44:44,316 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: paulo-ramos-133968
+2026-03-06 12:44:44,721 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-paulo-133969
+2026-03-06 12:44:46,359 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: eurico-ribeiro-133973
+2026-03-06 12:44:49,247 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-alves-133980
+2026-03-06 12:44:51,219 [INFO] etl_camara — 🔄 6300/7878 processados | 6300 atualizados | 0 erros
+2026-03-06 12:45:17,649 [INFO] etl_camara — 🔄 6350/7878 processados | 6350 atualizados | 0 erros
+2026-03-06 12:45:24,928 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: bezerra-de-melo-139161
+2026-03-06 12:45:37,683 [INFO] etl_camara — 🔄 6400/7878 processados | 6400 atualizados | 0 erros
+2026-03-06 12:45:45,959 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: francisco-sales-139213
+2026-03-06 12:45:58,311 [INFO] etl_camara — 🔄 6450/7878 processados | 6450 atualizados | 0 erros
+2026-03-06 12:45:59,497 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jesse-freire-139246
+2026-03-06 12:46:00,669 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-agripino-139249
+2026-03-06 12:46:09,589 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-melo-139270
+2026-03-06 12:46:19,156 [INFO] etl_camara — 🔄 6500/7878 processados | 6500 atualizados | 0 erros
+2026-03-06 12:46:20,768 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: maria-lucia-139298
+2026-03-06 12:46:31,904 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: oscar-correa-139326
+2026-03-06 12:46:34,664 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: paulo-marques-139333
+2026-03-06 12:46:39,562 [INFO] etl_camara — 🔄 6550/7878 processados | 6550 atualizados | 0 erros
+2026-03-06 12:46:52,516 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: vieira-da-silva-139377
+2026-03-06 12:46:59,841 [INFO] etl_camara — 🔄 6600/7878 processados | 6600 atualizados | 0 erros
+2026-03-06 12:47:12,253 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: vieira-da-cunha-141400
+2026-03-06 12:47:20,260 [INFO] etl_camara — 🔄 6650/7878 processados | 6650 atualizados | 0 erros
+2026-03-06 12:47:31,853 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: barbosa-neto-141449
+2026-03-06 12:47:35,575 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-carlos-bacelar-141458
+2026-03-06 12:47:35,973 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-maia-141459
+2026-03-06 12:47:40,567 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-guimaraes-141470
+2026-03-06 12:47:40,571 [INFO] etl_camara — 🔄 6700/7878 processados | 6700 atualizados | 0 erros
+2026-03-06 12:47:57,732 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: bilac-pinto-141513
+2026-03-06 12:48:00,482 [INFO] etl_camara — 🔄 6750/7878 processados | 6750 atualizados | 0 erros
+2026-03-06 12:48:05,326 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: rocha-loures-141532
+2026-03-06 12:48:20,588 [INFO] etl_camara — 🔄 6800/7878 processados | 6800 atualizados | 0 erros
+2026-03-06 12:48:40,664 [INFO] etl_camara — 🔄 6850/7878 processados | 6850 atualizados | 0 erros
+2026-03-06 12:48:41,465 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-carlos-159262
+2026-03-06 12:48:43,420 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-batista-160317
+2026-03-06 12:48:43,822 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carlos-alberto-160318
+2026-03-06 12:48:44,609 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: jose-humberto-160396
+2026-03-06 12:48:56,469 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: marcio-macedo-160542
+2026-03-06 12:49:00,757 [INFO] etl_camara — 🔄 6900/7878 processados | 6900 atualizados | 0 erros
+2026-03-06 12:49:09,361 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-arruda-160573
+2026-03-06 12:49:21,016 [INFO] etl_camara — 🔄 6950/7878 processados | 6950 atualizados | 0 erros
+2026-03-06 12:49:21,843 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carlos-magno-160605
+2026-03-06 12:49:38,251 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: luiz-carlos-160645
+2026-03-06 12:49:41,511 [INFO] etl_camara — 🔄 7000/7878 processados | 7000 atualizados | 0 erros
+2026-03-06 12:49:42,285 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: ricardo-izar-160655
+2026-03-06 12:49:51,032 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: fernando-torres-160676
+2026-03-06 12:49:53,450 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: hugo-napoleao-160974
+2026-03-06 12:50:02,352 [INFO] etl_camara — 🔄 7050/7878 processados | 7050 atualizados | 0 erros
+2026-03-06 12:50:03,520 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carlos-roberto-165583
+2026-03-06 12:50:14,399 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: fabio-reis-171623
+2026-03-06 12:50:20,686 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: oliveira-belo-176334
+2026-03-06 12:50:22,676 [INFO] etl_camara — 🔄 7100/7878 processados | 7100 atualizados | 0 erros
+2026-03-06 12:50:34,961 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: rocha-178840
+2026-03-06 12:50:45,596 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: macedo-178867
+2026-03-06 12:50:47,629 [INFO] etl_camara — 🔄 7150/7878 processados | 7150 atualizados | 0 erros
+2026-03-06 12:51:07,824 [INFO] etl_camara — 🔄 7200/7878 processados | 7200 atualizados | 0 erros
+2026-03-06 12:51:24,314 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carlos-gomes-178962
+2026-03-06 12:51:28,194 [INFO] etl_camara — 🔄 7250/7878 processados | 7250 atualizados | 0 erros
+2026-03-06 12:51:35,907 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: sergio-reis-178991
+2026-03-06 12:51:48,235 [INFO] etl_camara — 🔄 7300/7878 processados | 7300 atualizados | 0 erros
+2026-03-06 12:52:01,487 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: rogerio-silva-198963
+2026-03-06 12:52:08,309 [INFO] etl_camara — 🔄 7350/7878 processados | 7350 atualizados | 0 erros
+2026-03-06 12:52:12,938 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: helio-costa-204373
+2026-03-06 12:52:27,825 [INFO] etl_camara — 🔄 7400/7878 processados | 7400 atualizados | 0 erros
+2026-03-06 12:52:49,262 [INFO] etl_camara — 🔄 7450/7878 processados | 7450 atualizados | 0 erros
+2026-03-06 12:53:09,802 [INFO] etl_camara — 🔄 7500/7878 processados | 7500 atualizados | 0 erros
+2026-03-06 12:53:31,480 [INFO] etl_camara — 🔄 7550/7878 processados | 7550 atualizados | 0 erros
+2026-03-06 12:53:34,227 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: joao-roma-204576
+2026-03-06 12:53:39,649 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: reinhold-stephanes-205865
+2026-03-06 12:53:46,289 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: dr-joao-213679
+2026-03-06 12:53:51,544 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: pedreira-216072
+2026-03-06 12:53:51,941 [INFO] etl_camara — 🔄 7600/7878 processados | 7600 atualizados | 0 erros
+2026-03-06 12:54:03,306 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: albuquerque-220538
+2026-03-06 12:54:05,333 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: antonio-andrade-220544
+2026-03-06 12:54:11,594 [INFO] etl_camara — 🔄 7650/7878 processados | 7650 atualizados | 0 erros
+2026-03-06 12:54:31,721 [INFO] etl_camara — 🔄 7700/7878 processados | 7700 atualizados | 0 erros
+2026-03-06 12:54:32,099 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: bebeto-220612
+2026-03-06 12:54:49,591 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: andre-fernandes-220657
+2026-03-06 12:54:51,157 [INFO] etl_camara — 🔄 7750/7878 processados | 7750 atualizados | 0 erros
+2026-03-06 12:55:11,270 [INFO] etl_camara — 🔄 7800/7878 processados | 7800 atualizados | 0 erros
+2026-03-06 12:55:18,190 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: carvalho-de-mendonca-225374
+2026-03-06 12:55:19,742 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: martinho-campos-226061
+2026-03-06 12:55:20,914 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: costa-machado-226064
+2026-03-06 12:55:23,675 [WARNING] etl_camara — ⚠️  Slug duplicado — usando sufixo: mariana-carvalho-227275
+2026-03-06 12:55:31,473 [INFO] etl_camara — 🔄 7850/7878 processados | 7850 atualizados | 0 erros
+2026-03-06 12:55:42,967 [INFO] etl_camara — ════════════════════════════════════════════════════════════
+2026-03-06 12:55:42,967 [INFO] etl_camara — 🏁 Backfill de deputados concluído
+2026-03-06 12:55:42,967 [INFO] etl_camara —    Alvo        : 7878
+2026-03-06 12:55:42,967 [INFO] etl_camara —    Processados : 7878
+2026-03-06 12:55:42,967 [INFO] etl_camara —    Atualizados : 7878
+2026-03-06 12:55:42,967 [INFO] etl_camara —    Sem dados   : 0
+2026-03-06 12:55:42,967 [INFO] etl_camara —    Erros       : 0
+2026-03-06 12:55:42,967 [INFO] etl_camara — ════════════════════════════════════════════════════════════
+2026-03-06 12:55:43,727 [INFO] etl_camara — ✔ deputadosOcupacoes.csv (37445 linhas)
+2026-03-06 12:55:55,029 [INFO] etl_camara —   FK-insert _raw_deputadosOcupacoes → 33008 registros
+2026-03-06 12:55:55,669 [INFO] etl_camara — ✔ deputadosProfissoes.csv (12578 linhas)
+2026-03-06 12:55:59,476 [INFO] etl_camara —   FK-insert _raw_deputadosProfissoes → 12578 registros
+2026-03-06 12:56:00,004 [INFO] etl_camara — ✔ frentes.csv (1437 linhas)
+2026-03-06 12:56:01,687 [INFO] etl_camara —   FK-insert _raw_frentes → 1437 registros
+2026-03-06 12:56:05,456 [INFO] etl_camara — ✔ frentesDeputados.csv (261026 linhas)
+2026-03-06 13:01:40,049 [INFO] etl_camara —   FK-insert _raw_frentesDeputados → 261026 registros
+2026-03-06 13:01:40,353 [INFO] etl_camara — ✔ legislaturasMesas.csv (177 linhas)
+2026-03-06 13:01:40,468 [INFO] etl_camara —   upsert legislaturasMesas → 177 registros
+2026-03-06 13:01:40,686 [INFO] etl_camara — ✔ grupos.csv (118 linhas)
+2026-03-06 13:01:40,749 [INFO] etl_camara —   upsert grupos → 118 registros
+2026-03-06 13:01:41,315 [INFO] etl_camara — ✔ gruposMembros.csv (7086 linhas)
+2026-03-06 13:01:44,155 [INFO] etl_camara —   FK-insert _raw_gruposMembros → 7086 registros
+2026-03-06 13:01:44,440 [INFO] etl_camara — ✔ gruposHistorico.csv (408 linhas)
+2026-03-06 13:01:44,621 [INFO] etl_camara —   FK-insert _raw_gruposHistorico → 408 registros
+2026-03-06 13:01:45,168 [INFO] etl_camara — ✔ funcionarios.csv (14970 linhas)
+2026-03-06 13:01:47,987 [INFO] etl_camara —   upsert funcionarios → 14966 registros
+2026-03-06 13:01:48,159 [INFO] etl_camara — ✔ tecadCategorias.csv (79 linhas)
+2026-03-06 13:01:48,223 [INFO] etl_camara —   upsert tecadCategorias → 79 registros
+2026-03-06 13:01:49,627 [INFO] etl_camara — ✔ tecadTermos.csv (78631 linhas)
+2026-03-06 13:02:04,084 [INFO] etl_camara —   upsert tecadTermos → 78631 registros
+2026-03-06 13:02:04,350 [INFO] etl_camara — ✔ eventos-2026.csv (206 linhas)
+2026-03-06 13:02:04,438 [INFO] etl_camara —   upsert eventos → 206 registros
+2026-03-06 13:02:04,643 [INFO] etl_camara — ✔ eventosOrgaos-2026.csv (206 linhas)
+2026-03-06 13:02:04,736 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 206 registros
+2026-03-06 13:02:04,901 [INFO] etl_camara — ✔ eventosRequerimentos-2026.csv (70 linhas)
+2026-03-06 13:02:04,925 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 70 registros
+2026-03-06 13:02:05,306 [INFO] etl_camara — ✔ eventosPresencaDeputados-2026.csv (9161 linhas)
+2026-03-06 13:02:09,477 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 9161 registros
+2026-03-06 13:02:10,284 [INFO] etl_camara — ✔ proposicoes-2026.csv (7128 linhas)
+2026-03-06 13:02:14,051 [INFO] etl_camara —   upsert proposicoes → 7128 registros
+2026-03-06 13:02:14,574 [INFO] etl_camara — ✔ proposicoesAutores-2026.csv (10038 linhas)
+2026-03-06 13:02:27,164 [INFO] etl_camara —   FK-insert _raw_proposicoesAutores → 10038 registros
+2026-03-06 13:02:27,571 [INFO] etl_camara — ✔ proposicoesTemas-2026.csv (4149 linhas)
+2026-03-06 13:02:29,861 [INFO] etl_camara —   FK-insert _raw_proposicoesTemas → 4149 registros
+2026-03-06 13:02:30,249 [INFO] etl_camara — ✔ votacoes-2026.csv (867 linhas)
+2026-03-06 13:02:30,836 [INFO] etl_camara —   FK-insert _raw_votacoes → 867 registros
+2026-03-06 13:02:31,437 [INFO] etl_camara — ✔ votacoesVotos-2026.csv (13557 linhas)
+2026-03-06 13:02:38,234 [INFO] etl_camara —   FK-insert _raw_votacoesVotos → 13557 registros
+2026-03-06 13:02:38,482 [INFO] etl_camara — ✔ votacoesOrientacoes-2026.csv (418 linhas)
+2026-03-06 13:02:38,638 [INFO] etl_camara —   FK-insert _raw_votacoesOrientacoes → 418 registros
+2026-03-06 13:02:39,009 [INFO] etl_camara — ✔ votacoesProposicoes-2026.csv (601 linhas)
+2026-03-06 13:02:39,257 [INFO] etl_camara —   FK-insert _raw_votacoesObjetos → 601 registros
+2026-03-06 13:02:39,450 [INFO] etl_camara — ✔ licitacoes-2026.csv (34 linhas)
+2026-03-06 13:02:39,484 [INFO] etl_camara —   upsert licitacoes → 34 registros
+2026-03-06 13:02:39,743 [INFO] etl_camara — ✔ licitacoesPedidos-2026.csv (34 linhas)
+2026-03-06 13:02:39,770 [INFO] etl_camara —   FK-insert _raw_licitacoesPedidos → 34 registros
+2026-03-06 13:02:39,964 [INFO] etl_camara — ✔ licitacoesPropostas-2026.csv (61 linhas)
+2026-03-06 13:02:40,005 [INFO] etl_camara —   FK-insert _raw_licitacoesPropostas → 61 registros
+2026-03-06 13:02:40,318 [INFO] etl_camara — ✔ licitacoesItens-2026.csv (291 linhas)
+2026-03-06 13:02:40,469 [INFO] etl_camara —   FK-insert _raw_licitacoesItens → 291 registros
+2026-03-06 13:02:40,647 [INFO] etl_camara — ✔ licitacoesContratos-2026.csv (3 linhas)
+2026-03-06 13:02:40,666 [INFO] etl_camara —   FK-insert _raw_licitacoesContratos → 3 registros
+2026-03-06 13:02:40,849 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L1.csv
+2026-03-06 13:02:41,050 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L2.csv
+2026-03-06 13:02:41,245 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L3.csv
+2026-03-06 13:02:41,438 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L4.csv
+2026-03-06 13:02:41,659 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L5.csv
+2026-03-06 13:02:41,884 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L6.csv
+2026-03-06 13:02:42,047 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L7.csv
+2026-03-06 13:02:42,262 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L8.csv
+2026-03-06 13:02:42,453 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L9.csv
+2026-03-06 13:02:42,617 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L10.csv
+2026-03-06 13:02:42,839 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L11.csv
+2026-03-06 13:02:43,018 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L12.csv
+2026-03-06 13:02:43,212 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L13.csv
+2026-03-06 13:02:43,388 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L14.csv
+2026-03-06 13:02:43,587 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L15.csv
+2026-03-06 13:02:43,754 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L16.csv
+2026-03-06 13:02:43,989 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L17.csv
+2026-03-06 13:02:44,187 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L18.csv
+2026-03-06 13:02:44,358 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L19.csv
+2026-03-06 13:02:44,525 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L20.csv
+2026-03-06 13:02:44,698 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L21.csv
+2026-03-06 13:02:44,900 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L22.csv
+2026-03-06 13:02:45,114 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L23.csv
+2026-03-06 13:02:45,287 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L24.csv
+2026-03-06 13:02:45,448 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L25.csv
+2026-03-06 13:02:45,655 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L26.csv
+2026-03-06 13:02:45,852 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L27.csv
+2026-03-06 13:02:46,024 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L28.csv
+2026-03-06 13:02:46,192 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L29.csv
+2026-03-06 13:02:46,375 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L30.csv
+2026-03-06 13:02:46,587 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L31.csv
+2026-03-06 13:02:46,763 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L32.csv
+2026-03-06 13:02:46,973 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L33.csv
+2026-03-06 13:02:47,164 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L34.csv
+2026-03-06 13:02:47,385 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L35.csv
+2026-03-06 13:02:47,594 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L36.csv
+2026-03-06 13:02:47,768 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L37.csv
+2026-03-06 13:02:47,938 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L38.csv
+2026-03-06 13:02:48,123 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L39.csv
+2026-03-06 13:02:48,322 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L40.csv
+2026-03-06 13:02:48,488 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L41.csv
+2026-03-06 13:02:48,657 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L42.csv
+2026-03-06 13:02:48,817 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L43.csv
+2026-03-06 13:02:49,019 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L44.csv
+2026-03-06 13:02:49,206 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L45.csv
+2026-03-06 13:02:49,404 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L46.csv
+2026-03-06 13:02:49,601 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L47.csv
+2026-03-06 13:02:49,783 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L48.csv
+2026-03-06 13:02:50,004 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L49.csv
+2026-03-06 13:02:50,178 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L50.csv
+2026-03-06 13:02:50,867 [INFO] etl_camara — ✔ orgaosDeputados-L51.csv (12158 linhas)
+2026-03-06 13:02:56,530 [INFO] etl_camara —   FK-insert _raw_orgaosDeputados → 12158 registros
+2026-03-06 13:02:57,101 [INFO] etl_camara — ✔ orgaosDeputados-L52.csv (12512 linhas)
+2026-03-06 13:03:03,238 [INFO] etl_camara —   FK-insert _raw_orgaosDeputados → 12512 registros
+2026-03-06 13:03:03,837 [INFO] etl_camara — ✔ orgaosDeputados-L53.csv (10994 linhas)
+2026-03-06 13:03:09,472 [INFO] etl_camara —   FK-insert _raw_orgaosDeputados → 10994 registros
+2026-03-06 13:03:10,322 [INFO] etl_camara — ✔ orgaosDeputados-L54.csv (13591 linhas)
+2026-03-06 13:03:17,251 [INFO] etl_camara —   FK-insert _raw_orgaosDeputados → 13591 registros
+2026-03-06 13:03:18,078 [INFO] etl_camara — ✔ orgaosDeputados-L55.csv (17815 linhas)
+2026-03-06 13:03:27,252 [INFO] etl_camara —   FK-insert _raw_orgaosDeputados → 17815 registros
+2026-03-06 13:03:27,971 [INFO] etl_camara — ✔ orgaosDeputados-L56.csv (14519 linhas)
+2026-03-06 13:03:35,148 [INFO] etl_camara —   FK-insert _raw_orgaosDeputados → 14519 registros
+2026-03-06 13:03:35,844 [INFO] etl_camara — ✔ orgaosDeputados-L57.csv (12190 linhas)
+2026-03-06 13:03:42,086 [INFO] etl_camara —   FK-insert _raw_orgaosDeputados → 12190 registros
+2026-03-06 13:03:42,654 [INFO] etl_camara — ✔ Ano-2026.csv.zip (17381 linhas)
+2026-03-06 13:04:05,691 [INFO] etl_camara —   FK-insert _raw_cotas → 17304 registros
+2026-03-06 13:04:05,692 [INFO] etl_camara — ETL concluído — processados: 38 | sem alteração (304): 0 | histórico pulado: 0 | erros: 50
+2026-03-06 13:04:05,693 [WARNING] etl_camara — Datasets com falha (50): ['orgaosDeputados_L1', 'orgaosDeputados_L2', 'orgaosDeputados_L3', 'orgaosDeputados_L4', 'orgaosDeputados_L5', 'orgaosDeputados_L6', 'orgaosDeputados_L7', 'orgaosDeputados_L8', 'orgaosDeputados_L9', 'orgaosDeputados_L10', 'orgaosDeputados_L11', 'orgaosDeputados_L12', 'orgaosDeputados_L13', 'orgaosDeputados_L14', 'orgaosDeputados_L15', 'orgaosDeputados_L16', 'orgaosDeputados_L17', 'orgaosDeputados_L18', 'orgaosDeputados_L19', 'orgaosDeputados_L20', 'orgaosDeputados_L21', 'orgaosDeputados_L22', 'orgaosDeputados_L23', 'orgaosDeputados_L24', 'orgaosDeputados_L25', 'orgaosDeputados_L26', 'orgaosDeputados_L27', 'orgaosDeputados_L28', 'orgaosDeputados_L29', 'orgaosDeputados_L30', 'orgaosDeputados_L31', 'orgaosDeputados_L32', 'orgaosDeputados_L33', 'orgaosDeputados_L34', 'orgaosDeputados_L35', 'orgaosDeputados_L36', 'orgaosDeputados_L37', 'orgaosDeputados_L38', 'orgaosDeputados_L39', 'orgaosDeputados_L40', 'orgaosDeputados_L41', 'orgaosDeputados_L42', 'orgaosDeputados_L43', 'orgaosDeputados_L44', 'orgaosDeputados_L45', 'orgaosDeputados_L46', 'orgaosDeputados_L47', 'orgaosDeputados_L48', 'orgaosDeputados_L49', 'orgaosDeputados_L50']
+2026-03-06 18:33:20,601 [INFO] etl_camara — Banco: localhost:5432/quemvota_teste
+2026-03-06 18:33:20,601 [INFO] etl_camara — Cache: etl_cache.json
+2026-03-06 18:33:20,616 [INFO] etl_camara — Iniciando ETL: 88 datasets | anos=[2026] | legislaturas=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
+2026-03-06 18:33:21,375 [INFO] etl_camara — ✔ legislaturas.csv (0 linhas)
+2026-03-06 18:33:21,413 [INFO] etl_camara —   upsert legislaturas → 0 registros
+2026-03-06 18:33:53,310 [INFO] etl_camara — Banco: localhost:5432/quemvota_teste
+2026-03-06 18:33:53,310 [INFO] etl_camara — Cache: etl_cache.json
+2026-03-06 18:33:53,323 [INFO] etl_camara — Iniciando ETL: 88 datasets | anos=[2026] | legislaturas=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
+2026-03-06 18:33:53,508 [INFO] etl_camara — → sem alterações (304): legislaturas.csv
+2026-03-06 18:33:53,698 [INFO] etl_camara — → sem alterações (304): orgaos.csv
+2026-03-06 18:33:53,898 [INFO] etl_camara — → sem alterações (304): deputados.csv
+2026-03-06 18:33:54,097 [INFO] etl_camara — → sem alterações (304): deputadosOcupacoes.csv
+2026-03-06 18:33:54,300 [INFO] etl_camara — → sem alterações (304): deputadosProfissoes.csv
+2026-03-06 18:33:54,502 [INFO] etl_camara — → sem alterações (304): frentes.csv
+2026-03-06 18:33:54,671 [INFO] etl_camara — → sem alterações (304): frentesDeputados.csv
+2026-03-06 18:33:54,871 [INFO] etl_camara — → sem alterações (304): legislaturasMesas.csv
+2026-03-06 18:33:55,046 [INFO] etl_camara — → sem alterações (304): grupos.csv
+2026-03-06 18:33:55,219 [INFO] etl_camara — → sem alterações (304): gruposMembros.csv
+2026-03-06 18:33:55,389 [INFO] etl_camara — → sem alterações (304): gruposHistorico.csv
+2026-03-06 18:33:55,555 [INFO] etl_camara — → sem alterações (304): funcionarios.csv
+2026-03-06 18:33:55,719 [INFO] etl_camara — → sem alterações (304): tecadCategorias.csv
+2026-03-06 18:33:55,898 [INFO] etl_camara — → sem alterações (304): tecadTermos.csv
+2026-03-06 18:33:56,296 [INFO] etl_camara — ✔ eventos-2026.csv (0 linhas)
+2026-03-06 18:33:56,686 [INFO] etl_camara —   upsert eventos → 0 registros
+2026-03-06 18:33:56,924 [INFO] etl_camara — ✔ eventosOrgaos-2026.csv (0 linhas)
+2026-03-06 18:33:57,036 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 0 registros
+2026-03-06 18:33:57,251 [INFO] etl_camara — ✔ eventosRequerimentos-2026.csv (0 linhas)
+2026-03-06 18:33:57,281 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 0 registros
+2026-03-06 18:34:09,788 [INFO] etl_camara — ✔ eventosPresencaDeputados-2026.csv (0 linhas)
+2026-03-06 18:34:55,114 [INFO] etl_camara — Banco: localhost:5432/quemvota_teste
+2026-03-06 18:34:55,114 [INFO] etl_camara — Cache: etl_cache.json
+2026-03-06 18:34:55,129 [INFO] etl_camara — Iniciando ETL: 88 datasets | anos=[2026] | legislaturas=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
+2026-03-06 18:34:55,323 [INFO] etl_camara — ✔ legislaturas.csv (0 linhas)
+2026-03-06 18:34:55,359 [INFO] etl_camara —   upsert legislaturas → 0 registros
+2026-03-06 18:34:55,518 [INFO] etl_camara — → sem alterações (304): orgaos.csv
+2026-03-06 18:34:55,683 [INFO] etl_camara — → sem alterações (304): deputados.csv
+2026-03-06 18:34:55,881 [INFO] etl_camara — → sem alterações (304): deputadosOcupacoes.csv
+2026-03-06 18:34:56,766 [INFO] etl_camara — → sem alterações (304): deputadosProfissoes.csv
+2026-03-06 18:34:56,983 [INFO] etl_camara — → sem alterações (304): frentes.csv
+2026-03-06 18:34:57,195 [INFO] etl_camara — → sem alterações (304): frentesDeputados.csv
+2026-03-06 18:34:57,382 [INFO] etl_camara — → sem alterações (304): legislaturasMesas.csv
+2026-03-06 18:34:57,612 [INFO] etl_camara — → sem alterações (304): grupos.csv
+2026-03-06 18:34:57,771 [INFO] etl_camara — → sem alterações (304): gruposMembros.csv
+2026-03-06 18:35:57,922 [WARNING] etl_camara — Tentativa 1/3 falhou (http://dadosabertos.camara.leg.br/arquivos/gruposHistorico/csv/gruposHistorico.csv): HTTPSConnectionPool(host='dadosabertos.camara.leg.br', port=443): Read timed out. (read timeout=60)
+2026-03-06 18:36:03,133 [INFO] etl_camara — → sem alterações (304): gruposHistorico.csv
+2026-03-06 18:36:03,298 [INFO] etl_camara — → sem alterações (304): funcionarios.csv
+2026-03-06 18:36:03,481 [INFO] etl_camara — → sem alterações (304): tecadCategorias.csv
+2026-03-06 18:36:03,661 [INFO] etl_camara — → sem alterações (304): tecadTermos.csv
+2026-03-06 18:36:04,097 [INFO] etl_camara — ✔ eventos-2026.csv (0 linhas)
+2026-03-06 18:36:04,484 [INFO] etl_camara —   upsert eventos → 0 registros
+2026-03-06 18:36:04,727 [INFO] etl_camara — ✔ eventosOrgaos-2026.csv (0 linhas)
+2026-03-06 18:36:04,873 [INFO] etl_camara —   FK-insert _raw_eventosOrgaos → 0 registros
+2026-03-06 18:36:05,073 [INFO] etl_camara — ✔ eventosRequerimentos-2026.csv (0 linhas)
+2026-03-06 18:36:05,104 [INFO] etl_camara —   FK-insert _raw_eventosRequerimentos → 0 registros
+2026-03-06 18:36:17,875 [INFO] etl_camara — ✔ eventosPresencaDeputados-2026.csv (0 linhas)
+2026-03-06 18:36:35,159 [INFO] etl_camara —   FK-insert _raw_eventosPresenca → 0 registros
+2026-03-06 18:47:06,110 [INFO] etl_camara — ✔ proposicoes-2026.csv (0 linhas)

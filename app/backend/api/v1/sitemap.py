@@ -18,8 +18,8 @@ from backend.models import Deputado
 # Configuração — edite ao colocar em produção
 # ─────────────────────────────────────────────────────────────────────────────
 
-#BASE_URL = "https://quemvota.com.br"   # prod
-BASE_URL = "http://localhost:8000"    # dev
+BASE_URL = "https://quemvota.com.br"   # prod
+# BASE_URL = "http://localhost:8000"    # dev
 # Páginas estáticas do frontend — atualize se adicionar novas rotas
 STATIC_PAGES: list[dict] = [
     {"loc": "/",             "priority": "1.0", "changefreq": "weekly"},

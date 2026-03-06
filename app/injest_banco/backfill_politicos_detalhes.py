@@ -82,6 +82,7 @@ def _is_incompleto(dep: Deputado) -> bool:
         not dep.situacao,
         not dep.emailGabinete,
         not dep.slug, 
+        not dep.cpf
     ])
 
 def generate_slug(text):
@@ -115,7 +116,8 @@ def _aplicar_detalhes(dep: Deputado, dados: dict) -> bool:
         # Gabinete
         "emailGabinete":     gabinete.get("email") or status.get("email"),
         "telefoneGabinete":  gabinete.get("telefone"),
-        "slug":             generate_slug(status.get("nome")),  # Será gerado depois de salvar o nomeCivil atualizado
+        "slug":             generate_slug(status.get("nome")),
+        "cpf":              dados.get("cpf"),
     }
 
     alterado = False

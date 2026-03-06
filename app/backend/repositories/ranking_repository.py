@@ -14,7 +14,7 @@ from sqlalchemy import Float, Integer, Numeric, String, case, cast, desc, extrac
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models import Despesa, Discurso, Deputado, PresencaDeputado, Proposicao, ProposicaoAutor, Voto, Votacao
+from backend.models import Despesa, Discurso, Deputado, PresencaDeputado, Proposicao, ProposicaoAutor, Voto, Votacao, Evento
 from backend.schemas import KeywordInfo, RankingDespesaPolitico, RankingDiscursoPolitico, RankingEmpresaLucro
 
 logger = logging.getLogger(__name__)
@@ -56,31 +56,40 @@ _FORNECEDOR_DATA_FIX: dict = {
 # ---------------------------------------------------------------------------
 # Helpers internos — subqueries reutilizáveis
 # ---------------------------------------------------------------------------
-
 def _sub_presenca(deputado_id: int, ano: int | None = None):
-    """Subquery de assiduidade via eventosPresencaDeputados, filtrável por ano.
+    """Subquery de assiduidade via participação em votações, filtrável por ano.
 
-    Fórmula: (eventos em que o deputado esteve presente) / (total de eventos no período) * 100
-    O denominador usa uma subquery separada com COUNT sem filtro de deputado para
-    representar o universo total de eventos disponíveis naquele ano.
+    Fórmula: (votações em que o deputado registrou voto) / (total de votações no período) * 100
+
+    O denominador conta votações únicas na tabela Votacao para o período —
+    representa o universo total de votações disponíveis, independente de
+    qualquer deputado.
+    O numerador conta as linhas em Voto para o deputado no mesmo período,
+    fazendo join com Votacao para aplicar o filtro de ano de forma consistente.
     """
-    filtro_ano = [extract("year", PresencaDeputado.dataHoraInicio) == ano] if ano is not None else []
-
-    # Total de eventos disponíveis no período (denominador)
-    sub_total_eventos = (
-        select(func.count(PresencaDeputado.id))
-        .filter(*filtro_ano)
-        .scalar_subquery()
+    # ── Denominador: IDs únicos de Votacao presentes em Voto ──────────────
+    # Conta apenas votações que geraram registros em Voto — ou seja, votações
+    # que de fato exigiram voto nominal dos deputados. Faz join com Votacao
+    # apenas para poder aplicar o filtro de ano quando necessário.
+    sub_total_votacoes = (
+        select(func.count(func.distinct(Voto.idVotacao)))
+        .join(Votacao, Votacao.id == Voto.idVotacao)
     )
+    if ano is not None:
+        sub_total_votacoes = sub_total_votacoes.where(
+            extract("year", Votacao.data) == ano
+        )
+    sub_total_votacoes = sub_total_votacoes.scalar_subquery()
 
+    # ── Numerador: votações em que o deputado registrou voto ───────────────
     q = (
         select(
-            PresencaDeputado.idDeputado,
+            Voto.idDeputado,
             func.coalesce(
                 func.round(
                     cast(
-                        func.count(PresencaDeputado.id).cast(Float)
-                        / func.nullif(sub_total_eventos, 0)
+                        func.count(Voto.id).cast(Float)
+                        / func.nullif(sub_total_votacoes, 0)
                         * 100,
                         Numeric,
                     ),
@@ -89,13 +98,14 @@ def _sub_presenca(deputado_id: int, ano: int | None = None):
                 0,
             ).label("nota_assiduidade"),
         )
-        .where(PresencaDeputado.idDeputado == deputado_id)
+        .join(Votacao, Votacao.id == Voto.idVotacao)
+        .where(Voto.idDeputado == deputado_id)
     )
+
     if ano is not None:
-        q = q.where(extract("year", PresencaDeputado.dataHoraInicio) == ano)
-    return q.group_by(PresencaDeputado.idDeputado).subquery()
+        q = q.where(extract("year", Votacao.data) == ano)
 
-
+    return q.group_by(Voto.idDeputado).subquery()
 def _sub_producao(deputado_id: int, ano: int | None = None):
     """Subquery de produção legislativa ponderada, filtrável por ano."""
     q = (

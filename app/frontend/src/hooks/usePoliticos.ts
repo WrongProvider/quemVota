@@ -19,6 +19,7 @@ import {
   obterPoliticoPerformanceService,
   obterPoliticoTimelineService,
   obterPoliticoDetalheBySlugService,
+  obterPoliticoAtividadeService,
   PoliticoServiceError,
 } from "../services/politicos.service"
 import type {
@@ -28,6 +29,8 @@ import type {
   PoliticoEstatisticas,
   PoliticoPerformance,
   TimelineEntrada,
+  AtividadeLegislativaParams,
+  AtividadeLegislativaResponse,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -79,6 +82,8 @@ export const politicoKeys = {
     [...politicoKeys.detail(id), "performance", ano ?? "all"] as const,
   timeline:     (id: number) => [...politicoKeys.detail(id), "timeline"] as const,
   slug:         (slug: string) => [...politicoKeys.details(), "slug", slug] as const,
+  atividade:    (id: number, params?: AtividadeLegislativaParams) =>
+    [...politicoKeys.detail(id), "atividade", params ?? {}] as const,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -229,6 +234,42 @@ export function usePoliticoDetalheBySlug(
     queryKey: politicoKeys.slug(slug ?? ""),
     queryFn: ({ signal }) => obterPoliticoDetalheBySlugService(slug!, signal),
     enabled: !!slug && !/^\d+$/.test(slug),
+    staleTime: STALE_TIME_MS,
+    gcTime: GC_TIME_MS,
+    retry: shouldRetry,
+    retryDelay,
+  })
+}
+/**
+ * Retorna o histórico de atividade legislativa de um político:
+ * votações com o voto individual e proposições de autoria.
+ *
+ * A query key inclui os parâmetros de paginação e filtro — cada
+ * combinação tem cache independente, permitindo navegação entre
+ * páginas sem refetch das anteriores.
+ *
+ * O ano respeita o seletor global do PoliticoDetalhe: quando o usuário
+ * filtra por ano, a query refaz automaticamente com o novo contexto.
+ *
+ * @param id     - ID inteiro positivo do político
+ * @param params - Filtros opcionais: ano, limit/offset de votações e proposições
+ *
+ * @example
+ * // Mandato completo, página 1
+ * const { data } = usePoliticoAtividade(42)
+ *
+ * @example
+ * // Filtrado por ano, segunda página de votações
+ * const { data } = usePoliticoAtividade(42, { ano: 2023, limit_votacoes: 15, offset_votacoes: 15 })
+ */
+export function usePoliticoAtividade(
+  id: number,
+  params?: AtividadeLegislativaParams,
+): UseQueryResult<AtividadeLegislativaResponse, PoliticoServiceError> {
+  return useQuery({
+    queryKey: politicoKeys.atividade(id, params),
+    queryFn: ({ signal }) => obterPoliticoAtividadeService(id, params, signal),
+    enabled: Number.isInteger(id) && id > 0,
     staleTime: STALE_TIME_MS,
     gcTime: GC_TIME_MS,
     retry: shouldRetry,

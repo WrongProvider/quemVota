@@ -333,3 +333,90 @@ export async function fetchPoliticoTimeline(
   assertArray<TimelineEntrada>(data, "fetchPoliticoTimeline")
   return data
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tipos — espelham AtividadeLegislativaResponse do backend
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Parâmetros opcionais para o endpoint de atividade legislativa */
+export interface AtividadeLegislativaParams {
+  ano?: number                // filtra por ano (respeita o seletor da página)
+  limit_votacoes?: number     // padrão: 20, máx: 100
+  offset_votacoes?: number
+  limit_proposicoes?: number  // padrão: 20, máx: 100
+  offset_proposicoes?: number
+}
+
+/** Voto nominal de um parlamentar em uma votação */
+export interface VotacaoResumida {
+  readonly id_votacao: number
+  readonly data: string | null
+  readonly proposicao_id: number | null
+  readonly proposicao_sigla: string | null     // "PL", "PEC"...
+  readonly proposicao_numero: number | null
+  readonly proposicao_ano: number | null
+  readonly proposicao_ementa: string | null
+  readonly voto: string                        // "Sim", "Não", "Obstrução", "Abstenção"...
+  readonly aprovacao: number | null            // 1 aprovada, 0 rejeitada, -1 indefinido
+  readonly tipo_votacao: string | null
+  readonly sigla_orgao: string | null
+}
+
+/** Proposição da qual o parlamentar é autor ou coautor */
+export interface ProposicaoResumida {
+  readonly id: number
+  readonly id_camara: number
+  readonly sigla_tipo: string | null
+  readonly numero: number | null
+  readonly ano: number | null
+  readonly descricao_tipo: string | null
+  readonly ementa: string | null
+  readonly keywords: string | null
+  readonly data_apresentacao: string | null
+  readonly url_inteiro_teor: string | null
+  readonly proponente: boolean
+  readonly tipo_autoria: string | null
+  readonly temas: string[]
+}
+
+/** Resposta consolidada de GET /politicos/{id}/atividade-legislativa */
+export interface AtividadeLegislativaResponse {
+  readonly votacoes: VotacaoResumida[]
+  readonly proposicoes: ProposicaoResumida[]
+  readonly total_votacoes: number
+  readonly total_proposicoes: number
+  readonly limit_votacoes: number
+  readonly limit_proposicoes: number
+  readonly offset_votacoes: number
+  readonly offset_proposicoes: number
+  readonly ano: number | null
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Função de fetch
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /politicos/{id}/atividade-legislativa
+ *
+ * Retorna votações + proposições do parlamentar em um único request.
+ * Paginação independente para cada lista via limit/offset dedicados.
+ */
+export async function fetchPoliticoAtividade(
+  id: number,
+  params?: AtividadeLegislativaParams,
+  signal?: AbortSignal,
+): Promise<AtividadeLegislativaResponse> {
+  const { data } = await api.get<AtividadeLegislativaResponse>(
+    `/politicos/${id}/atividade-legislativa`,
+    {
+      params: {
+        limit_votacoes:     20,
+        limit_proposicoes:  20,
+        ...params,
+      },
+      signal,
+    },
+  )
+  return data
+}

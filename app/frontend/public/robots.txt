@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+Allow: /politicos/
+Allow: /rankings
+Allow: /proposicoes
+Allow: /sobre
+Allow: /metodologia
+Allow: /faq
+Allow: /roadmap
+
+# Não indexar rotas de API nem documentação
+Disallow: /docs
+Disallow: /redoc
+Disallow: /openapi.json
+Disallow: /ranking/
+Disallow: /busca/
+
+# Não indexar URLs legadas com ID numérico — o Google deve usar o slug
+Disallow: /politicos_detalhe/
+
+Sitemap: https://quemvota.com.br/sitemap.xml

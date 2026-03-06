@@ -6,7 +6,7 @@
  *   "Votações"  → lista votações com filtros (ano, resultado, tipo)
  *
  * Ao clicar em uma proposição → painel lateral com detalhe + tramitação
- * Ao clicar em uma votação    → painel lateral com detalhe + orientações
+ * Ao clicar em uma votação    → painel lateral com detalhe + orientações + votos
  */
 
 import { useState, useCallback } from "react"
@@ -28,6 +28,9 @@ import {
   ArrowRight,
   Clock,
   Building,
+  ThumbsUp,
+  ThumbsDown,
+  User,
 } from "lucide-react"
 import {
   useProposicoes,
@@ -109,6 +112,39 @@ function ResultadoBadge({ aprovacao }: { aprovacao: 1 | 0 | -1 | null }) {
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-500 text-[11px] font-semibold">
       <MinusCircle size={11} /> Indefinido
     </span>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Contadores de votos (Sim / Não / Outros)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ContagemVotos({
+  sim,
+  nao,
+  outros,
+}: {
+  sim: number | null
+  nao: number | null
+  outros: number | null
+}) {
+  if (sim == null && nao == null) return null
+  return (
+    <div className="flex items-center gap-2 text-[11px]">
+      {sim != null && (
+        <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold">
+          <ThumbsUp size={10} /> {sim}
+        </span>
+      )}
+      {nao != null && (
+        <span className="inline-flex items-center gap-1 text-red-500 font-semibold">
+          <ThumbsDown size={10} /> {nao}
+        </span>
+      )}
+      {outros != null && outros > 0 && (
+        <span className="text-slate-400 font-medium">{outros} outros</span>
+      )}
+    </div>
   )
 }
 
@@ -303,13 +339,16 @@ function PainelProposicao({
                   {votacoes.map((v) => (
                     <div
                       key={v.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100"
+                      className="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-2"
                     >
-                      <div>
-                        <p className="text-xs text-slate-600 font-medium">{formatarData(v.data)}</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{v.tipo_votacao ?? "—"}</p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-slate-600 font-medium">{formatarData(v.data)}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">{v.tipo_votacao ?? "—"}</p>
+                        </div>
+                        <ResultadoBadge aprovacao={v.aprovacao} />
                       </div>
-                      <ResultadoBadge aprovacao={v.aprovacao} />
+                      <ContagemVotos sim={v.votos_sim} nao={v.votos_nao} outros={v.votos_outros} />
                     </div>
                   ))}
                 </div>
@@ -403,7 +442,7 @@ function CardVotacao({
         selecionada ? "bg-blue-50 border-l-2 border-l-blue-500" : ""
       }`}
     >
-      {/* Linha 1: tipo + data + resultado */}
+      {/* Linha 1: tipo + número/ano + resultado */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         {votacao.proposicao_sigla && <TipoBadge sigla={votacao.proposicao_sigla} />}
         {votacao.proposicao_numero && (
@@ -421,8 +460,8 @@ function CardVotacao({
         {truncar(votacao.proposicao_ementa ?? votacao.descricao)}
       </p>
 
-      {/* Linha 3: data + órgão */}
-      <div className="flex items-center gap-3 text-[11px] text-slate-400">
+      {/* Linha 3: data + órgão + contagem de votos */}
+      <div className="flex items-center gap-3 text-[11px] text-slate-400 flex-wrap">
         <span className="flex items-center gap-1">
           <Calendar size={10} /> {formatarData(votacao.data)}
         </span>
@@ -431,9 +470,12 @@ function CardVotacao({
             <Building size={10} /> {votacao.sigla_orgao}
           </span>
         )}
+        <span className="ml-auto flex-shrink-0">
+          <ContagemVotos sim={votacao.votos_sim} nao={votacao.votos_nao} outros={votacao.votos_outros} />
+        </span>
         <ChevronRight
           size={14}
-          className={`ml-auto text-slate-300 group-hover:text-blue-500 transition-colors flex-shrink-0 ${selecionada ? "text-blue-500" : ""}`}
+          className={`text-slate-300 group-hover:text-blue-500 transition-colors flex-shrink-0 ${selecionada ? "text-blue-500" : ""}`}
         />
       </div>
     </button>
@@ -460,6 +502,7 @@ function PainelVotacao({
   onClose: () => void
 }) {
   const { data: votacao, isLoading } = useVotacao(id)
+  const [abaDetalhe, setAbaDetalhe] = useState<"orientacoes" | "votos">("orientacoes")
 
   return (
     <motion.div
@@ -524,30 +567,112 @@ function PainelVotacao({
               </div>
             </div>
 
-            {/* Orientações por partido */}
-            {votacao.orientacoes.length > 0 && (
+            {/* Placar de votos */}
+            {(votacao.votos_sim != null || votacao.votos_nao != null) && (
               <div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-                  Orientação dos partidos ({votacao.orientacoes.length})
+                  Placar
                 </p>
-                <div className="space-y-1.5">
-                  {votacao.orientacoes.map((o, i) => {
-                    const cls = VOTO_COLORS[o.orientacao_voto ?? ""] ?? "text-slate-600 bg-slate-50 border-slate-200"
-                    return (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border border-slate-100"
-                      >
-                        <span className="text-sm font-semibold text-slate-700">
-                          {o.sigla_partido_bloco ?? "—"}
-                        </span>
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${cls}`}>
-                          {o.orientacao_voto ?? "—"}
-                        </span>
-                      </div>
-                    )
-                  })}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                    <p className="text-xl font-bold text-emerald-700">{votacao.votos_sim ?? "—"}</p>
+                    <p className="text-[10px] text-emerald-600 font-medium mt-0.5">Sim</p>
+                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
+                    <p className="text-xl font-bold text-red-600">{votacao.votos_nao ?? "—"}</p>
+                    <p className="text-[10px] text-red-500 font-medium mt-0.5">Não</p>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                    <p className="text-xl font-bold text-slate-600">{votacao.votos_outros ?? "—"}</p>
+                    <p className="text-[10px] text-slate-500 font-medium mt-0.5">Outros</p>
+                  </div>
                 </div>
+              </div>
+            )}
+
+            {/* Sub-abas: Orientações / Votos */}
+            {(votacao.orientacoes.length > 0 || votacao.votos.length > 0) && (
+              <div>
+                {/* Seletor de aba interno */}
+                <div className="flex border-b border-slate-200 mb-3">
+                  <button
+                    onClick={() => setAbaDetalhe("orientacoes")}
+                    className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors ${
+                      abaDetalhe === "orientacoes"
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    <Building size={11} />
+                    Partidos ({votacao.orientacoes.length})
+                  </button>
+                  <button
+                    onClick={() => setAbaDetalhe("votos")}
+                    className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors ${
+                      abaDetalhe === "votos"
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    <User size={11} />
+                    Deputados ({votacao.votos.length})
+                  </button>
+                </div>
+
+                {/* Orientações por partido */}
+                {abaDetalhe === "orientacoes" && (
+                  <div className="space-y-1.5">
+                    {votacao.orientacoes.length === 0 ? (
+                      <p className="text-xs text-slate-400 py-4 text-center">Sem orientações registradas.</p>
+                    ) : (
+                      votacao.orientacoes.map((o, i) => {
+                        const cls = VOTO_COLORS[o.orientacao_voto ?? ""] ?? "text-slate-600 bg-slate-50 border-slate-200"
+                        return (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border border-slate-100"
+                          >
+                            <span className="text-sm font-semibold text-slate-700">
+                              {o.sigla_partido_bloco ?? "—"}
+                            </span>
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${cls}`}>
+                              {o.orientacao_voto ?? "—"}
+                            </span>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                )}
+
+                {/* Votos individuais dos deputados */}
+                {abaDetalhe === "votos" && (
+                  <div className="space-y-1">
+                    {votacao.votos.length === 0 ? (
+                      <p className="text-xs text-slate-400 py-4 text-center">Sem votos nominais registrados.</p>
+                    ) : (
+                      votacao.votos.map((v, i) => {
+                        const cls = VOTO_COLORS[v.voto] ?? "text-slate-600 bg-slate-50 border-slate-200"
+                        return (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-slate-700 truncate">{v.nome}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">
+                                {[v.sigla_partido, v.sigla_uf].filter(Boolean).join(" · ")}
+                              </p>
+                            </div>
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ml-2 flex-shrink-0 ${cls}`}>
+                              {v.voto}
+                            </span>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -719,22 +844,18 @@ type Aba = "projetos" | "votacoes"
 export default function ProjetosVotacoes() {
   const [aba, setAba] = useState<Aba>("projetos")
 
-  // Estado de filtros — cada aba tem o seu
   const [filtrosProposicoes, setFiltrosProposicoes] = useState<ProposicoesFiltros>({ limit: 20, offset: 0 })
   const [filtrosVotacoes, setFiltrosVotacoes] = useState<VotacoesFiltros>({ limit: 20, offset: 0 })
 
-  // Item selecionado para o painel lateral
   const [proposicaoSelecionada, setProposicaoSelecionada] = useState<number | null>(null)
   const [votacaoSelecionada, setVotacaoSelecionada] = useState<number | null>(null)
 
-  // Fecha painel ao trocar de aba
   const handleAba = useCallback((novaAba: Aba) => {
     setAba(novaAba)
     setProposicaoSelecionada(null)
     setVotacaoSelecionada(null)
   }, [])
 
-  // Queries
   const { data: proposicoes = [], isLoading: loadingProposicoes } = useProposicoes(filtrosProposicoes)
   const { data: votacoes = [], isLoading: loadingVotacoes } = useVotacoes(filtrosVotacoes)
 
@@ -745,160 +866,160 @@ export default function ProjetosVotacoes() {
       <Header />
       {/* ── Cabeçalho da página ── */}
       <div className="bg-white border-b border-slate-200">
-          <div className="max-w-7xl mx-auto px-6 py-8 pt-24">
+        <div className="max-w-7xl mx-auto px-6 py-8 pt-24">
           <p className="text-xs font-semibold tracking-widest uppercase text-blue-600 mb-2">
-              Legislativo
+            Legislativo
           </p>
           <h1
-              style={{ fontFamily: "'Fraunces', serif" }}
-              className="text-3xl font-bold text-slate-900 mb-1"
+            style={{ fontFamily: "'Fraunces', serif" }}
+            className="text-3xl font-bold text-slate-900 mb-1"
           >
-              Projetos e Votações
+            Projetos e Votações
           </h1>
           <p className="text-slate-500 text-sm">
-              Pesquise proposições em tramitação e votações realizadas na Câmara dos Deputados.
+            Pesquise proposições em tramitação e votações realizadas na Câmara dos Deputados.
           </p>
-          </div>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className={`flex gap-6 transition-all duration-300 ${painelAberto ? "" : ""}`}>
+        <div className="flex gap-6 transition-all duration-300">
 
           {/* ── Coluna principal ── */}
           <div className="flex-1 min-w-0">
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
 
               {/* Abas */}
               <div className="flex border-b border-slate-200">
-                  <button
+                <button
                   onClick={() => handleAba("projetos")}
                   className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-                      aba === "projetos"
+                    aba === "projetos"
                       ? "border-blue-500 text-blue-600"
                       : "border-transparent text-slate-500 hover:text-slate-700"
                   }`}
-                  >
+                >
                   <FileText size={15} /> Projetos
-                  </button>
-                  <button
+                </button>
+                <button
                   onClick={() => handleAba("votacoes")}
                   className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-                      aba === "votacoes"
+                    aba === "votacoes"
                       ? "border-blue-500 text-blue-600"
                       : "border-transparent text-slate-500 hover:text-slate-700"
                   }`}
-                  >
+                >
                   <Vote size={15} /> Votações
-                  </button>
+                </button>
               </div>
 
               {/* Filtros */}
               <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
-                  {aba === "projetos" ? (
+                {aba === "projetos" ? (
                   <FiltrosProposicoes filtros={filtrosProposicoes} onChange={setFiltrosProposicoes} />
-                  ) : (
+                ) : (
                   <FiltrosVotacoes filtros={filtrosVotacoes} onChange={setFiltrosVotacoes} />
-                  )}
+                )}
               </div>
 
               {/* Lista */}
               <AnimatePresence mode="wait">
-                  <motion.div
+                <motion.div
                   key={aba}
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.15 }}
-                  >
+                >
                   {aba === "projetos" ? (
-                      loadingProposicoes ? (
+                    loadingProposicoes ? (
                       <EstadoLoading />
-                      ) : proposicoes.length === 0 ? (
+                    ) : proposicoes.length === 0 ? (
                       <EstadoVazio mensagem="Nenhuma proposição encontrada com os filtros selecionados." />
-                      ) : (
+                    ) : (
                       <>
-                          {proposicoes.map((p) => (
+                        {proposicoes.map((p) => (
                           <CardProposicao
-                              key={p.id}
-                              proposicao={p}
-                              selecionada={proposicaoSelecionada === p.id}
-                              onClick={() => setProposicaoSelecionada(
+                            key={p.id}
+                            proposicao={p}
+                            selecionada={proposicaoSelecionada === p.id}
+                            onClick={() => setProposicaoSelecionada(
                               proposicaoSelecionada === p.id ? null : p.id
-                              )}
+                            )}
                           />
-                          ))}
-                          <Paginacao
+                        ))}
+                        <Paginacao
                           offset={filtrosProposicoes.offset ?? 0}
                           limit={filtrosProposicoes.limit ?? 20}
                           total={proposicoes.length}
                           onChange={(o) => setFiltrosProposicoes((f) => ({ ...f, offset: o }))}
-                          />
+                        />
                       </>
-                      )
+                    )
                   ) : (
-                      loadingVotacoes ? (
+                    loadingVotacoes ? (
                       <EstadoLoading />
-                      ) : votacoes.length === 0 ? (
+                    ) : votacoes.length === 0 ? (
                       <EstadoVazio mensagem="Nenhuma votação encontrada com os filtros selecionados." />
-                      ) : (
+                    ) : (
                       <>
-                          {votacoes.map((v) => (
+                        {votacoes.map((v) => (
                           <CardVotacao
-                              key={v.id}
-                              votacao={v}
-                              selecionada={votacaoSelecionada === v.id}
-                              onClick={() => setVotacaoSelecionada(
+                            key={v.id}
+                            votacao={v}
+                            selecionada={votacaoSelecionada === v.id}
+                            onClick={() => setVotacaoSelecionada(
                               votacaoSelecionada === v.id ? null : v.id
-                              )}
+                            )}
                           />
-                          ))}
-                          <Paginacao
+                        ))}
+                        <Paginacao
                           offset={filtrosVotacoes.offset ?? 0}
                           limit={filtrosVotacoes.limit ?? 20}
                           total={votacoes.length}
                           onChange={(o) => setFiltrosVotacoes((f) => ({ ...f, offset: o }))}
-                          />
+                        />
                       </>
-                      )
+                    )
                   )}
-                  </motion.div>
+                </motion.div>
               </AnimatePresence>
-              </div>
+            </div>
           </div>
 
           {/* ── Painel lateral de detalhe ── */}
           <AnimatePresence>
-              {painelAberto && (
+            {painelAberto && (
               <motion.div
-                  initial={{ width: 0, opacity: 0 }}
-                  animate={{ width: 420, opacity: 1 }}
-                  exit={{ width: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
-                  className="flex-shrink-0 overflow-hidden"
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 420, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="flex-shrink-0 overflow-hidden"
               >
-                  <div className="w-[420px] bg-white rounded-2xl border border-slate-200 shadow-sm h-[calc(100vh-180px)] sticky top-6">
+                <div className="w-[420px] bg-white rounded-2xl border border-slate-200 shadow-sm h-[calc(100vh-180px)] sticky top-6">
                   <AnimatePresence mode="wait">
-                      {aba === "projetos" && proposicaoSelecionada !== null && (
+                    {aba === "projetos" && proposicaoSelecionada !== null && (
                       <PainelProposicao
-                          key={proposicaoSelecionada}
-                          id={proposicaoSelecionada}
-                          onClose={() => setProposicaoSelecionada(null)}
+                        key={proposicaoSelecionada}
+                        id={proposicaoSelecionada}
+                        onClose={() => setProposicaoSelecionada(null)}
                       />
-                      )}
-                      {aba === "votacoes" && votacaoSelecionada !== null && (
+                    )}
+                    {aba === "votacoes" && votacaoSelecionada !== null && (
                       <PainelVotacao
-                          key={votacaoSelecionada}
-                          id={votacaoSelecionada}
-                          onClose={() => setVotacaoSelecionada(null)}
+                        key={votacaoSelecionada}
+                        id={votacaoSelecionada}
+                        onClose={() => setVotacaoSelecionada(null)}
                       />
-                      )}
+                    )}
                   </AnimatePresence>
-                  </div>
+                </div>
               </motion.div>
-              )}
+            )}
           </AnimatePresence>
-          </div>
+        </div>
       </div>
-      </div>
+    </div>
   )
 }
