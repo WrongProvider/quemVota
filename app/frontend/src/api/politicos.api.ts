@@ -64,7 +64,12 @@ export interface PoliticoDetalhe extends Politico {
 export interface PoliticoEstatisticas {
   readonly total_votacoes: number
   readonly total_despesas: number
+  /** Gastos CEAP (cota parlamentar) */
   readonly total_gasto: number
+  /** Gastos com verba de gabinete (pessoal/funcionários) */
+  readonly total_gasto_gabinete: number
+  /** Soma de total_gasto + total_gasto_gabinete */
+  readonly total_gasto_combinado: number
   readonly media_mensal: number
   readonly primeiro_ano: number | null
   readonly ultimo_ano: number | null
@@ -79,7 +84,17 @@ export interface NotasPerformance {
 export interface InfoPerformance {
   readonly valor_cota_mensal: number
   readonly meses_considerados: number
+  /** Gastos CEAP (cota parlamentar) */
   readonly total_gasto: number
+  /** Gastos com verba de gabinete (pessoal/funcionários) */
+  readonly gasto_gabinete: number
+  /** Soma CEAP + gabinete */
+  readonly gasto_total: number
+  /** Orçamento total = cota CEAP + verba gabinete */
+  readonly orcamento_total: number
+  /** Percentual do orçamento total utilizado */
+  readonly orcamento_utilizado_pct: number
+  /** @deprecated Use orcamento_utilizado_pct */
   readonly cota_utilizada_pct: number
 }
 
@@ -109,6 +124,19 @@ export interface TimelineInfoAno {
   readonly valor_cota_mensal: number
   readonly meses_ativos: number
   readonly cota_total: number
+  /** Verba de gabinete disponivel no periodo (constante nacional * meses) */
+  readonly verba_gabinete_total: number
+  /** Orcamento total = cota CEAP + verba gabinete */
+  readonly orcamento_total: number
+  /** Gastos CEAP no ano */
+  readonly gasto_ceap: number
+  /** Gastos com verba de gabinete no ano */
+  readonly gasto_gabinete: number
+  /** Soma CEAP + gabinete */
+  readonly gasto_total: number
+  /** Percentual do orcamento total utilizado */
+  readonly orcamento_utilizado_pct: number
+  /** @deprecated Use orcamento_utilizado_pct */
   readonly cota_utilizada_pct: number
 }
 

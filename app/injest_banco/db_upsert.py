@@ -5,17 +5,15 @@ import logging
 from sqlalchemy.orm import Session
 from injest_banco.db.models import (
     Orgao,
-    OrgaoMembro,
     Partido,
-    Politico,
     Evento,
     ProposicaoAutor,
     Proposicao,
     VerbaGabinete,
     Votacao,
-    OrientacaoVotacao,
     Voto,
-    Despesa
+    Despesa,
+    Deputado
 )
 
 from sqlalchemy.dialects.postgresql import insert
@@ -33,9 +31,9 @@ def parse_datetime(valor: str | None) -> datetime | None:
         return None
 
     
-def carregar_por_id_camara(db: Session) -> dict[int, Politico]:
-    politicos = db.query(Politico).all()
-    return {p.id_camara: p for p in politicos}
+def carregar_por_id_camara(db: Session) -> dict[int, Deputado]:
+    deputados = db.query(Deputado).all()
+    return {d.idCamara: d for d in deputados}
 
 
 def upsert_politico(db: Session, cache: dict, dep: dict, partido_obj: Partido = None):
@@ -50,8 +48,8 @@ def upsert_politico(db: Session, cache: dict, dep: dict, partido_obj: Partido = 
             politico.partido_id = partido_obj.id
             politico.partido_sigla = partido_obj.sigla
     else:
-        politico = Politico(
-            id_camara=dep["id"],
+        politico = Deputado(
+            idCamara=dep["id"],
             nome=dep["nome"],
             uf=dep["siglaUf"],
             url_foto=dep.get("urlFoto"),
@@ -120,8 +118,8 @@ def enrich_orgao(orgao: Orgao, d: dict):
 
 def upsert_orgao_membro(db: Session, orgao: Orgao, d: dict):
     politico = (
-        db.query(Politico)
-        .filter(Politico.id_camara == d["id"])
+        db.query(Deputado)
+        .filter(Deputado.idCamara == d["id"])
         .first()
     )
 
@@ -236,8 +234,8 @@ def upsert_evento_deputados(db, evento: Evento, deputados: dict):
 
     for d in dados:
         politico = (
-            db.query(Politico)
-            .filter(Politico.id_camara == d["id"])
+            db.query(Deputado)
+            .filter(Deputado.idCamara == d["id"])
             .first()
         )
 
@@ -525,21 +523,3 @@ def vincular_votacao_a_proposicao(db: Session, votacao: Votacao, id_proposicao_c
         votacao.proposicao_id = prop.id
         # logger.info(f"🔗 Votação {votacao.id_camara} vinculada à Proposição {prop.sigla_tipo} {prop.numero}/{prop.ano}")
 
-def upsert_verba(db: Session, politico_id: int, ano: int, mes: int, disponivel: float, gasto: float):
-    """Insere ou atualiza os valores mensais"""
-    existing = db.query(VerbaGabinete).filter_by(
-        politico_id=politico_id, ano=ano, mes=mes
-    ).first()
-
-    if existing:
-        existing.valor_disponivel = disponivel
-        existing.valor_gasto = gasto
-    else:
-        new_verba = VerbaGabinete(
-            politico_id=politico_id,
-            ano=ano,
-            mes=mes,
-            valor_disponivel=disponivel,
-            valor_gasto=gasto
-        )
-        db.add(new_verba)

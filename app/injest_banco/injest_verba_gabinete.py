@@ -2,13 +2,40 @@ import requests
 from bs4 import BeautifulSoup
 import logging
 import time
+from sqlalchemy.orm import Session # Importado para tipagem correta
 from injest_banco.db.database import SessionLocal
-from injest_banco.db.models import Politico
-from injest_banco.db_upsert import upsert_verba
+from injest_banco.db.models import Deputado, VerbaGabinete
+from sqlalchemy.dialects.postgresql import insert
 
 # Configuração de Logs
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def upsert_verba(db: Session, idDeputado: int, ano: int, mes: int, disponivel: float, gasto: float):
+    """Faz um Upsert nativo (muito mais rápido) e salva na hora"""
+    
+    # 1. Monta a instrução de INSERT
+    stmt = insert(VerbaGabinete).values(
+        idDeputado=idDeputado,
+        ano=ano,
+        mes=mes,
+        valorDisponivel=disponivel,
+        valorGasto=gasto
+    )
+
+    # 2. Define o que fazer em caso de conflito (quando já existe)
+    # 'stmt.excluded' refere-se aos dados novos que tentamos inserir
+    stmt = stmt.on_conflict_do_update(
+        index_elements=['idDeputado', 'ano', 'mes'], # Colunas que definem a "duplicidade"
+        set_={
+            'valorDisponivel': stmt.excluded.valorDisponivel,
+            'valorGasto': stmt.excluded.valorGasto
+        }
+    )
+
+    # 3. Executa a query montada e commita imediatamente
+    db.execute(stmt)
+    db.commit()
 
 def clean_currency(value_str: str) -> float:
     """Converte '125.478,69' para 125478.69"""
@@ -37,62 +64,53 @@ def fetch_verba_html(id_camara: int, ano: int):
         logger.error(f"❌ Erro na requisição: {e}")
         return None
 
-
 def injest_verbas_gabinete(ano: int):
-    db = SessionLocal()
-    # Pega todos os políticos ativos (ou todos que tenham id_camara)
-    politicos = db.query(Politico).filter(Politico.id_camara.isnot(None)).all()
-    logger.info(f"🚀 Iniciando ingestão de verbas via HTML para {len(politicos)} políticos...")
-    
-    for p in politicos:
-        try:
-            html = fetch_verba_html(p.id_camara, ano)
-            if not html: 
-                continue
+    with SessionLocal() as db:
+        # Filtro: Deputados da legislatura 54 em diante
+        deputados = db.query(Deputado).filter(
+            Deputado.idCamara.isnot(None),
+            Deputado.idLegislaturaInicial >= 54
+        ).all()
+        
+        logger.info(f"🚀 Processando {len(deputados)} deputados (Leg. 54+) para o ano {ano}...")
+        
+        for p in deputados:
+            try:
+                html = fetch_verba_html(p.idCamara, ano)
+                if not html: 
+                    continue
 
-            soup = BeautifulSoup(html, 'html.parser')
-            
-            # Busca especificamente a tabela do seu print
-            tabela = soup.find('table', class_='table-striped')
-            if not tabela:
-                logger.info(f"ℹ️ Sem dados de verba para {p.nome} em {ano}")
-                continue
+                soup = BeautifulSoup(html, 'html.parser')
+                tabela = soup.find('table', class_='table-striped')
+                
+                if not tabela:
+                    continue
 
-            # Tenta pegar as linhas do <tbody> (seguro contra thead duplo ou estranho)
-            tbody = tabela.find('tbody')
-            linhas = tbody.find_all('tr') if tbody else tabela.find_all('tr')[1:]
+                tbody = tabela.find('tbody')
+                linhas = tbody.find_all('tr') if tbody else tabela.find_all('tr')[1:]
 
-            contador = 0
-            for linha in linhas:
-                cols = linha.find_all('td')
-                if len(cols) >= 3:
-                    mes_texto = cols[0].text.strip()
-                    
-                    try:
-                        # Agora sim: "01" vira 1, "02" vira 2
-                        mes_num = int(mes_texto) 
-                    except ValueError:
-                        continue # Pula se não for um número válido (ex: linha vazia)
-                    
-                    v_disponivel = clean_currency(cols[1].text)
-                    v_gasto = clean_currency(cols[2].text)
-                    
-                    upsert_verba(db, p.id, ano, mes_num, v_disponivel, v_gasto)
-                    contador += 1
-            
-            if contador > 0:
-                db.commit()
-                logger.info(f"✅ {p.nome}: {contador} meses processados.")
-            else:
-                logger.warning(f"❌ {p.nome}: Tabela encontrada, mas dados inválidos.")
+                for linha in linhas:
+                    cols = linha.find_all('td')
+                    if len(cols) >= 3:
+                        try:
+                            mes_num = int(cols[0].text.strip())
+                            v_disponivel = clean_currency(cols[1].text)
+                            v_gasto = clean_currency(cols[2].text)
+                            
+                            # Faz o upsert e comita na hora
+                            upsert_verba(db, p.id, ano, mes_num, v_disponivel, v_gasto)
+                        except ValueError:
+                            continue
+                
+                logger.info(f"✅ {p.nome} (ID:{p.idCamara}) processado e salvo.")
+                time.sleep(0.3)
 
-            # Pausa para não agredir o servidor
-            time.sleep(0.5)  
+            except Exception as e:
+                # O rollback agora afeta apenas o que não foi "commitado" ainda
+                db.rollback()
+                logger.error(f"❌ Erro em {p.nome}: {e}")
 
-        except Exception as e:
-            db.rollback()
-            logger.error(f"❌ Erro ao processar {p.nome}: {e}")
-            continue
-
-    db.close()
-    logger.info("🏁 Ingestão de verbas finalizada!")
+if __name__ == "__main__":
+    anos = list(range(2015, 2026))
+    for a in anos:
+        injest_verbas_gabinete(a)

@@ -8,6 +8,7 @@ import {
   type RankingEmpresaLucro,
   type RankingDiscursoPolitico,
   type RankingPerformancePolitico,
+  type PerformanceRankingResponse,
   type StatsGeral,
 } from "../api/rankings.api"
 
@@ -43,11 +44,14 @@ export class PerformanceRankingService {
    * Retorna separado: Top 3 (pódio) e o restante
    */
   static async getPerformanceRanking() {
-    const data = await getRankingPerformance()
-    
+    const envelope = await getRankingPerformance()
+    const data = envelope.ranking
+
     return {
+      aviso: envelope.aviso,
+      total: envelope.total,
       top3: data.slice(0, 3),
-      rest: data.slice(3, 50), // Top 50 parlamentares
+      rest: data.slice(3, 50),
       all: data,
     }
   }
@@ -63,7 +67,7 @@ export class PerformanceRankingService {
    * Calcula a posição de um político no ranking geral
    */
   static async getPoliticoPosition(politicoId: number): Promise<number | null> {
-    const ranking = await getRankingPerformance()
+    const { ranking } = await getRankingPerformance()
     const position = ranking.findIndex(p => p.id === politicoId)
     return position === -1 ? null : position + 1
   }

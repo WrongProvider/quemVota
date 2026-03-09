@@ -23,6 +23,7 @@ import {
   BarChart2,
   TrendingUp,
   Receipt,
+  Wallet,
   Calendar,
   ChevronRight,
   ArrowLeft,
@@ -681,10 +682,12 @@ export default function PoliticoDetalhe() {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <StatCard icon={<BadgeCheck size={16} className="text-blue-500" />}   titulo="Total de Votações"  valor={stats.total_votacoes}                                      accent="blue"    />
-                <StatCard icon={<Receipt size={16} className="text-violet-500" />}    titulo="Total de Despesas"  valor={stats.total_despesas}                                      accent="violet"  />
-                <StatCard icon={<TrendingUp size={16} className="text-emerald-500" />} titulo="Cota Utilizada"    valor={`R$ ${stats.total_gasto.toLocaleString("pt-BR")}`}         accent="emerald" />
-                <StatCard icon={<Receipt size={16} className="text-amber-500" />}     titulo="Média Mensal"       valor={`R$ ${stats.media_mensal.toLocaleString("pt-BR")}`}        accent="amber"   />
+                <StatCard icon={<BadgeCheck size={16} className="text-blue-500" />}    titulo="Total de Votações"   valor={stats.total_votacoes}                                                        accent="blue"    />
+                <StatCard icon={<Receipt size={16} className="text-violet-500" />}     titulo="Total de Despesas"   valor={stats.total_despesas}                                                        accent="violet"  />
+                <StatCard icon={<TrendingUp size={16} className="text-emerald-500" />} titulo="Cota Parlamentar"    valor={`R$ ${stats.total_gasto.toLocaleString("pt-BR")}`}                           accent="emerald" />
+                <StatCard icon={<Wallet size={16} className="text-orange-500" />}      titulo="Verba de Gabinete"   valor={`R$ ${(stats.total_gasto_gabinete ?? 0).toLocaleString("pt-BR")}`}           accent="amber"   />
+                <StatCard icon={<Receipt size={16} className="text-red-500" />}        titulo="Gasto Total"         valor={`R$ ${(stats.total_gasto_combinado ?? stats.total_gasto).toLocaleString("pt-BR")}`} accent="slate" />
+                <StatCard icon={<Receipt size={16} className="text-amber-500" />}      titulo="Média Mensal"        valor={`R$ ${stats.media_mensal.toLocaleString("pt-BR")}`}                          accent="amber"   />
                 {!anoSelecionado && (
                   <>
                     <StatCard icon={<Calendar size={16} className="text-slate-400" />} titulo="Primeiro Ano" valor={stats.primeiro_ano ?? "—"} accent="slate" />
@@ -692,6 +695,14 @@ export default function PoliticoDetalhe() {
                   </>
                 )}
               </div>
+
+              {/* Aviso quando gabinete != 0 */}
+              {(stats.total_gasto_gabinete ?? 0) > 0 && (
+                <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                  ℹ️ <strong>Cota Parlamentar</strong> cobre deslocamentos, materiais e serviços de terceiros.{" "}
+                  <strong>Verba de Gabinete</strong> cobre salários e encargos dos funcionários do escritório.
+                </p>
+              )}
             </section>
           )}
 
@@ -703,6 +714,56 @@ export default function PoliticoDetalhe() {
                 <h2 className="display-font text-xl font-bold text-slate-800">Performance Parlamentar</h2>
               </div>
               <PoliticoGraficos performance={performance} />
+
+              {/* Breakdown do orçamento — exibido quando há dados de gabinete */}
+              {(performance.info?.gasto_gabinete ?? 0) > 0 && (
+                <div className="mt-4 bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                  <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/60">
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                      💰 Composição do Orçamento
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100">
+                    {[
+                      {
+                        label: "Cota Parlamentar",
+                        value: `R$ ${(performance.info.total_gasto ?? 0).toLocaleString("pt-BR")}`,
+                        sub: "gastos CEAP",
+                        color: "text-violet-600",
+                      },
+                      {
+                        label: "Verba de Gabinete",
+                        value: `R$ ${(performance.info.gasto_gabinete ?? 0).toLocaleString("pt-BR")}`,
+                        sub: "pessoal / funcionários",
+                        color: "text-orange-500",
+                      },
+                      {
+                        label: "Gasto Total",
+                        value: `R$ ${(performance.info.gasto_total ?? 0).toLocaleString("pt-BR")}`,
+                        sub: "CEAP + gabinete",
+                        color: "text-red-500",
+                      },
+                      {
+                        label: "Orçamento Utilizado",
+                        value: `${(performance.info.orcamento_utilizado_pct ?? performance.info.cota_utilizada_pct ?? 0).toFixed(1)}%`,
+                        sub: "do total disponível",
+                        color:
+                          (performance.info.orcamento_utilizado_pct ?? 0) > 85
+                            ? "text-red-500"
+                            : (performance.info.orcamento_utilizado_pct ?? 0) > 60
+                            ? "text-amber-500"
+                            : "text-emerald-600",
+                      },
+                    ].map((item) => (
+                      <div key={item.label} className="px-5 py-4 text-center">
+                        <p className={`mono-font font-bold text-base ${item.color}`}>{item.value}</p>
+                        <p className="text-[11px] font-semibold text-slate-600 mt-1">{item.label}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{item.sub}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
           )}
 
@@ -741,13 +802,21 @@ function VotoBadge({ voto }: { voto: string }) {
   )
 }
 
-function ResultadoVotacaoBadge({ aprovacao }: { aprovacao: number | null | undefined }) {
-  if (aprovacao === 1) return (
+function ResultadoVotacaoBadge({ aprovacao, resultadoTexto }: { aprovacao: number | null | undefined; resultadoTexto?: string | null }) {
+  // Deriva aprovacao da string resultado_da_votacao caso não venha como número
+  let resolvedAprovacao = aprovacao
+  if ((resolvedAprovacao === null || resolvedAprovacao === undefined) && resultadoTexto) {
+    const r = resultadoTexto.toLowerCase()
+    if (r.startsWith("aprovad") || r.includes(": aprovad")) resolvedAprovacao = 1
+    else if (r.startsWith("rejeitad") || r.includes(": rejeitad")) resolvedAprovacao = 0
+  }
+  const aprovacaoFinal = resolvedAprovacao
+  if (aprovacaoFinal === 1) return (
     <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
       <CheckCircle2 size={9} /> Aprovada
     </span>
   )
-  if (aprovacao === 0) return (
+  if (aprovacaoFinal === 0) return (
     <span className="inline-flex items-center gap-1 text-[10px] text-red-500 font-semibold bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
       <XCircle size={9} /> Rejeitada
     </span>
@@ -809,7 +878,7 @@ function PainelDetalheVotacao({
                   {votacao.proposicao_numero}/{votacao.proposicao_ano}
                 </span>
               )}
-              {votacao && <ResultadoVotacaoBadge aprovacao={votacao.aprovacao} />}
+              {votacao && <ResultadoVotacaoBadge aprovacao={votacao.aprovacao} resultadoTexto={(votacao as any).resultado_da_votacao} />}
             </div>
             <button
               onClick={onClose}
@@ -849,11 +918,11 @@ function PainelDetalheVotacao({
           ) : (
             <div className="px-6 py-5 space-y-5">
               {/* Ementa */}
-              {(votacao.proposicao_ementa || votacao.descricao) && (
+              {(votacao.proposicao_ementa || (votacao as any).ementa || votacao.descricao) && (
                 <div>
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Proposição</p>
                   <p className="text-sm text-slate-700 leading-relaxed">
-                    {votacao.proposicao_ementa ?? votacao.descricao}
+                    {votacao.proposicao_ementa ?? (votacao as any).ementa ?? votacao.descricao}
                   </p>
                 </div>
               )}
@@ -979,7 +1048,23 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
     offset_votacoes: offset,
   })
 
-  const votacoes: VotacaoResumida[] = atividade?.votacoes ?? []
+  // Normaliza campos do JSON do endpoint para o formato esperado pelo componente
+  const normalizarVotacao = (v: any): VotacaoResumida => {
+    // Deriva aprovacao (0/1) a partir da string resultado_da_votacao
+    let aprovacao: number | null = v.aprovacao ?? null
+    if (aprovacao === null && v.resultado_da_votacao) {
+      const r = (v.resultado_da_votacao as string).toLowerCase()
+      if (r.startsWith("aprovad") || r.includes(": aprovad")) aprovacao = 1
+      else if (r.startsWith("rejeitad") || r.includes(": rejeitad")) aprovacao = 0
+    }
+    return {
+      ...v,
+      proposicao_ementa: v.proposicao_ementa ?? v.ementa ?? null,
+      aprovacao,
+    }
+  }
+
+  const votacoes: VotacaoResumida[] = (atividade?.votacoes ?? []).map(normalizarVotacao)
   const total = atividade?.total_votacoes ?? 0
 
   const votacoesFiltradas = filtroVoto
@@ -1089,7 +1174,7 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
                         </div>
                         <div className="flex items-center gap-3 text-[11px] text-slate-400">
                           <span>{formatarData(v.data)}</span>
-                          <ResultadoVotacaoBadge aprovacao={v.aprovacao} />
+                          <ResultadoVotacaoBadge aprovacao={v.aprovacao} resultadoTexto={(v as any).resultado_da_votacao} />
                           {v.sigla_orgao && (
                             <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">{v.sigla_orgao}</span>
                           )}
@@ -1112,7 +1197,7 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
                           )}
                         </div>
                         <span className="text-sm text-slate-500 whitespace-nowrap">{formatarData(v.data)}</span>
-                        <ResultadoVotacaoBadge aprovacao={v.aprovacao} />
+                        <ResultadoVotacaoBadge aprovacao={v.aprovacao} resultadoTexto={(v as any).resultado_da_votacao} />
                         <VotoBadge voto={v.voto} />
                         <ChevronRight
                           size={14}

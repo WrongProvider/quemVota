@@ -149,7 +149,12 @@ class PoliticoFornecedor(BaseModel):
 class PoliticoEstatisticasResponse(BaseModel):
     total_votacoes: int
     total_despesas: int
+    # Gastos CEAP (cota parlamentar)
     total_gasto: float
+    # Gastos com verba de gabinete (pessoal/funcionarios)
+    total_gasto_gabinete: float = 0.0
+    # Soma CEAP + gabinete
+    total_gasto_combinado: float = 0.0
     media_mensal: float
     primeiro_ano: int | None = None
     ultimo_ano: int | None = None

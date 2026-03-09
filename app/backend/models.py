@@ -1329,7 +1329,9 @@ class VerbaGabinete(Base):
     valorDisponivel = Column(Numeric(12, 2))
     valorGasto      = Column(Numeric(12, 2))
 
-
+    __table_args__ = (
+        UniqueConstraint('idDeputado', 'ano', 'mes', name='uix_deputado_ano_mes'),
+    )
 # ===========================================================================
 # BUSCA POPULAR (tabela auxiliar de produto)
 # ===========================================================================

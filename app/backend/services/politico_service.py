@@ -234,10 +234,16 @@ class PoliticoService:
                 "nota_producao":    result["notas"]["producao"],
             },
             "info": {
-                "valor_cota_mensal":  meta["cota_mensal"],
-                "meses_considerados": meta["meses_mandato"],
-                "total_gasto":        meta["total_gasto"],
-                "cota_utilizada_pct": meta["cota_utilizada_pct"],
+                "valor_cota_mensal":       meta["cota_mensal"],
+                "meses_considerados":      meta["meses_mandato"],
+                # Breakdown de gastos — apos inclusao da verba de gabinete
+                "total_gasto":             meta["gasto_ceap"],
+                "gasto_gabinete":          meta["gasto_gabinete"],
+                "gasto_total":             meta["gasto_total"],
+                "orcamento_total":         meta["orcamento_total"],
+                "orcamento_utilizado_pct": meta["orcamento_utilizado_pct"],
+                # Mantido por retrocompatibilidade
+                "cota_utilizada_pct":      meta["orcamento_utilizado_pct"],
             },
         }
 
@@ -269,8 +275,10 @@ class PoliticoService:
             calc = calcular_score(raw)
             meta = calc.pop("_meta")
 
-            meses_ativos = meta["meses_mandato"]
-            total_gasto  = meta["total_gasto"]
+            meses_ativos   = meta["meses_mandato"]
+            gasto_ceap     = meta["gasto_ceap"]
+            gasto_gabinete = meta["gasto_gabinete"]
+            gasto_total    = meta["gasto_total"]
 
             resultado.append({
                 "ano":   entry["ano"],
@@ -279,14 +287,22 @@ class PoliticoService:
                 "estatisticas": {
                     "total_votacoes": entry["total_votacoes"],
                     "total_despesas": entry["total_despesas"],
-                    "total_gasto":    round(total_gasto, 2),
-                    "media_mensal":   round(total_gasto / meses_ativos, 2) if meses_ativos else 0.0,
+                    "total_gasto":    round(gasto_ceap, 2),
+                    "media_mensal":   round(gasto_ceap / meses_ativos, 2) if meses_ativos else 0.0,
                 },
                 "info": {
-                    "valor_cota_mensal":  meta["cota_mensal"],
-                    "meses_ativos":       meses_ativos,
-                    "cota_total":         round(meta["cota_total"], 2),
-                    "cota_utilizada_pct": meta["cota_utilizada_pct"],
+                    "valor_cota_mensal":       meta["cota_mensal"],
+                    "meses_ativos":            meses_ativos,
+                    "cota_total":              round(meta["cota_total"], 2),
+                    # Breakdown de gastos — apos inclusao da verba de gabinete
+                    "gasto_ceap":              round(gasto_ceap, 2),
+                    "gasto_gabinete":          round(gasto_gabinete, 2),
+                    "gasto_total":             round(gasto_total, 2),
+                    "verba_gabinete_total":    round(meta["verba_gabinete_total"], 2),
+                    "orcamento_total":         round(meta["orcamento_total"], 2),
+                    "orcamento_utilizado_pct": meta["orcamento_utilizado_pct"],
+                    # Mantido por retrocompatibilidade
+                    "cota_utilizada_pct":      meta["orcamento_utilizado_pct"],
                 },
             })
 

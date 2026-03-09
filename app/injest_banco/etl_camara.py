@@ -101,59 +101,46 @@ _CACHE_HIT = object()
 
 # ---------------------------------------------------------------------------
 # Padrão de início de registro dos CSVs da Câmara.
-# Cobre os dois formatos conhecidos de ID:
-#   • votações  → "2485383-7;"   (dígitos, hífen, dígitos, ponto-e-vírgula)
-#   • demais    → "220593;"      (apenas dígitos, ponto-e-vírgula)
-# A linha de cabeçalho também passa porque começa com letras.
+# Cobre os formatos conhecidos de ID:
+#   • votações   → "2485383-7;"  (dígitos, hífen, dígitos, ponto-e-vírgula)
+#   • demais     → "220593;"     (apenas dígitos, ponto-e-vírgula)
+#   • cotas/lideranças → linha começa com letra (ex: "LIDERANÇA DO PT;")
+# A linha de cabeçalho também começa com letra e é preservada normalmente.
 # ---------------------------------------------------------------------------
 _RE_RECORD_START = re.compile(r'^(?:\d+(?:-\d+)?;|[A-Za-z\u00C0-\u00FF])')
 
 
-def _fix_multiline_csv(raw_text: str) -> str:
-    """
-    Reconstrói registros quebrados por '\\n' internos em campos de texto longo
-    (ementas, pareceres) dos CSVs da Câmara dos Deputados.
+# def _fix_multiline_csv(raw_text: str) -> str:
+#     """
+#     Reconstrói registros quebrados por '\\n' internos em campos de texto longo
+#     (ementas, pareceres, descrições) nos CSVs da Câmara dos Deputados.
 
-    Dois cenários são tratados:
+#     Os arquivos não usam aspas de forma consistente para delimitar campos, então
+#     o pandas não consegue distinguir sozinho uma quebra dentro de um campo de
+#     uma quebra real entre registros. A solução é iterar as linhas brutas e
+#     colapsar na linha anterior toda linha que não parece início de registro.
 
-    1. Campo SEM aspas com quebra de linha interna (ex: votacoes-AAAA.csv):
-       Linhas de continuação — aquelas que não iniciam com o padrão de ID ou
-       cabeçalho — são colapsadas na linha anterior com um espaço simples.
+#     Toda linha que não bate com _RE_RECORD_START é considerada continuação e
+#     anexada à linha anterior com um espaço simples.
+#     """
+#     lines = raw_text.splitlines()
+#     if not lines:
+#         return raw_text
 
-    2. Campo COM aspas e conteúdo entre aspas duplas (ex: votacoesProposicoes):
-       Enquanto o número de aspas duplas acumuladas for ímpar, o parser ainda
-       está dentro de um campo quoted; essas linhas são colapsadas sem abrir
-       um novo registro, independentemente do padrão de ID.
-    """
-    lines = raw_text.splitlines()
-    if not lines:
-        return raw_text
+#     merged: list[str] = [lines[0]]
+#     broken = 0
 
-    merged: list[str] = [lines[0]]
-    broken = 0
-    # Conta aspas na primeira linha para inicializar o estado
-    open_quotes = lines[0].count('"') % 2 == 1  # True = dentro de campo quoted
+#     for line in lines[1:]:
+#         if _RE_RECORD_START.match(line):
+#             merged.append(line)
+#         else:
+#             merged[-1] = merged[-1] + " " + line.strip()
+#             broken += 1
 
-    for line in lines[1:]:
-        if open_quotes:
-            # Ainda dentro de um campo delimitado por aspas: sempre colapsa
-            merged[-1] = merged[-1] + " " + line
-            broken += 1
-        elif _RE_RECORD_START.match(line):
-            # Nova linha que parece início de registro: adiciona normalmente
-            merged.append(line)
-        else:
-            # Linha de continuação sem aspas: colapsa na anterior
-            merged[-1] = merged[-1] + " " + line.strip()
-            broken += 1
+#     if broken:
+#         log.debug("_fix_multiline_csv: %d linha(s) de continuação colapsada(s)", broken)
 
-        # Atualiza estado de aspas após processar a linha
-        open_quotes = merged[-1].count('"') % 2 == 1
-
-    if broken:
-        log.debug("_fix_multiline_csv: %d linha(s) de continuação colapsada(s)", broken)
-
-    return "\n".join(merged)
+#     return "\n".join(merged)
 
 
 def _download_csv(url: str, cache: Optional[dict] = None) -> Optional[pd.DataFrame]:
@@ -184,14 +171,9 @@ def _download_csv(url: str, cache: Optional[dict] = None) -> Optional[pd.DataFra
                 if entry:
                     cache[url] = entry
             raw_text = resp.content.decode("utf-8-sig", errors="replace")
-            raw_text = _fix_multiline_csv(raw_text)
             df = pd.read_csv(
                 io.StringIO(raw_text),
-                sep=";",
-                dtype=str,
-                low_memory=False,
-                quotechar='"',
-                doublequote=True,
+                sep=";", dtype=str, low_memory=False, quotechar='"', doublequote=True, on_bad_lines="warn"
             )
             log.info("✔ %s (%d linhas)", url.split("/")[-1], len(df))
             return df
@@ -230,7 +212,16 @@ def _clean(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = df.columns.str.replace('\ufeff', '').str.replace('"', '').str.strip()
     
     for col in df.select_dtypes(include="object").columns:
-        df[col] = df[col].str.strip().replace({"": None, "nan": None, "None": None})
+        df[col] = (
+            df[col]
+            .str.strip()
+            # Remove aspas externas apenas quando o valor inteiro esta entre aspas
+            # (ex: '"Sao Paulo"' -> 'Sao Paulo'). Nao toca em aspas internas.
+            .str.replace(r'^"(.*)"$', r'\1', regex=True)
+            # Normaliza escape RFC 4180: "" -> " (aspas duplas residuais)
+            .str.replace('""', '"', regex=False)
+            .replace({"": None, "nan": None, "None": None})
+        )
     return df
 
 def _date(s: pd.Series) -> pd.Series:

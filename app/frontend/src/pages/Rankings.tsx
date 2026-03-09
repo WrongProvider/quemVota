@@ -309,13 +309,23 @@ function RankingPerformance() {
 
   if (isLoading) return <EstadoLoading />
   if (error) return <EstadoErro mensagem={error.message} />
-  if (!data?.length) return <EstadoVazio mensagem="Nenhum dado de performance disponível." />
 
-  const top3 = data.slice(0, 3)
-  const rest = data.slice(3, 50)
+  const ranking = data?.ranking ?? []
+  if (!ranking.length) return <EstadoVazio mensagem="Nenhum dado de performance disponível." />
+
+  const top3 = ranking.slice(0, 3)
+  const rest = ranking.slice(3, 50)
 
   return (
     <>
+      {/* Aviso de cobertura histórica */}
+      {data?.aviso && (
+        <div className="px-5 py-3 bg-blue-50/70 border-b border-blue-100 flex items-start gap-2.5">
+          <span className="text-blue-400 flex-shrink-0 mt-0.5">ℹ️</span>
+          <p className="text-[11px] text-blue-700 leading-relaxed">{data.aviso}</p>
+        </div>
+      )}
+
       {/* Pódio */}
       <div className="border-b border-slate-100">
         <div className="px-5 py-2.5 bg-amber-50/60 border-b border-amber-100">

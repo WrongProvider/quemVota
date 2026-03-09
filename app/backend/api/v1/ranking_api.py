@@ -110,9 +110,26 @@ async def ranking_performance_politicos(
     """
     Retorna o ranking de performance calculado a partir de assiduidade (15%),
     economia (40%) e producao legislativa (45%).
+
+    **Nota:** inclui apenas parlamentares a partir da legislatura 54 (eleitos em 2010,
+    em exercício a partir de 2011). Deputados de legislaturas anteriores à 54
+    (eleitos antes de 2010) não registravam gastos de forma sistemática na plataforma
+    da Câmara, o que tornaria a comparação injusta e os scores distorcidos.
+    Parlamentares de legislaturas anteriores à 53 (antes de 2008) não tinham
+    obrigação de registro e estão completamente ausentes da base de dados.
     """
     logger.info("Ranking performance parlamentar solicitado")
-    return await service.get_ranking_performance_politicos()
+    ranking = await service.get_ranking_performance_politicos()
+    return {
+        "aviso": (
+            "Este ranking considera apenas parlamentares eleitos a partir de 2010 "
+            "(legislatura 54+). Deputados de legislaturas anteriores não registravam "
+            "gastos de forma sistemática. Antes de 2008 (legislatura 52 e anteriores), "
+            "não havia obrigatoriedade de registro de despesas."
+        ),
+        "total": len(ranking),
+        "ranking": ranking,
+    }
 
 
 @router.get(
@@ -132,6 +149,12 @@ async def get_stats_geral(
     media = sum(scores) / total if total > 0 else 0.0
 
     return {
+        "aviso": (
+            "Estatísticas calculadas apenas sobre parlamentares eleitos a partir de 2010 "
+            "(legislatura 54+). Deputados de legislaturas anteriores não registravam "
+            "gastos de forma sistemática. Antes de 2008 (legislatura 52 e anteriores), "
+            "não havia obrigatoriedade de registro de despesas."
+        ),
         "media_global": round(media, 2),
         "total_parlamentares": total,
         "top_50": ranking_completo[:50],

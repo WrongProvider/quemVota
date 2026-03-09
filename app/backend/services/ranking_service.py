@@ -8,6 +8,7 @@ Seguranca (OWASP):
   - A06 / Vulnerable Components: logica de negocio isolada do transporte HTTP.
 """
 
+import asyncio
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_cache import FastAPICache
@@ -80,12 +81,76 @@ class RankingService:
 
     async def get_ranking_performance_politicos(self) -> list[dict]:
         """
-        Calcula e ordena o ranking de performance de todos os politicos.
-        O calculo do score usa performance_calc.calcular_score — mesma logica
-        que o endpoint individual /politicos/{id}/performance.
+        Calcula e ordena o ranking de performance com normalização por ano.
+
+        Para cada parlamentar:
+          1. Busca a timeline anual (via get_timeline_data_batch — sem N+1).
+          2. Calcula calcular_score() para cada ano individualmente.
+          3. O score final é a média dos scores anuais — comparação justa
+             independente do tamanho do mandato.
+
+        Campos adicionais por parlamentar:
+          - anos_com_dados : int  — quantos anos têm dados de despesas
+          - confianca      : str  — "baixa" (1 ano) | "media" (2-3) | "alta" (4+)
         """
-        raw_data = await self._repo.get_ranking_performance_politicos()
-        ranking  = [calcular_score(dict(p)) for p in raw_data]
+        # 1. Busca todos os deputados elegíveis (query leve)
+        deputados = await self._repo.get_todos_deputados_ids()
+        if not deputados:
+            return []
+
+        dep_map = {d["id"]: d for d in deputados}
+        ids     = list(dep_map.keys())
+
+        # 2. Busca timelines em batch (6 queries no total, independente do nº de deputados)
+        timelines = await self._repo.get_timeline_data_batch(ids)
+
+        # 3. Calcula score médio por parlamentar
+        ranking = []
+        for dep_id, entradas in timelines.items():
+            if not entradas:
+                continue
+
+            dep  = dep_map[dep_id]
+            anos = len(entradas)
+
+            scores_anuais = []
+            notas_por_dim: dict[str, list[float]] = {
+                "assiduidade": [], "economia": [], "producao": []
+            }
+
+            for entrada in entradas:
+                raw = {**entrada["raw"], **dep}
+                calc = calcular_score(raw)
+                scores_anuais.append(calc["score"])
+                notas_por_dim["assiduidade"].append(calc["notas"]["assiduidade"])
+                notas_por_dim["economia"].append(calc["notas"]["economia"])
+                notas_por_dim["producao"].append(calc["notas"]["producao"])
+
+            score_medio = round(sum(scores_anuais) / anos, 2)
+
+            if anos >= 4:
+                confianca = "alta"
+            elif anos >= 2:
+                confianca = "media"
+            else:
+                confianca = "baixa"
+
+            ranking.append({
+                "id":      dep_id,
+                "nome":    dep["nome"],
+                "uf":      dep["siglaUF"],
+                "partido": dep["siglaPartido"],
+                "foto":    dep["urlFoto"],
+                "score":   score_medio,
+                "notas": {
+                    "assiduidade": round(sum(notas_por_dim["assiduidade"]) / anos, 2),
+                    "economia":    round(sum(notas_por_dim["economia"])    / anos, 2),
+                    "producao":    round(sum(notas_por_dim["producao"])    / anos, 2),
+                },
+                "anos_com_dados": anos,
+                "confianca":      confianca,
+            })
+
         ranking.sort(key=lambda x: x["score"], reverse=True)
         return ranking
 

@@ -44,12 +44,28 @@ export interface RankingPerformancePolitico {
   foto: string      // campo retornado por performance_calc.py
   score: number
   notas: NotasPerformance
+  /** Quantos anos calendário têm dados de despesas para este parlamentar */
+  anos_com_dados: number
+  /** "baixa" = 1 ano | "media" = 2-3 anos | "alta" = 4+ anos (legislatura completa) */
+  confianca: "baixa" | "media" | "alta"
 }
 
 export interface StatsGeral {
+  /** Aviso sobre limitação de cobertura histórica (leg. 54+, eleitos >= 2010). */
+  aviso: string
   media_global: number
   total_parlamentares: number
-  top_50: RankingPerformancePolitico[]  // corrigido: backend retorna top_50, não top_3
+  top_50: RankingPerformancePolitico[]
+}
+
+/**
+ * Envelope retornado por GET /ranking/performance_politicos.
+ * O campo `aviso` explica a limitação de cobertura histórica (leg. 54+).
+ */
+export interface PerformanceRankingResponse {
+  aviso: string
+  total: number
+  ranking: RankingPerformancePolitico[]
 }
 
 // ============================================
@@ -124,13 +140,15 @@ export async function getRankingDiscursos(
 }
 
 /**
- * Busca o ranking geral de performance dos políticos
- * Score baseado em: Assiduidade (15%) + Economia (40%) + Produção (45%)
+ * Busca o ranking geral de performance dos políticos.
+ * Score: Assiduidade (15%) + Economia (40%) + Producao (45%)
  * Endpoint: GET /ranking/performance_politicos
  * Cache: 24 horas no backend
+ *
+ * Retorna envelope com `aviso` (cobertura leg. 54+), `total` e `ranking[]`.
  */
-export async function getRankingPerformance(): Promise<RankingPerformancePolitico[]> {
-  const { data } = await api.get<RankingPerformancePolitico[]>(
+export async function getRankingPerformance(): Promise<PerformanceRankingResponse> {
+  const { data } = await api.get<PerformanceRankingResponse>(
     "/ranking/performance_politicos"
   )
   return data

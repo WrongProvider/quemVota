@@ -407,15 +407,24 @@ class PoliticoRepository:
         if ano is not None:
             stmt_despesas = stmt_despesas.where(Despesa.ano == ano)
 
+        # --- Verba de gabinete ---
+        stmt_gabinete = select(
+            func.coalesce(func.sum(VerbaGabinete.valorGasto), 0)
+        ).where(VerbaGabinete.idDeputado == politico_id)
+        if ano is not None:
+            stmt_gabinete = stmt_gabinete.where(VerbaGabinete.ano == ano)
+
         try:
             res_votos    = await self.db.execute(stmt_votos)
             res_despesas = await self.db.execute(stmt_despesas)
+            res_gabinete = await self.db.execute(stmt_gabinete)
         except SQLAlchemyError:
             logger.exception("Erro ao buscar estatísticas do deputado id=%s", politico_id)
             raise
 
         total_votacoes = res_votos.scalar() or 0
         total_despesas, total_gasto, primeiro_ano, ultimo_ano = res_despesas.one()
+        total_gasto_gabinete = float(res_gabinete.scalar() or 0)
 
         if ano is not None:
             stmt_meses = select(
@@ -434,16 +443,21 @@ class PoliticoRepository:
                 else 1
             )
 
+        gasto_ceap     = float(total_gasto or 0)
+        gasto_combinado = round(gasto_ceap + total_gasto_gabinete, 2)
+
         media_mensal = (
-            round(float(total_gasto) / total_meses, 2)
-            if total_meses > 0 and total_gasto
+            round(gasto_ceap / total_meses, 2)
+            if total_meses > 0 and gasto_ceap
             else 0.0
         )
 
         return PoliticoEstatisticasResponse(
             total_votacoes=total_votacoes,
             total_despesas=total_despesas or 0,
-            total_gasto=float(total_gasto or 0),
+            total_gasto=gasto_ceap,
+            total_gasto_gabinete=total_gasto_gabinete,
+            total_gasto_combinado=gasto_combinado,
             media_mensal=media_mensal,
             primeiro_ano=primeiro_ano,
             ultimo_ano=ultimo_ano,

@@ -76,17 +76,30 @@ def calcular_score(p: dict, meses_override: int | None = None) -> dict:
         else 0.0
     )
 
-    # --- 3. Economia (0–100): quanto da cota não foi gasto ---
+    # --- 3. Economia (0–100): quanto do orçamento total não foi gasto ---
     # Aceita tanto "siglaUF" (novo modelo) quanto "uf" (legado) para compatibilidade
     uf = p.get("siglaUF") or p.get("uf")
-    cota_mensal   = resolve_cota_mensal(uf)
-    cota_total    = cota_mensal * meses
-    gasto         = float(p["total_gasto"])
-    nota_economia = (
-        max(0.0, ((cota_total - gasto) / cota_total) * 100)
-        if cota_total > 0
-        else 0.0
-    )
+    cota_mensal  = resolve_cota_mensal(uf)
+    cota_total   = cota_mensal * meses
+
+    # Verba de gabinete: constante nacional (R$ 112.320,26/mês — 2025)
+    _VERBA_GABINETE_MENSAL = 112_320.26
+    verba_gabinete_total = _VERBA_GABINETE_MENSAL * meses
+
+    gasto_ceap     = float(p["total_gasto"])
+    gasto_gabinete = float(p.get("gasto_gabinete") or 0.0)
+    gasto_total    = gasto_ceap + gasto_gabinete
+    orcamento_total = cota_total + verba_gabinete_total
+
+    # Ausência de dados: todo deputado usa CEAP e verba de gabinete por obrigação
+    # institucional. gasto_total = 0 indica dados não registrados, não economia real.
+    # Nesses casos aplicamos nota neutra (50) para não inflar artificialmente o score.
+    if gasto_total == 0.0:
+        nota_economia = 50.0
+    elif orcamento_total > 0:
+        nota_economia = max(0.0, ((orcamento_total - gasto_total) / orcamento_total) * 100)
+    else:
+        nota_economia = 50.0
 
     score_final = (
         nota_assiduidade * _PESO_ASSIDUIDADE
@@ -108,10 +121,20 @@ def calcular_score(p: dict, meses_override: int | None = None) -> dict:
         },
         # Campos auxiliares — o service remove antes de expor ao cliente
         "_meta": {
-            "cota_mensal":        cota_mensal,
-            "cota_total":         cota_total,
-            "total_gasto":        gasto,
-            "meses_mandato":      meses,
-            "cota_utilizada_pct": round((gasto / cota_total) * 100, 2) if cota_total > 0 else 0.0,
+            "cota_mensal":             cota_mensal,
+            "cota_total":              cota_total,
+            "verba_gabinete_total":    verba_gabinete_total,
+            "orcamento_total":         orcamento_total,
+            # gasto_ceap mantido como "total_gasto" para retrocompatibilidade
+            # com politico_service.py que ainda lê meta["total_gasto"]
+            "total_gasto":             gasto_ceap,
+            "gasto_ceap":              gasto_ceap,
+            "gasto_gabinete":          gasto_gabinete,
+            "gasto_total":             gasto_total,
+            "meses_mandato":           meses,
+            "sem_dados_gastos":        gasto_total == 0.0,
+            "orcamento_utilizado_pct": round((gasto_total / orcamento_total) * 100, 2) if orcamento_total > 0 and gasto_total > 0 else 0.0,
+            # mantido por retrocompatibilidade
+            "cota_utilizada_pct":      round((gasto_ceap / cota_total) * 100, 2) if cota_total > 0 and gasto_ceap > 0 else 0.0,
         },
     }

@@ -1,8 +1,8 @@
 """new
 
-Revision ID: 7bc718f68c31
+Revision ID: 97b9b773c7ab
 Revises: 
-Create Date: 2026-03-04 21:03:35.406383
+Create Date: 2026-03-07 01:58:12.746553
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '7bc718f68c31'
+revision: str = '97b9b773c7ab'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -179,7 +179,7 @@ def upgrade() -> None:
     sa.Column('codTipo', sa.Integer(), nullable=True),
     sa.Column('numero', sa.Integer(), nullable=True),
     sa.Column('ano', sa.Integer(), nullable=True),
-    sa.Column('descricaoTipo', sa.String(length=100), nullable=True),
+    sa.Column('descricaoTipo', sa.Text(), nullable=True),
     sa.Column('ementa', sa.Text(), nullable=True),
     sa.Column('ementaDetalhada', sa.Text(), nullable=True),
     sa.Column('keywords', sa.Text(), nullable=True),
@@ -228,7 +228,7 @@ def upgrade() -> None:
     op.create_table('tecadTermos',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('codTermo', sa.Integer(), nullable=True),
-    sa.Column('termo', sa.String(length=300), nullable=True),
+    sa.Column('termo', sa.Text(), nullable=True),
     sa.Column('categorias', sa.Text(), nullable=True),
     sa.Column('subcategorias', sa.Text(), nullable=True),
     sa.Column('notasExplicativas', sa.Text(), nullable=True),
@@ -256,6 +256,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('idCamara', sa.Integer(), nullable=False),
     sa.Column('uri', sa.Text(), nullable=True),
+    sa.Column('slug', sa.String(length=200), nullable=True),
     sa.Column('nome', sa.String(length=200), nullable=False),
     sa.Column('nomeCivil', sa.String(length=200), nullable=True),
     sa.Column('cpf', sa.String(length=14), nullable=True),
@@ -290,6 +291,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_deputados_nome'), 'deputados', ['nome'], unique=False)
     op.create_index(op.f('ix_deputados_siglaPartido'), 'deputados', ['siglaPartido'], unique=False)
     op.create_index(op.f('ix_deputados_siglaUF'), 'deputados', ['siglaUF'], unique=False)
+    op.create_index(op.f('ix_deputados_slug'), 'deputados', ['slug'], unique=True)
     op.create_table('eventosOrgaos',
     sa.Column('idEvento', sa.Integer(), nullable=False),
     sa.Column('idOrgao', sa.Integer(), nullable=False),
@@ -316,7 +318,7 @@ def upgrade() -> None:
     sa.Column('presidenteUri', sa.Text(), nullable=True),
     sa.Column('observacao', sa.Text(), nullable=True),
     sa.Column('oficioTitulo', sa.String(length=200), nullable=True),
-    sa.Column('oficioAutorTipo', sa.String(length=50), nullable=True),
+    sa.Column('oficioAutorTipo', sa.Text(), nullable=True),
     sa.Column('oficioAutor', sa.String(length=200), nullable=True),
     sa.Column('oficioAutorUri', sa.Text(), nullable=True),
     sa.Column('oficioDataApresentacao', sa.DateTime(), nullable=True),
@@ -375,8 +377,8 @@ def upgrade() -> None:
     sa.Column('tipoContrato', sa.String(length=50), nullable=True),
     sa.Column('situacaoItem', sa.String(length=50), nullable=True),
     sa.Column('observacoes', sa.Text(), nullable=True),
-    sa.Column('naturezaDespesa', sa.String(length=100), nullable=True),
-    sa.Column('programaTrabalho', sa.String(length=100), nullable=True),
+    sa.Column('naturezaDespesa', sa.Text(), nullable=True),
+    sa.Column('programaTrabalho', sa.Text(), nullable=True),
     sa.Column('codPTRES', sa.String(length=50), nullable=True),
     sa.ForeignKeyConstraint(['idLicitacao'], ['licitacoes.idLicitacao'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
@@ -528,22 +530,25 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('idDeputado', sa.Integer(), nullable=False),
     sa.Column('codDocumento', sa.String(length=100), nullable=False),
-    sa.Column('codLote', sa.Integer(), nullable=True),
     sa.Column('ano', sa.Integer(), nullable=False),
     sa.Column('mes', sa.Integer(), nullable=False),
-    sa.Column('dataDocumento', sa.Date(), nullable=True),
+    sa.Column('dataDocumento', sa.DateTime(), nullable=True),
     sa.Column('tipoDespesa', sa.Text(), nullable=True),
-    sa.Column('tipoDocumento', sa.String(length=150), nullable=True),
+    sa.Column('numSubCota', sa.Integer(), nullable=True),
+    sa.Column('numEspecificacaoSubCota', sa.Integer(), nullable=True),
     sa.Column('codTipoDocumento', sa.Integer(), nullable=True),
     sa.Column('numDocumento', sa.String(length=150), nullable=True),
     sa.Column('urlDocumento', sa.Text(), nullable=True),
     sa.Column('nomeFornecedor', sa.Text(), nullable=True),
     sa.Column('cnpjCpfFornecedor', sa.String(length=20), nullable=True),
     sa.Column('valorDocumento', sa.Numeric(precision=12, scale=2), nullable=True),
-    sa.Column('valorLiquido', sa.Numeric(precision=12, scale=2), nullable=True),
     sa.Column('valorGlosa', sa.Numeric(precision=12, scale=2), nullable=True),
+    sa.Column('valorLiquido', sa.Numeric(precision=12, scale=2), nullable=True),
     sa.Column('parcela', sa.Integer(), nullable=True),
+    sa.Column('codLote', sa.Integer(), nullable=True),
     sa.Column('numRessarcimento', sa.String(length=100), nullable=True),
+    sa.Column('txPassageiro', sa.Text(), nullable=True),
+    sa.Column('txTrecho', sa.Text(), nullable=True),
     sa.Column('createdAt', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['idDeputado'], ['deputados.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
@@ -712,7 +717,7 @@ def upgrade() -> None:
     sa.Column('uriAutor', sa.Text(), nullable=True),
     sa.Column('codTipoAutor', sa.Integer(), nullable=True),
     sa.Column('tipoAutor', sa.String(length=50), nullable=True),
-    sa.Column('nomeAutor', sa.String(length=500), nullable=False),
+    sa.Column('nomeAutor', sa.Text(), nullable=False),
     sa.Column('siglaPartidoAutor', sa.String(length=50), nullable=True),
     sa.Column('uriPartidoAutor', sa.Text(), nullable=True),
     sa.Column('siglaUFAutor', sa.CHAR(length=2), nullable=True),
@@ -898,6 +903,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_eventosRequerimentos_idEvento'), table_name='eventosRequerimentos')
     op.drop_table('eventosRequerimentos')
     op.drop_table('eventosOrgaos')
+    op.drop_index(op.f('ix_deputados_slug'), table_name='deputados')
     op.drop_index(op.f('ix_deputados_siglaUF'), table_name='deputados')
     op.drop_index(op.f('ix_deputados_siglaPartido'), table_name='deputados')
     op.drop_index(op.f('ix_deputados_nome'), table_name='deputados')

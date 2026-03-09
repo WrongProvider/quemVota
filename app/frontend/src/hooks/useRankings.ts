@@ -9,6 +9,7 @@ import {
   type RankingEmpresaLucro,
   type RankingDiscursoPolitico,
   type RankingPerformancePolitico,
+  type PerformanceRankingResponse,
   type StatsGeral,
   type RankingDespesaParams,
   type RankingLucroParams,
@@ -86,14 +87,20 @@ export function useRankingDiscursos(
 }
 
 /**
- * Hook para buscar ranking geral de performance
- * Score baseado em: Assiduidade (15%) + Economia (40%) + Produção (45%)
- * 
+ * Hook para buscar ranking geral de performance.
+ * Score: Assiduidade (15%) + Economia (40%) + Producao (45%)
+ *
+ * Retorna envelope { aviso, total, ranking[] } — inclui apenas parlamentares
+ * da legislatura 54+ (eleitos >= 2010). O campo `aviso` pode ser exibido
+ * na UI para informar o usuario sobre a limitação de cobertura histórica.
+ *
  * @example
- * const { data, isLoading } = useRankingPerformance()
+ * const { data } = useRankingPerformance()
+ * const lista = data?.ranking ?? []
+ * const aviso = data?.aviso
  */
 export function useRankingPerformance(
-  options?: Omit<UseQueryOptions<RankingPerformancePolitico[]>, "queryKey" | "queryFn">
+  options?: Omit<UseQueryOptions<PerformanceRankingResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery({
     queryKey: ["rankings", "performance"],
