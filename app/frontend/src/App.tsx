@@ -11,6 +11,7 @@ import Faq from "./pages/Faq"
 import Sobre from "./pages/Sobre"
 import Roadmap from "./pages/Roadmap"
 import GlobalExternalLinkModal from "./components/GlobalExternalLinkModal"
+import ComparacaoPoliticos from "./pages/ComparacaoPoliticos"
 
 /**
  * Redireciona URLs legadas com ID numérico para o formato com slug.
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/politicos_detalhe/:id" element={<LegacyPoliticoRedirect />} />
 
         <Route path="/rankings" element={<Rankings />} />
+        <Route path="/comparar/:slug1/:slug2" element={<ComparacaoPoliticos/>} />
         <Route path="/sobre" element={<Sobre />} />
         <Route path="/metodologia" element={<Metodologia />} />
         <Route path="/faq" element={<Faq />} />

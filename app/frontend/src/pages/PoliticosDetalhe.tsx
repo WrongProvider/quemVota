@@ -38,10 +38,12 @@ import {
   MinusCircle,
   ChevronDown,
   Loader2,
+  ArrowLeftRight,
 } from "lucide-react"
 import { useRegistrarBusca } from "../hooks/useBuscaPopular"
 import { useVotacao } from "../hooks/useProposicoes"
 import type { VotacaoResumida } from "../api/politicos.api"
+import ModalSelecionarPolitico from "../components/ModalSelecionarPolitico"
 
 const PATH_FOTOS = "/fotos_politicos/"
 
@@ -348,6 +350,7 @@ export default function PoliticoDetalhe() {
 
   const [anoSelecionado, setAnoSelecionado] = useState<number | null>(null)
   const [avisoSaidaAberto, setAvisoSaidaAberto] = useState(false)
+  const [modalCompararAberto, setModalCompararAberto] = useState(false)
 
   // Busca por ID numérico (legado) ou por slug (canônico)
   const porId   = usePoliticoDetalhe(isNumerico ? Number(idOuSlug) : 0)
@@ -508,8 +511,20 @@ export default function PoliticoDetalhe() {
                   <span className="text-slate-600 font-medium">{data.nome}</span>
                 </Link>
 
-                {/* ── BOTÃO COMPARTILHAR ── */}
-                <BotoesCompartilhamento nome={data.nome} url={pageUrl} />
+                {/* ── BOTÕES DE AÇÃO ── */}
+                <div className="flex items-center gap-2">
+                  {/* ── BOTÃO COMPARAR ── */}
+                  <button
+                    onClick={() => setModalCompararAberto(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium transition-colors shadow-sm shadow-blue-200"
+                  >
+                    <ArrowLeftRight size={15} />
+                    Comparar
+                  </button>
+
+                  {/* ── BOTÃO COMPARTILHAR ── */}
+                  <BotoesCompartilhamento nome={data.nome} url={pageUrl} />
+                </div>
               </div>
 
               <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
@@ -635,7 +650,6 @@ export default function PoliticoDetalhe() {
 
         {/* ── MAIN CONTENT ── */}
         <div className="max-w-5xl mx-auto px-6 py-10 space-y-10">
-
           {/* ── SELETOR DE ANO ── */}
           {!timelineLoading && anosDisponiveis.length > 0 && (
             <section>
@@ -780,6 +794,15 @@ export default function PoliticoDetalhe() {
           <HistoricoVotacoes politicoId={data.id} anoSelecionado={anoSelecionado} />
         </div>
       </div>
+
+      {/* ── MODAL COMPARAR ── */}
+      {modalCompararAberto && (
+        <ModalSelecionarPolitico
+          politicoAtualId={data.id}
+          politicoAtualSlug={data.slug}
+          onClose={() => setModalCompararAberto(false)}
+        />
+      )}
     </>
   )
 }
