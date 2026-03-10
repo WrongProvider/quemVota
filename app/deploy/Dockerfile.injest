@@ -1,11 +1,11 @@
 # script injest banco
 FROM python:3.11-slim
 
-WORKDIR /app
+WORKDIR /app/injest_banco
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY injest_banco/ ./injest_banco/
 
-CMD ["python", "-m", "injest_banco.main"]
+CMD ["python", "etl_camara.py", "--update"]
