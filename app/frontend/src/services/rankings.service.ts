@@ -9,6 +9,7 @@ import {
   type RankingDiscursoPolitico,
   type RankingPerformancePolitico,
   type PerformanceRankingResponse,
+  type PerformanceParams,
   type StatsGeral,
 } from "../api/rankings.api"
 
@@ -21,6 +22,21 @@ export interface RankingFilters {
   selectedUF?: string
   limit?: number
   offset?: number
+}
+
+/**
+ * Filtros específicos para o ranking de performance.
+ * Espelha PerformanceParams da API com nomenclatura idiomática para a UI.
+ */
+export interface PerformanceFilters {
+  /** Ano de referência. Quando informado, compara parlamentares no mesmo período. */
+  ano?: number
+  /** Busca parcial por nome. */
+  searchTerm?: string
+  /** Sigla do estado (ex: "SP"). */
+  selectedUF?: string
+  /** Sigla do partido (ex: "PT"). */
+  selectedPartido?: string
 }
 
 export interface PaginationInfo {
@@ -40,34 +56,61 @@ export interface PaginationInfo {
  */
 export class PerformanceRankingService {
   /**
-   * Busca o ranking completo de performance
-   * Retorna separado: Top 3 (pódio) e o restante
+   * Busca o ranking de performance com filtros opcionais.
+   *
+   * Quando `ano` é informado, todos os parlamentares são comparados no mesmo
+   * período — ideal para construir a timeline histórica do ranking e evitar
+   * que deputados com mandatos longos tenham vantagem sobre os mais novos.
+   *
+   * Retorna separado: Top 3 (pódio) e o restante (posições 4–50).
    */
-  static async getPerformanceRanking() {
-    const envelope = await getRankingPerformance()
+  static async getPerformanceRanking(filters: PerformanceFilters = {}) {
+    const { ano, searchTerm, selectedUF, selectedPartido } = filters
+    const params: PerformanceParams = {
+      ano,
+      q:       searchTerm   || undefined,
+      uf:      selectedUF   || undefined,
+      partido: selectedPartido || undefined,
+    }
+    const envelope = await getRankingPerformance(params)
     const data = envelope.ranking
 
     return {
-      aviso: envelope.aviso,
-      total: envelope.total,
-      top3: data.slice(0, 3),
-      rest: data.slice(3, 50),
-      all: data,
+      aviso:          envelope.aviso,
+      ano_referencia: envelope.ano_referencia,
+      total:          envelope.total,
+      top3:  data.slice(0, 3),
+      rest:  data.slice(3, 50),
+      all:   data,
     }
   }
 
   /**
-   * Busca as estatísticas gerais (para dashboard/home)
+   * Busca as estatísticas gerais (para dashboard/home), com filtros opcionais.
    */
-  static async getStats(): Promise<StatsGeral> {
-    return await getStatsGeral()
+  static async getStats(filters: PerformanceFilters = {}): Promise<StatsGeral> {
+    const params: PerformanceParams = {
+      ano:     filters.ano,
+      q:       filters.searchTerm    || undefined,
+      uf:      filters.selectedUF    || undefined,
+      partido: filters.selectedPartido || undefined,
+    }
+    return await getStatsGeral(params)
   }
 
   /**
-   * Calcula a posição de um político no ranking geral
+   * Calcula a posição de um político no ranking geral (ou anual se `ano` informado).
    */
-  static async getPoliticoPosition(politicoId: number): Promise<number | null> {
-    const { ranking } = await getRankingPerformance()
+  static async getPoliticoPosition(
+    politicoId: number,
+    filters: PerformanceFilters = {}
+  ): Promise<number | null> {
+    const params: PerformanceParams = {
+      ano:     filters.ano,
+      uf:      filters.selectedUF    || undefined,
+      partido: filters.selectedPartido || undefined,
+    }
+    const { ranking } = await getRankingPerformance(params)
     const position = ranking.findIndex(p => p.id === politicoId)
     return position === -1 ? null : position + 1
   }
@@ -76,11 +119,24 @@ export class PerformanceRankingService {
    * Filtra políticos pelo score (útil para criar faixas de performance)
    */
   static filterByScore(
-    politicos: RankingPerformancePolitico[], 
-    minScore: number, 
+    politicos: RankingPerformancePolitico[],
+    minScore: number,
     maxScore: number = 100
   ): RankingPerformancePolitico[] {
     return politicos.filter(p => p.score >= minScore && p.score <= maxScore)
+  }
+
+  /**
+   * Retorna os anos disponíveis para o ranking de uma lista de parlamentares.
+   * Útil para popular o seletor de ano na UI de timeline.
+   *
+   * Como o backend filtra por `idLegislaturaInicial >= 54` (2011+),
+   * o range mínimo começa em 2011.
+   */
+  static getAnosDisponiveis(anoInicio = 2011, anoFim = new Date().getFullYear()): number[] {
+    const anos: number[] = []
+    for (let a = anoFim; a >= anoInicio; a--) anos.push(a)
+    return anos
   }
 }
 

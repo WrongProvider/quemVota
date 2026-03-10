@@ -10,6 +10,7 @@ import {
   type RankingDiscursoPolitico,
   type RankingPerformancePolitico,
   type PerformanceRankingResponse,
+  type PerformanceParams,
   type StatsGeral,
   type RankingDespesaParams,
   type RankingLucroParams,
@@ -90,40 +91,55 @@ export function useRankingDiscursos(
  * Hook para buscar ranking geral de performance.
  * Score: Assiduidade (15%) + Economia (40%) + Producao (45%)
  *
- * Retorna envelope { aviso, total, ranking[] } — inclui apenas parlamentares
- * da legislatura 54+ (eleitos >= 2010). O campo `aviso` pode ser exibido
- * na UI para informar o usuario sobre a limitação de cobertura histórica.
+ * Sem parâmetros → score médio de mandato (comportamento padrão).
+ * Com `params.ano` → ranking anual: todos os parlamentares comparados
+ * no mesmo período, sem vantagem de deputados com mandatos longos.
+ * Ideal para construir a timeline histórica do ranking.
+ *
+ * O campo `ano_referencia` na resposta confirma o período aplicado.
  *
  * @example
+ * // Ranking padrão (média de mandato)
  * const { data } = useRankingPerformance()
- * const lista = data?.ranking ?? []
- * const aviso = data?.aviso
+ *
+ * // Ranking para um ano específico
+ * const { data } = useRankingPerformance({ ano: 2023 })
+ *
+ * // Com filtros combinados
+ * const { data } = useRankingPerformance({ ano: 2022, uf: "SP", partido: "PT" })
  */
 export function useRankingPerformance(
+  params?: PerformanceParams,
   options?: Omit<UseQueryOptions<PerformanceRankingResponse>, "queryKey" | "queryFn">
 ) {
   return useQuery({
-    queryKey: ["rankings", "performance"],
-    queryFn: getRankingPerformance,
+    // A query key inclui todos os params para que cada combinação
+    // de filtros tenha seu próprio cache independente.
+    queryKey: ["rankings", "performance", params ?? {}],
+    queryFn: () => getRankingPerformance(params),
     ...CACHE_CONFIG,
     ...options,
   })
 }
 
 /**
- * Hook para buscar estatísticas gerais do sistema
- * Inclui média global, total de parlamentares e top 50
- * Ideal para usar na página inicial
- * 
+ * Hook para buscar estatísticas gerais do sistema.
+ * Inclui aviso, ano_referencia, média global, total de parlamentares e top 50.
+ * Ideal para usar na página inicial ou em dashboards.
+ *
+ * Aceita os mesmos filtros de `useRankingPerformance`.
+ *
  * @example
- * const { data, isLoading } = useStatsGeral()
+ * const { data } = useStatsGeral()
+ * const { data } = useStatsGeral({ ano: 2023 })
  */
 export function useStatsGeral(
+  params?: PerformanceParams,
   options?: Omit<UseQueryOptions<StatsGeral>, "queryKey" | "queryFn">
 ) {
   return useQuery({
-    queryKey: ["rankings", "stats-geral"],
-    queryFn: getStatsGeral,
+    queryKey: ["rankings", "stats-geral", params ?? {}],
+    queryFn: () => getStatsGeral(params),
     ...CACHE_CONFIG,
     ...options,
   })

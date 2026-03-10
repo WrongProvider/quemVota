@@ -326,6 +326,7 @@ class PoliticoService:
         ano: int | None = None,
         limit_votacoes: int = 20,
         limit_proposicoes: int = 20,
+        q: str | None = None,
         offset_votacoes: int = 0,
         offset_proposicoes: int = 0,
     ) -> "AtividadeLegislativaResponse":
@@ -354,6 +355,7 @@ class PoliticoService:
         (votacoes, total_v), (proposicoes, total_p) = await asyncio.gather(
             self._repo.get_atividade_votacoes_repo(
                 deputado_id,
+                q=q,
                 ano=ano,
                 limit=safe_lv,
                 offset=safe_ov,
@@ -361,6 +363,7 @@ class PoliticoService:
             self._repo.get_atividade_proposicoes_repo(
                 deputado_id,
                 ano=ano,
+                q=q,
                 limit=safe_lp,
                 offset=safe_op,
             ),

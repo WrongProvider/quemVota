@@ -198,6 +198,74 @@ class RankingDiscursoPolitico(BaseModel):
 
 
 # =============================================================================
+# SCHEMAS — Ranking de Performance Parlamentar
+# =============================================================================
+
+class NotasPerformance(BaseModel):
+    """Notas individuais que compõem o score final (todas 0–100)."""
+    assiduidade: float
+    producao:    float
+    economia:    float
+
+
+class RankingPerformancePolitico(BaseModel):
+    """
+    Entrada do ranking de performance de um parlamentar.
+
+    Campos de confiança:
+      - anos_com_dados : int  — quantos anos calendário têm dados de despesas
+      - confianca      : str  — "baixa" (1 ano) | "media" (2-3) | "alta" (4+)
+
+    Quando o ranking é filtrado por `ano`, o campo `ano_referencia` indica
+    o período exato de comparação.
+    """
+    id:      int
+    nome:    str
+    uf:      str | None = None
+    partido: str | None = None
+    foto:    str | None = None
+    score:   float
+    notas:   NotasPerformance
+    anos_com_dados:  int
+    confianca:       str  # "baixa" | "media" | "alta"
+    ano_referencia:  int | None = None
+
+
+class PerformanceRankingResponse(BaseModel):
+    """
+    Envelope retornado por GET /ranking/performance_politicos.
+
+    Campos:
+      - aviso          : texto explicando a limitação de cobertura (leg. 54+)
+      - ano_referencia : ano filtrado; None = média de mandato (comportamento padrão)
+      - total          : quantidade de parlamentares no ranking
+      - ranking        : lista ordenada por score decrescente
+    """
+    aviso:          str
+    ano_referencia: int | None = None
+    total:          int
+    ranking:        List[RankingPerformancePolitico]
+
+
+class StatsGeral(BaseModel):
+    """
+    Estatísticas globais retornadas por GET /ranking/stats/geral.
+
+    Campos:
+      - aviso               : texto explicando limitação de cobertura
+      - ano_referencia      : ano filtrado; None = todos os anos
+      - media_global        : média dos scores de todos os parlamentares elegíveis
+      - total_parlamentares : quantidade total de parlamentares no cálculo
+      - top_50              : os 50 melhores colocados no ranking
+    """
+    aviso:               str
+    ano_referencia:      int | None = None
+    media_global:        float
+    total_parlamentares: int
+    top_50:              List[RankingPerformancePolitico]
+
+
+# =============================================================================
 # SCHEMAS — Proposições e Votações
 # =============================================================================
 

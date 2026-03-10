@@ -506,7 +506,7 @@ def t_votacoes(df):
         df[c] = pd.to_numeric(df.get(c), errors="coerce")
     df["idOrgaoCamara"]      = pd.to_numeric(df.get("idOrgao"),  errors="coerce")
     df["idEventoCamara"]     = pd.to_numeric(df.get("idEvento"), errors="coerce")
-    df["idProposicaoCamara"] = pd.to_numeric(df.get("ultimaApresentacaoProposicao_idProposicao"), errors="coerce")
+    df["idProposicaoCamara"] = pd.to_numeric(df.get("idCamara").str.split("-").str[0], errors="coerce")
     return _keep(df, [
         "idCamara","uri","data","dataHoraRegistro",
         "idOrgaoCamara","uriOrgao","siglaOrgao","idEventoCamara","uriEvento",

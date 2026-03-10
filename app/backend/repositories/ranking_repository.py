@@ -604,11 +604,24 @@ class RankingRepository:
     # Performance — lista de IDs elegíveis para o ranking
     # ------------------------------------------------------------------
 
-    async def get_todos_deputados_ids(self) -> list[dict]:
+    async def get_todos_deputados_ids(
+        self,
+        *,
+        q: str | None = None,
+        uf: str | None = None,
+        partido: str | None = None,
+        ano: int | None = None,
+    ) -> list[dict]:
         """
         Retorna id, nome, siglaUF, siglaPartido e urlFoto de todos os
         parlamentares elegíveis para o ranking (idLegislaturaInicial >= 54).
-        Query leve — sem agregações.
+
+        Filtros opcionais:
+          - q       : busca parcial por nome (case-insensitive)
+          - uf      : sigla de estado (2 letras)
+          - partido : sigla do partido (case-insensitive)
+          - ano     : restringe aos deputados que possuem despesas naquele ano
+                      (garante que só entrem no ranking quem tem dados para o período)
         """
         stmt = (
             select(
@@ -619,8 +632,28 @@ class RankingRepository:
                 Deputado.urlFoto,
             )
             .where(Deputado.idLegislaturaInicial >= 54)
-            .order_by(Deputado.id)
         )
+
+        if q:
+            stmt = stmt.where(Deputado.nome.ilike(f"%{q}%"))
+        if uf:
+            stmt = stmt.where(Deputado.siglaUF == uf.upper()[:2])
+        if partido:
+            stmt = stmt.where(Deputado.siglaPartido.ilike(f"%{partido}%"))
+        if ano is not None:
+            # Restringe aos deputados que têm ao menos uma despesa no ano solicitado.
+            # Isso garante que o ranking anual não inclua parlamentares sem dados
+            # para o período — o que distorceria os scores de economia.
+            sub_dep_ano = (
+                select(Despesa.idDeputado)
+                .where(Despesa.ano == ano)
+                .distinct()
+                .scalar_subquery()
+            )
+            stmt = stmt.where(Deputado.id.in_(sub_dep_ano))
+
+        stmt = stmt.order_by(Deputado.id)
+
         try:
             result = await self.db.execute(stmt)
             return [dict(r) for r in result.mappings()]
@@ -628,13 +661,24 @@ class RankingRepository:
             logger.exception("Erro ao listar IDs de deputados para ranking")
             raise
 
-    async def get_timeline_data_batch(self, deputado_ids: list[int]) -> dict[int, list[dict]]:
+    async def get_timeline_data_batch(
+        self,
+        deputado_ids: list[int],
+        *,
+        ano: int | None = None,
+    ) -> dict[int, list[dict]]:
         """
         Busca dados de timeline para múltiplos deputados em queries únicas (sem N+1).
         Retorna dict {deputado_id: [lista de entradas anuais com raw + metadados]}.
 
         Cada entrada tem o mesmo formato de get_timeline_data_by_id:
           {"ano": int, "raw": {...}, "total_votacoes": int, "total_despesas": int}
+
+        Args:
+            deputado_ids : lista de IDs já validados pelo chamador.
+            ano          : quando fornecido, restringe todas as subqueries a esse
+                           ano específico — usado pelo ranking anual para comparar
+                           parlamentares no mesmo período.
         """
         if not deputado_ids:
             return {}
@@ -642,11 +686,12 @@ class RankingRepository:
         ids = deputado_ids  # já validados pelo chamador
 
         # --- Anos disponíveis por deputado ---
-        stmt_anos = (
-            select(Despesa.idDeputado, Despesa.ano)
-            .where(Despesa.idDeputado.in_(ids))
-            .distinct()
+        stmt_anos = select(Despesa.idDeputado, Despesa.ano).where(
+            Despesa.idDeputado.in_(ids)
         )
+        if ano is not None:
+            stmt_anos = stmt_anos.where(Despesa.ano == ano)
+        stmt_anos = stmt_anos.distinct()
 
         # --- Assiduidade por deputado/ano via votações ---
         sub_total_votacoes_ano = (
@@ -707,8 +752,10 @@ class RankingRepository:
             )
             .join(Proposicao, Proposicao.id == ProposicaoAutor.idProposicao)
             .where(ProposicaoAutor.idDeputadoAutor.in_(ids))
-            .group_by(ProposicaoAutor.idDeputadoAutor, Proposicao.ano)
         )
+        if ano is not None:
+            stmt_producao = stmt_producao.where(Proposicao.ano == ano)
+        stmt_producao = stmt_producao.group_by(ProposicaoAutor.idDeputadoAutor, Proposicao.ano)
 
         # --- Gastos CEAP por deputado/ano ---
         stmt_gastos = (
@@ -720,8 +767,10 @@ class RankingRepository:
                 func.count(Despesa.id).label("total_despesas"),
             )
             .where(Despesa.idDeputado.in_(ids))
-            .group_by(Despesa.idDeputado, Despesa.ano)
         )
+        if ano is not None:
+            stmt_gastos = stmt_gastos.where(Despesa.ano == ano)
+        stmt_gastos = stmt_gastos.group_by(Despesa.idDeputado, Despesa.ano)
 
         # --- Verba de gabinete por deputado/ano ---
         stmt_gabinete = (
@@ -731,8 +780,10 @@ class RankingRepository:
                 func.coalesce(func.sum(VerbaGabinete.valorGasto), 0).label("gasto_gabinete"),
             )
             .where(VerbaGabinete.idDeputado.in_(ids))
-            .group_by(VerbaGabinete.idDeputado, VerbaGabinete.ano)
         )
+        if ano is not None:
+            stmt_gabinete = stmt_gabinete.where(VerbaGabinete.ano == ano)
+        stmt_gabinete = stmt_gabinete.group_by(VerbaGabinete.idDeputado, VerbaGabinete.ano)
 
         # --- Votações por deputado/ano ---
         _ano_voto2 = extract("year", Votacao.data).cast(Integer).label("ano")
@@ -744,8 +795,12 @@ class RankingRepository:
             )
             .join(Votacao, Votacao.id == Voto.idVotacao)
             .where(Voto.idDeputado.in_(ids))
-            .group_by(Voto.idDeputado, _ano_voto2)
         )
+        if ano is not None:
+            stmt_votos = stmt_votos.where(
+                extract("year", Votacao.data).cast(Integer) == ano
+            )
+        stmt_votos = stmt_votos.group_by(Voto.idDeputado, _ano_voto2)
 
         try:
             res_anos     = await self.db.execute(stmt_anos)

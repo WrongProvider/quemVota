@@ -79,32 +79,50 @@ class RankingService:
     # Rankings de performance
     # ------------------------------------------------------------------
 
-    async def get_ranking_performance_politicos(self) -> list[dict]:
+    async def get_ranking_performance_politicos(
+        self,
+        *,
+        ano: int | None = None,
+        q: str | None = None,
+        uf: str | None = None,
+        partido: str | None = None,
+    ) -> list[dict]:
         """
         Calcula e ordena o ranking de performance com normalização por ano.
 
-        Para cada parlamentar:
-          1. Busca a timeline anual (via get_timeline_data_batch — sem N+1).
-          2. Calcula calcular_score() para cada ano individualmente.
-          3. O score final é a média dos scores anuais — comparação justa
-             independente do tamanho do mandato.
+        Quando `ano` é fornecido, o ranking é calculado **exclusivamente** para
+        aquele ano — todos os parlamentares são comparados no mesmo período,
+        eliminando a vantagem de deputados com mandatos mais longos.
 
-        Campos adicionais por parlamentar:
-          - anos_com_dados : int  — quantos anos têm dados de despesas
-          - confianca      : str  — "baixa" (1 ano) | "media" (2-3) | "alta" (4+)
+        Quando `ano` é None, o comportamento padrão é mantido: score médio
+        sobre todos os anos com dados (média de mandato).
+
+        Para cada parlamentar:
+          1. Busca a timeline anual filtrada por ano se fornecido.
+          2. Calcula calcular_score() para cada entrada anual.
+          3. O score final é a média dos scores anuais — ou o score do ano
+             específico quando `ano` é passado.
+
+        Filtros disponíveis:
+          - ano     : restringe o ranking a um único ano calendário
+          - q       : busca parcial por nome (case-insensitive)
+          - uf      : sigla do estado (ex: "SP", "RJ")
+          - partido : sigla do partido (ex: "PT", "PL")
         """
-        # 1. Busca todos os deputados elegíveis (query leve)
-        deputados = await self._repo.get_todos_deputados_ids()
+        # 1. Busca todos os deputados elegíveis — com filtros aplicados
+        deputados = await self._repo.get_todos_deputados_ids(
+            q=q, uf=uf, partido=partido, ano=ano
+        )
         if not deputados:
             return []
 
         dep_map = {d["id"]: d for d in deputados}
         ids     = list(dep_map.keys())
 
-        # 2. Busca timelines em batch (6 queries no total, independente do nº de deputados)
-        timelines = await self._repo.get_timeline_data_batch(ids)
+        # 2. Busca timelines em batch, restringindo ao ano se fornecido
+        timelines = await self._repo.get_timeline_data_batch(ids, ano=ano)
 
-        # 3. Calcula score médio por parlamentar
+        # 3. Calcula score médio (ou do ano específico) por parlamentar
         ranking = []
         for dep_id, entradas in timelines.items():
             if not entradas:
@@ -135,7 +153,7 @@ class RankingService:
             else:
                 confianca = "baixa"
 
-            ranking.append({
+            entry: dict = {
                 "id":      dep_id,
                 "nome":    dep["nome"],
                 "uf":      dep["siglaUF"],
@@ -149,7 +167,14 @@ class RankingService:
                 },
                 "anos_com_dados": anos,
                 "confianca":      confianca,
-            })
+            }
+
+            # Quando o ranking é filtrado por ano, expõe o ano de referência
+            # para que o cliente saiba exatamente qual período está sendo exibido.
+            if ano is not None:
+                entry["ano_referencia"] = ano
+
+            ranking.append(entry)
 
         ranking.sort(key=lambda x: x["score"], reverse=True)
         return ranking
@@ -158,21 +183,21 @@ class RankingService:
     # Media global (com cache manual)
     # ------------------------------------------------------------------
 
-    async def get_media_global_cached(self) -> float:
+    async def get_media_global_cached(self, *, ano: int | None = None) -> float:
         """
         Retorna a media global dos scores com cache de 24h.
         Evita recalcular o ranking completo a cada requisicao de performance individual.
+        A chave de cache é diferenciada por ano para evitar colisão entre períodos.
         """
-        media = await self._cache.get(_CACHE_MEDIA_GLOBAL_KEY)
+        cache_key = f"{_CACHE_MEDIA_GLOBAL_KEY}:{ano}" if ano is not None else _CACHE_MEDIA_GLOBAL_KEY
+        media = await self._cache.get(cache_key)
 
         if media is None:
-            ranking = await self.get_ranking_performance_politicos()
+            ranking = await self.get_ranking_performance_politicos(ano=ano)
             if not ranking:
                 return 0.0
             media = sum(p["score"] for p in ranking) / len(ranking)
-            await self._cache.set(
-                _CACHE_MEDIA_GLOBAL_KEY, media, expire=_CACHE_MEDIA_GLOBAL_TTL
-            )
-            logger.info("Media global recalculada: %.2f", media)
+            await self._cache.set(cache_key, media, expire=_CACHE_MEDIA_GLOBAL_TTL)
+            logger.info("Media global recalculada (ano=%s): %.2f", ano, media)
 
         return float(media)
