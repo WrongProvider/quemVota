@@ -21,7 +21,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from injest_banco.db.database import Base
+from backend.database import Base
 
 
 # ---------------------------------------------------------------------------
