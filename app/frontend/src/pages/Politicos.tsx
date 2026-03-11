@@ -325,11 +325,11 @@ export default function Politicos() {
                         </p>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono text-[11px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
-                            {p.partido_sigla}
+                            {p.sigla_partido}
                           </span>
                           <span className="font-mono inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
                             <MapPin size={9} />
-                            {p.uf}
+                            {p.sigla_uf}
                           </span>
                         </div>
                       </div>

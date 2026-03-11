@@ -179,10 +179,11 @@ function BotoesCompartilhamento({ nome, url }: { nome: string; url: string }) {
     <div className="relative">
       <button
         onClick={() => setAberto(!aberto)}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 text-sm font-medium transition-colors border border-transparent hover:border-blue-100"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-colors border border-slate-300 hover:border-slate-400 shadow-sm"
       >
         <Share2 size={15} />
-        Compartilhar
+        <span className="hidden sm:inline">Compartilhar</span>
+        <span className="sm:hidden">Share</span>
       </button>
 
       {aberto && (
@@ -271,68 +272,38 @@ function TimelineSelector({
         </p>
       </div>
 
-      <div className="px-6 py-5">
-        <div className="flex items-center gap-3">
+      <div className="px-4 py-5">
+        {/* Mobile: botões individuais em grid */}
+        <div className="flex flex-wrap justify-center gap-2">
+          {/* Botão "Tudo" */}
           <button
-            onClick={handlePrev}
-            disabled={idx === 0}
-            className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+            onClick={() => onChange(null)}
+            className={`flex items-center justify-center w-12 h-10 rounded-xl border-2 text-xs font-bold transition-all ${
+              anoSelecionado === null
+                ? "bg-slate-700 border-slate-700 text-white shadow-md"
+                : "bg-white border-slate-200 text-slate-500 hover:border-slate-400"
+            }`}
+            title="Mandato completo"
           >
-            <ChevronLeft size={16} />
+            ∑
           </button>
 
-          <div className="flex-1 relative">
-            <div className="absolute top-1/2 left-0 right-0 h-px bg-slate-200 -translate-y-1/2 z-0" />
-            <div className="relative z-10 flex justify-between items-center">
+          {anos.map((ano) => {
+            const ativo = ano === anoSelecionado
+            return (
               <button
-                onClick={() => onChange(null)}
-                className={`w-9 h-9 rounded-lg border-2 text-xs font-bold transition-all ${
-                  anoSelecionado === null
-                    ? "bg-slate-700 border-slate-700 text-white shadow-md scale-110"
-                    : "bg-white border-slate-300 text-slate-500 hover:border-slate-400"
+                key={ano}
+                onClick={() => onChange(ativo ? null : ano)}
+                className={`flex items-center justify-center px-3 h-10 rounded-xl border-2 text-xs font-semibold transition-all ${
+                  ativo
+                    ? "bg-yellow-400 border-yellow-400 text-white shadow-md scale-105"
+                    : "bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600"
                 }`}
-                title="Mandato completo"
               >
-                ∑
+                {ano}
               </button>
-
-              {anos.map((ano) => {
-                const ativo = ano === anoSelecionado
-                return (
-                  <button
-                    key={ano}
-                    onClick={() => onChange(ativo ? null : ano)}
-                    className="flex flex-col items-center gap-1 group"
-                  >
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 transition-all ${
-                        ativo
-                          ? "bg-yellow-400 border-yellow-500 scale-150 shadow-md"
-                          : "bg-white border-slate-300 group-hover:border-blue-400 group-hover:scale-125"
-                      }`}
-                    />
-                    {ativo ? (
-                      <span className="text-xs font-bold text-white bg-yellow-400 px-2 py-0.5 rounded-md shadow-sm mt-1">
-                        {ano}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-slate-500 group-hover:text-blue-600 transition-colors mt-1">
-                        {ano}
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <button
-            onClick={handleNext}
-            disabled={anoSelecionado === null}
-            className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-          >
-            <ChevronRight size={16} />
-          </button>
+            )
+          })}
         </div>
 
         <p className="text-center text-[11px] text-slate-400 mt-4">
@@ -501,8 +472,8 @@ export default function PoliticoDetalhe() {
             />
 
             <div className="relative max-w-5xl mx-auto px-6 py-12 hero-fade">
-              {/* Back breadcrumb + Share */}
-              <div className="flex items-center justify-between mb-8">
+              {/* Back breadcrumb + Botões */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
                 <Link
                   to="/politicos"
                   className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors group"
@@ -521,7 +492,8 @@ export default function PoliticoDetalhe() {
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium transition-colors shadow-sm shadow-blue-200"
                   >
                     <ArrowLeftRight size={15} />
-                    Comparar
+                    <span className="hidden sm:inline">Comparar</span>
+                    <span className="sm:hidden">Comp.</span>
                   </button>
 
                   {/* ── BOTÃO COMPARTILHAR ── */}
@@ -530,21 +502,45 @@ export default function PoliticoDetalhe() {
               </div>
 
               <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
-                {/* PHOTO */}
-                <div className="profile-photo relative flex-shrink-0">
-                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden ring-4 ring-white shadow-xl">
-                    <img
-                      src={`${PATH_FOTOS}${data.id}.jpg`}
-                      alt={`Foto de ${data.nome}`}
-                      className="w-full h-full object-cover"
-                    />
+                {/* PHOTO + SCORE (mobile: side by side) */}
+                <div className="flex flex-row md:flex-col md:items-start gap-5 items-center">
+                  <div className="profile-photo relative flex-shrink-0">
+                    <div className="w-28 h-28 md:w-40 md:h-40 rounded-2xl overflow-hidden ring-4 ring-white shadow-xl">
+                      <img
+                        src={`${PATH_FOTOS}${data.id}.jpg`}
+                        alt={`Foto de ${data.nome}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    {data.situacao && (
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500 text-white shadow-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white inline-block" />
+                          {data.situacao}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  {data.situacao && (
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500 text-white shadow-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white inline-block" />
-                        {data.situacao}
-                      </span>
+
+                  {/* Score ring visível só no mobile, ao lado da foto */}
+                  {performance && (
+                    <div className="flex md:hidden flex-shrink-0 text-center">
+                      <div>
+                        <div
+                          className="score-ring w-24 h-24"
+                          style={{ "--score": performance.score_final } as React.CSSProperties}
+                        >
+                          <div className="score-ring-inner flex-col">
+                            <span className={`mono-font text-xl font-bold ${scoreColor}`}>
+                              {performance.score_final.toFixed(0)}
+                            </span>
+                            <span className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                              {anoSelecionado ? anoSelecionado : "score"}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-2 font-medium">Performance</p>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -610,23 +606,25 @@ export default function PoliticoDetalhe() {
                   </div>
                 </div>
 
-                {/* SCORE RING */}
+                {/* SCORE RING — oculto no mobile (aparece ao lado da foto) */}
                 {performance && (
-                  <div className="flex-shrink-0 text-center">
-                    <div
-                      className="score-ring w-28 h-28"
-                      style={{ "--score": performance.score_final } as React.CSSProperties}
-                    >
-                      <div className="score-ring-inner flex-col">
-                        <span className={`mono-font text-2xl font-bold ${scoreColor}`}>
-                          {performance.score_final.toFixed(0)}
-                        </span>
-                        <span className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                          {anoSelecionado ? anoSelecionado : "score"}
-                        </span>
+                  <div className="hidden md:flex flex-shrink-0 text-center">
+                    <div>
+                      <div
+                        className="score-ring w-28 h-28"
+                        style={{ "--score": performance.score_final } as React.CSSProperties}
+                      >
+                        <div className="score-ring-inner flex-col">
+                          <span className={`mono-font text-2xl font-bold ${scoreColor}`}>
+                            {performance.score_final.toFixed(0)}
+                          </span>
+                          <span className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                            {anoSelecionado ? anoSelecionado : "score"}
+                          </span>
+                        </div>
                       </div>
+                      <p className="text-xs text-slate-400 mt-2 font-medium">Performance</p>
                     </div>
-                    <p className="text-xs text-slate-400 mt-2 font-medium">Performance</p>
                   </div>
                 )}
               </div>
@@ -690,7 +688,7 @@ export default function PoliticoDetalhe() {
                 <BarChart2 size={18} className="text-blue-500" />
                 <h2 className="display-font text-xl font-bold text-slate-800">Estatísticas</h2>
                 <ToolDica
-                  side="right"
+                  side="bottom"
                   content="O score é calculado com base em assiduidade, economia e produção parlamentar."
                 >
                   <InfoBotao />

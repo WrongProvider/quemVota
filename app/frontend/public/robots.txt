@@ -1,6 +1,6 @@
 User-agent: *
 Allow: /
-Allow: /politicos/
+Allow: /politicos/*
 Allow: /rankings
 Allow: /proposicoes
 Allow: /sobre
@@ -12,7 +12,6 @@ Allow: /roadmap
 Disallow: /docs
 Disallow: /redoc
 Disallow: /openapi.json
-Disallow: /ranking/
 Disallow: /busca/
 
 # Não indexar URLs legadas com ID numérico — o Google deve usar o slug

@@ -1,5 +1,5 @@
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
-import { type ReactNode } from "react"
+import { type ReactNode, useState } from "react"
 
 type InfoDicaProps = {
   content: string
@@ -7,36 +7,35 @@ type InfoDicaProps = {
   side?: "top" | "right" | "bottom" | "left"
 }
 
-export default function InfoDica({ content, children, side = "top" }: InfoDicaProps) {
+export default function InfoDica({ content, children, side = "bottom" }: InfoDicaProps) {
+  const [open, setOpen] = useState(false)
+
   return (
     <TooltipPrimitive.Provider delayDuration={200}>
-      <TooltipPrimitive.Root>
-        <TooltipPrimitive.Trigger asChild>
+      <TooltipPrimitive.Root open={open} onOpenChange={setOpen}>
+        <TooltipPrimitive.Trigger
+          asChild
+          onClick={(e) => {
+            e.preventDefault()
+            setOpen((v) => !v)
+          }}
+        >
           {children}
         </TooltipPrimitive.Trigger>
-        
+
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content
             side={side}
-            sideOffset={5}
-            style={{
-              backgroundColor: "#222",
-              color: "#fff",
-              padding: "8px 12px",
-              borderRadius: "6px",
-              fontSize: "12px",
-              maxWidth: "250px",
-              zIndex: 9999,
-              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-              animation: "fadeIn 0.2s ease-out",
-            }}
+            sideOffset={6}
+            align="center"
+            avoidCollisions
+            collisionPadding={{ top: 8, right: 16, bottom: 8, left: 16 }}
+            sticky="always"
+            onClick={() => setOpen(false)}
+            className="z-[9999] max-w-[min(250px,calc(100vw-32px))] rounded-md bg-gray-900 px-3 py-2 text-xs leading-relaxed text-white shadow-lg cursor-pointer break-words animate-in fade-in-0 zoom-in-95"
           >
             {content}
-            <TooltipPrimitive.Arrow
-              style={{
-                fill: "#222",
-              }}
-            />
+            <TooltipPrimitive.Arrow className="fill-gray-900" />
           </TooltipPrimitive.Content>
         </TooltipPrimitive.Portal>
       </TooltipPrimitive.Root>
