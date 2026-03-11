@@ -371,8 +371,8 @@ export default function PoliticoDetalhe() {
       {/* ── SEO META TAGS ── */}
       <SeoHead
         nome={data.nome}
-        partido={data.partido_sigla}
-        uf={data.uf}
+        partido={data.sigla_partido}
+        uf={data.sigla_uf}
         score={performance?.score_final}
         fotoUrl={fotoAbsoluta}
         pageUrl={pageUrl}
@@ -563,16 +563,16 @@ export default function PoliticoDetalhe() {
                   </h1>
 
                   <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
-                    {data.uf && (
+                    {data.sigla_uf && (
                       <span className="flex items-center gap-1.5">
                         <MapPin size={14} className="text-slate-400" />
-                        {data.uf}
+                        {data.sigla_uf}
                       </span>
                     )}
-                    {data.partido_sigla && (
+                    {data.sigla_partido && (
                       <span className="flex items-center gap-1.5">
                         <Users size={20} className="text-slate-400" />
-                        {data.partido_sigla}
+                        {data.sigla_partido}
                       </span>
                     )}
                     {data.escolaridade && (
