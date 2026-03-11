@@ -52,7 +52,8 @@ const PATH_FOTOS = "/fotos_politicos/"
 import { useSeo } from "../hooks/useSeo"
 
 /**
- * Injeta meta tags SEO e Open Graph dinamicamente via hook useSeo.
+ * Injeta meta tags SEO, Open Graph, Twitter Card, canonical e
+ * JSON-LD Person (rich snippet) dinamicamente no <head>.
  */
 function SeoHead({
   nome,
@@ -82,6 +83,47 @@ function SeoHead({
     type: "profile",
     keywords: `${nome}, deputado federal, ${partido ?? ""}, ${uf ?? ""}, perfil parlamentar`,
   })
+
+  // ── JSON-LD Person ──────────────────────────────────────────────────────
+  useEffect(() => {
+    const script = document.createElement("script")
+    script.setAttribute("type", "application/ld+json")
+    script.setAttribute("data-seo-dynamic", "true")
+    script.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Person",
+      name: nome,
+      jobTitle: "Deputado Federal",
+      ...(partido && {
+        memberOf: {
+          "@type": "Organization",
+          name: partido,
+        },
+      }),
+      ...(uf && {
+        address: {
+          "@type": "PostalAddress",
+          addressRegion: uf,
+          addressCountry: "BR",
+        },
+      }),
+      ...(fotoUrl && { image: fotoUrl }),
+      url: pageUrl,
+      sameAs: [
+        `https://www.camara.leg.br`,
+      ],
+      worksFor: {
+        "@type": "GovernmentOrganization",
+        name: "Câmara dos Deputados",
+        url: "https://www.camara.leg.br",
+      },
+    })
+    document.head.appendChild(script)
+
+    return () => {
+      document.querySelectorAll('[data-seo-dynamic="true"]').forEach((el) => el.remove())
+    }
+  }, [nome, partido, uf, fotoUrl, pageUrl])
 
   return null
 }
