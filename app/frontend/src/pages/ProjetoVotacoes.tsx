@@ -11,6 +11,7 @@
 
 import { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useSeo } from "../hooks/useSeo"
 import {
   Search,
   FileText,
@@ -849,6 +850,14 @@ export default function ProjetosVotacoes() {
 
   const [proposicaoSelecionada, setProposicaoSelecionada] = useState<number | null>(null)
   const [votacaoSelecionada, setVotacaoSelecionada] = useState<number | null>(null)
+
+  useSeo({
+    title: "Projetos de Lei e Votações — Câmara dos Deputados | quemvota",
+    description:
+      "Pesquise proposições legislativas e votações da Câmara dos Deputados. Veja como cada partido orientou seus votos e o resultado de cada votação.",
+    url: "https://www.quemvota.com.br/votacoes",
+    keywords: "projetos de lei, votações, proposições, câmara dos deputados, plenário",
+  })
 
   const handleAba = useCallback((novaAba: Aba) => {
     setAba(novaAba)

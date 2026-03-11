@@ -6,6 +6,7 @@ import {
   selectAllPoliticos,
   POLITICOS_PAGE_SIZE,
 } from "../hooks/usePoliticosInfinite"
+import { useSeo } from "../hooks/useSeo"
 import Header from "../components/Header"
 import {
   Search,
@@ -40,6 +41,14 @@ export default function Politicos() {
   const [selectedPartido, setSelectedPartido] = useState("")
   const [showFilters, setShowFilters]     = useState(false)
   const debouncedSearch = useDebounce(search, 400)
+
+  useSeo({
+    title: "Parlamentares — Deputados Federais | quemvota",
+    description:
+      "Pesquise e filtre todos os deputados federais em exercício. Veja presença, gastos, votações e score de performance de cada parlamentar.",
+    url: "https://www.quemvota.com.br/politicos",
+    keywords: "lista de deputados, parlamentares brasileiros, câmara dos deputados, deputado federal",
+  })
 
   const sentinelRef = useRef<HTMLDivElement>(null)
 

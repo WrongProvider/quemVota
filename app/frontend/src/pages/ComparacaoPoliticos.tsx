@@ -6,6 +6,7 @@ import {
   usePoliticoPerformance,
 } from "../hooks/usePoliticos"
 import Header from "../components/Header"
+import { useSeo } from "../hooks/useSeo"
 import {
   ArrowLeft,
   MapPin,
@@ -165,33 +166,13 @@ function BotoesCompartilhamento({ texto, url }: { texto: string; url: string }) 
 // ── SEO HEAD ────────────────────────────────────────────────────────────────
 
 function SeoHead({ nomeA, nomeB }: { nomeA: string; nomeB: string }) {
-  useEffect(() => {
-    const title = `${nomeA} vs ${nomeB} — Comparação Parlamentar`
-    const description = `Compare o desempenho de ${nomeA} e ${nomeB}. Gastos, votações, score e performance lado a lado.`
-    document.title = title
-
-    const setMeta = (selector: string, attr: string, value: string) => {
-      let el = document.querySelector(selector) as HTMLMetaElement | null
-      if (!el) {
-        el = document.createElement("meta")
-        el.setAttribute(attr.split("=")[0], attr.split("=")[1] ?? attr)
-        el.setAttribute("data-seo-dynamic", "true")
-        document.head.appendChild(el)
-      }
-      el.setAttribute("content", value)
-    }
-
-    setMeta('meta[name="description"]',        'name=description',        description)
-    setMeta('meta[property="og:title"]',       'property=og:title',       title)
-    setMeta('meta[property="og:description"]', 'property=og:description', description)
-    setMeta('meta[property="og:type"]',        'property=og:type',        "website")
-
-    return () => {
-      document.querySelectorAll('[data-seo-dynamic="true"]').forEach((el) => el.remove())
-      document.title = "Parlamentares"
-    }
-  }, [nomeA, nomeB])
-
+  useSeo({
+    title: `${nomeA} vs ${nomeB} — Comparação Parlamentar | quemvota`,
+    description: `Compare o desempenho de ${nomeA} e ${nomeB}. Gastos, votações, score e performance lado a lado.`,
+    url: typeof window !== "undefined" ? window.location.href : "",
+    keywords: `${nomeA}, ${nomeB}, comparação parlamentar, deputados, performance`,
+    type: "website",
+  })
   return null
 }
 

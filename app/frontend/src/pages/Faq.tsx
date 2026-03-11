@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import Header from "../components/Header"
 import { ChevronDown, Search, ArrowRight } from "lucide-react"
+import { useSeo } from "../hooks/useSeo"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Dados
@@ -271,6 +272,14 @@ function Acordeao({ item }: { item: FaqItem }) {
 export default function FAQ() {
   const [busca, setBusca] = useState("")
   const [categoriaAtiva, setCategoriaAtiva] = useState<string | null>(null)
+
+  useSeo({
+    title: "Perguntas Frequentes — FAQ | quemvota",
+    description:
+      "Tire suas dúvidas sobre o quemvota: de onde vêm os dados, como funciona o score de performance, como comparar parlamentares e muito mais.",
+    url: "https://www.quemvota.com.br/faq",
+    keywords: "dúvidas frequentes, como funciona, dados abertos, câmara deputados, score parlamentar",
+  })
 
   // Filtra as perguntas pela busca
   const filtrado = CATEGORIAS.map((cat) => ({

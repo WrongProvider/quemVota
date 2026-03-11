@@ -4,6 +4,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { MagnifyingGlassIcon, ArrowRightIcon, FireIcon } from "@heroicons/react/24/outline"
 import { useMaisPesquisados } from "../hooks/useBuscaPopular"
+import { useSeo } from "../hooks/useSeo"
 
 function EmAltaSkeleton() {
   return (
@@ -86,6 +87,15 @@ function EmAlta() {
 export default function Home() {
   const [query, setQuery] = useState("")
   const navigate = useNavigate()
+
+  useSeo({
+    title: "quemvota — Transparência Legislativa Brasileira",
+    description:
+      "Acompanhe o que seus deputados federais fazem no Congresso. Gastos, votações, presença e performance de todos os parlamentares — dados oficiais, sem viés.",
+    url: "https://www.quemvota.com.br",
+    keywords: "deputados federais, câmara dos deputados, votações, transparência, gastos parlamentares",
+    type: "website",
+  })
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()

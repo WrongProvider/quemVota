@@ -10,6 +10,7 @@ import {
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import Header from "../components/Header"
+import { useSeo } from "../hooks/useSeo"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Acordeão reutilizável (mesmo padrão do FAQ)
@@ -166,6 +167,13 @@ function ClassificacaoCards() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Metodologia() {
+  useSeo({
+    title: "Metodologia de Cálculo — Como avaliamos os parlamentares | quemvota",
+    description:
+      "Entenda como calculamos o score de performance dos deputados: assiduidade (15%), economia da cota (40%) e produção legislativa (45%). Metodologia transparente e baseada em dados oficiais.",
+    url: "https://www.quemvota.com.br/metodologia",
+    keywords: "metodologia, score parlamentar, como calculamos, assiduidade, economia cota, produção legislativa",
+  })
   return (
     <>
       <Header />

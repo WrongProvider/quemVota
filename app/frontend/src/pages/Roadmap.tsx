@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import Header from "../components/Header"
+import { useSeo } from "../hooks/useSeo"
 import {
   CheckCircle2,
   Circle,
@@ -390,6 +391,13 @@ function ProgressoGeral() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Roadmap() {
+  useSeo({
+    title: "Roadmap — O que vem por aí | quemvota",
+    description:
+      "Veja o plano de desenvolvimento público do quemvota: novas funcionalidades, expansão de dados, app mobile e muito mais. Acompanhe cada fase do projeto.",
+    url: "https://www.quemvota.com.br/roadmap",
+    keywords: "roadmap, próximas funcionalidades, desenvolvimento, quemvota futuro",
+  })
   return (
     <>
       <Header />

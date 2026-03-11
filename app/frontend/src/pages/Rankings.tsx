@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
 import { Link } from "react-router-dom"
+import { useSeo } from "../hooks/useSeo"
 import {
   TrendingUp,
   TrendingDown,
@@ -720,6 +721,14 @@ export default function Rankings() {
   const [searchTerm, setSearchTerm]           = useState("")
   const [selectedUF, setSelectedUF]           = useState("")
   const [selectedPartido, setSelectedPartido] = useState("")
+
+  useSeo({
+    title: "Rankings Parlamentares — Performance, Gastos e Discursos | quemvota",
+    description:
+      "Veja quais deputados têm melhor performance, gastam mais da cota parlamentar ou fazem mais discursos. Rankings completos com filtros por estado e partido.",
+    url: "https://www.quemvota.com.br/rankings",
+    keywords: "ranking deputados, melhor deputado, gastos cota parlamentar, mais produtivo, score parlamentar",
+  })
 
   const showFilters       = activeTab !== "empresas" && activeTab !== "discursos"
   const showPartidoFilter = activeTab === "performance"

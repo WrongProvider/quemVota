@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import Header from "../components/Header"
 import { Github, Database, Shield, Heart, ArrowRight, ExternalLink, Code2, BarChart3, FileSearch, Map, Users } from "lucide-react"
+import { useSeo } from "../hooks/useSeo"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Dados
@@ -99,6 +100,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Sobre() {
+  useSeo({
+    title: "Sobre o quemvota — Transparência Legislativa Independente",
+    description:
+      "O quemvota é uma plataforma independente que organiza dados abertos da Câmara dos Deputados. Sem viés editorial, sem financiamento político — só informação.",
+    url: "https://www.quemvota.com.br/sobre",
+    keywords: "sobre quemvota, transparência legislativa, dados abertos câmara, projeto independente",
+    type: "website",
+  })
   return (
     <>
       <Header />

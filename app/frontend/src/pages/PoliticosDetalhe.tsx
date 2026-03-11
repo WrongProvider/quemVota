@@ -49,9 +49,10 @@ const PATH_FOTOS = "/fotos_politicos/"
 
 // ── SEO HEAD ────────────────────────────────────────────────────────────────
 
+import { useSeo } from "../hooks/useSeo"
+
 /**
- * Injeta meta tags SEO e Open Graph dinamicamente no <head>.
- * Remove as tags ao desmontar o componente.
+ * Injeta meta tags SEO e Open Graph dinamicamente via hook useSeo.
  */
 function SeoHead({
   nome,
@@ -68,60 +69,19 @@ function SeoHead({
   fotoUrl: string
   pageUrl: string
 }) {
-  useEffect(() => {
-    const scoreTexto = score != null ? ` | Score: ${score.toFixed(0)}/100` : ""
-    const localTexto = [partido, uf].filter(Boolean).join(" • ")
+  const scoreTexto = score != null ? ` | Score: ${score.toFixed(0)}/100` : ""
+  const localTexto = [partido, uf].filter(Boolean).join(" • ")
 
-    const title = `${nome} — Perfil Parlamentar${localTexto ? ` | ${localTexto}` : ""}`
-    const description =
+  useSeo({
+    title: `${nome} — Perfil Parlamentar${localTexto ? ` | ${localTexto}` : ""}`,
+    description:
       `Veja o perfil completo de ${nome}${localTexto ? ` (${localTexto})` : ""}` +
-      `${scoreTexto}. Gastos, votações e performance parlamentar.`
-
-    // Título da aba
-    document.title = title
-
-    // Helper para criar/atualizar meta tags
-    const setMeta = (selector: string, attr: string, value: string) => {
-      let el = document.querySelector(selector) as HTMLMetaElement | null
-      const isNew = !el
-      if (isNew) {
-        el = document.createElement("meta")
-        el.setAttribute(attr.split("=")[0], attr.split("=")[1] ?? attr)
-        el.setAttribute("data-seo-dynamic", "true")
-        document.head.appendChild(el)
-      }
-      el!.setAttribute("content", value)
-      return el!
-    }
-
-    setMeta('meta[name="description"]',       'name=description',          description)
-    setMeta('meta[property="og:title"]',      'property=og:title',         title)
-    setMeta('meta[property="og:description"]','property=og:description',   description)
-    setMeta('meta[property="og:url"]',        'property=og:url',           pageUrl)
-    setMeta('meta[property="og:type"]',       'property=og:type',          "profile")
-    setMeta('meta[property="og:image"]',      'property=og:image',         fotoUrl)
-    setMeta('meta[name="twitter:card"]',      'name=twitter:card',         "summary_large_image")
-    setMeta('meta[name="twitter:title"]',     'name=twitter:title',        title)
-    setMeta('meta[name="twitter:description"]','name=twitter:description', description)
-    setMeta('meta[name="twitter:image"]',     'name=twitter:image',        fotoUrl)
-
-    // Canonical URL
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null
-    const canonicalIsNew = !canonical
-    if (canonicalIsNew) {
-      canonical = document.createElement("link")
-      canonical.setAttribute("rel", "canonical")
-      canonical.setAttribute("data-seo-dynamic", "true")
-      document.head.appendChild(canonical)
-    }
-    canonical!.setAttribute("href", pageUrl)
-
-    return () => {
-      // Limpa tudo ao sair da página
-      document.querySelectorAll('[data-seo-dynamic="true"]').forEach((el) => el.remove())
-      document.title = "Parlamentares" // título padrão do seu app
-    }
-  }, [nome, partido, uf, score, fotoUrl, pageUrl])
+      `${scoreTexto}. Gastos, votações e performance parlamentar.`,
+    url: pageUrl,
+    image: fotoUrl,
+    type: "profile",
+    keywords: `${nome}, deputado federal, ${partido ?? ""}, ${uf ?? ""}, perfil parlamentar`,
+  })
 
   return null
 }
