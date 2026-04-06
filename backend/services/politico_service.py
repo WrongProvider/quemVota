@@ -10,7 +10,7 @@ Segurança (OWASP):
   - A06 / Vulnerable Components: nenhuma dependência desnecessária; lógica de
     negócio isolada do transporte HTTP.
 """
-
+import asyncio
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
@@ -18,9 +18,8 @@ from fastapi import HTTPException, status
 from repositories.politico_repository import PoliticoRepository
 from repositories.ranking_repository import RankingRepository
 from schemas import PoliticoResponse, AtividadeLegislativaResponse
-from services.performance_calc import calcular_score, resolve_cota_mensal
+from services.performance_calc import calcular_score 
 from .ranking_service import RankingService
-import asyncio
 
 logger = logging.getLogger(__name__)
 

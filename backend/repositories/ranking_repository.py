@@ -14,7 +14,7 @@ from sqlalchemy import Float, Integer, Numeric, String, case, cast, desc, extrac
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import Despesa, Discurso, Deputado, PresencaDeputado, Proposicao, ProposicaoAutor, Voto, Votacao, Evento, VerbaGabinete
+from models import Despesa, Discurso, Deputado, PresencaDeputado, Proposicao, ProposicaoAutor, Voto, Votacao, VerbaGabinete
 from schemas import KeywordInfo, RankingDespesaPolitico, RankingDiscursoPolitico, RankingEmpresaLucro
 
 logger = logging.getLogger(__name__)
@@ -115,13 +115,13 @@ def _sub_producao(deputado_id: int, ano: int | None = None):
                 case(
                     (
                         Proposicao.siglaTipo.in_(["PEC", "PL", "PLC", "PLP"]),
-                        case((ProposicaoAutor.proponente == True, 1.0), else_=0.2),
+                        case((ProposicaoAutor.proponente, 1.0), else_=0.2),
                     ),
                     (
                         Proposicao.siglaTipo.in_(["PDC", "PRC", "MPV"]),
-                        case((ProposicaoAutor.proponente == True, 0.5), else_=0.1),
+                        case((ProposicaoAutor.proponente, 0.5), else_=0.1),
                     ),
-                    else_=case((ProposicaoAutor.proponente == True, 0.05), else_=0.01),
+                    else_=case((ProposicaoAutor.proponente, 0.05), else_=0.01),
                 )
             ).label("pontos_producao"),
         )
@@ -336,13 +336,13 @@ class RankingRepository:
                     case(
                         (
                             Proposicao.siglaTipo.in_(["PEC", "PL", "PLC", "PLP"]),
-                            case((ProposicaoAutor.proponente == True, 1.0), else_=0.2),
+                            case((ProposicaoAutor.proponente, 1.0), else_=0.2),
                         ),
                         (
                             Proposicao.siglaTipo.in_(["PDC", "PRC", "MPV"]),
-                            case((ProposicaoAutor.proponente == True, 0.5), else_=0.1),
+                            case((ProposicaoAutor.proponente, 0.5), else_=0.1),
                         ),
-                        else_=case((ProposicaoAutor.proponente == True, 0.05), else_=0.01),
+                        else_=case((ProposicaoAutor.proponente, 0.05), else_=0.01),
                     )
                 ).label("pontos_producao"),
             )
@@ -495,13 +495,13 @@ class RankingRepository:
                     case(
                         (
                             Proposicao.siglaTipo.in_(["PEC", "PL", "PLC", "PLP"]),
-                            case((ProposicaoAutor.proponente == True, 1.0), else_=0.2),
+                            case((ProposicaoAutor.proponente, 1.0), else_=0.2),
                         ),
                         (
                             Proposicao.siglaTipo.in_(["PDC", "PRC", "MPV"]),
-                            case((ProposicaoAutor.proponente == True, 0.5), else_=0.1),
+                            case((ProposicaoAutor.proponente, 0.5), else_=0.1),
                         ),
-                        else_=case((ProposicaoAutor.proponente == True, 0.05), else_=0.01),
+                        else_=case((ProposicaoAutor.proponente, 0.05), else_=0.01),
                     )
                 ).label("pontos_producao"),
             )
@@ -740,13 +740,13 @@ class RankingRepository:
                     case(
                         (
                             Proposicao.siglaTipo.in_(["PEC", "PL", "PLC", "PLP"]),
-                            case((ProposicaoAutor.proponente == True, 1.0), else_=0.2),
+                            case((ProposicaoAutor.proponente, 1.0), else_=0.2),
                         ),
                         (
                             Proposicao.siglaTipo.in_(["PDC", "PRC", "MPV"]),
-                            case((ProposicaoAutor.proponente == True, 0.5), else_=0.1),
+                            case((ProposicaoAutor.proponente, 0.5), else_=0.1),
                         ),
-                        else_=case((ProposicaoAutor.proponente == True, 0.05), else_=0.01),
+                        else_=case((ProposicaoAutor.proponente, 0.05), else_=0.01),
                     )
                 ).label("pontos_producao"),
             )

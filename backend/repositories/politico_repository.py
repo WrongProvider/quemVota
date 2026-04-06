@@ -11,7 +11,7 @@ Segurança (OWASP):
 
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import case, desc, func, select, String, or_
+from sqlalchemy import desc, func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 
@@ -580,14 +580,14 @@ class PoliticoRepository:
         if ano is not None:
             base_filter.append(func.extract("year", Votacao.data) == ano)
 
-        if q:
-            termo = f"%{q}%"
-            stmt = stmt.where(
-                or_(
-                    Votacao.ementa.ilike(termo),
-                    Votacao.proposicao_sigla.ilike(termo) # Se houver campos em comum
-                )
-            )
+        # if q:
+        #     termo = f"%{q}%"
+        #     stmt = stmt.where(
+        #         or_(
+        #             Votacao.ementa.ilike(termo),
+        #             Votacao.proposicao_sigla.ilike(termo) # Se houver campos em comum
+        #         )
+        #     )
         stmt_count = (
             select(func.count())
             .select_from(Voto)
@@ -669,14 +669,14 @@ class PoliticoRepository:
         if ano is not None:
             base_filter.append(Proposicao.ano == ano)
         
-        if q:
-            termo = f"%{q}%"
-            stmt = stmt.where(
-                or_(
-                    Votacao.ementa.ilike(termo),
-                    Votacao.proposicao_sigla.ilike(termo) # Se houver campos em comum
-                )
-            )
+        # if q:
+        #     termo = f"%{q}%"
+        #     stmt = stmt.where(
+        #         or_(
+        #             Votacao.ementa.ilike(termo),
+        #             Votacao.proposicao_sigla.ilike(termo) # Se houver campos em comum
+        #         )
+        #     )
         stmt_count = (
             select(func.count(func.distinct(ProposicaoAutor.idProposicao)))
             .select_from(ProposicaoAutor)

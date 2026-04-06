@@ -8,7 +8,6 @@ Seguranca (OWASP):
   - A06 / Vulnerable Components: logica de negocio isolada do transporte HTTP.
 """
 
-import asyncio
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_cache import FastAPICache

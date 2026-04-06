@@ -1,13 +1,11 @@
 from logging.config import fileConfig
-import os
-import sys
 
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from database import Base  # ajuste para o seu Base
-from models import *  # importe seus modelos aqui para que o Alembic os reconheça   
+#from models import *  # importe seus modelos aqui para que o Alembic os reconheça   
 from alembic import context
 
 # this is the Alembic Config object, which provides

@@ -24,7 +24,7 @@ Endpoints expostos:
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, Query, Path 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db

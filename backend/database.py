@@ -1,6 +1,6 @@
 import os
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import create_engine
 
 # 1. URLs de Conexão

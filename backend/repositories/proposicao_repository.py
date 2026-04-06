@@ -20,9 +20,7 @@ from models import (
     VotacaoOrientacao,
     Voto,
     Proposicao,
-    ProposicaoAutor,
     Tema,
-    Tramitacao,
     Votacao,
     Deputado,
 )
