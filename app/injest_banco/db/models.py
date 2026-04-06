@@ -1347,6 +1347,13 @@ class BuscaPopular(Base):
 
     deputado = relationship("Deputado", back_populates="buscaPopular")
 
+class ResumoIA(Base):
+    __tablename__ = "resumoIa"
+    id = Column(Integer, primary_key=True, index=True)
+    idDeputado = Column(Integer, ForeignKey("deputados.id"), nullable=False, unique=True)
+    resumoFeitos = Column(Text)
+    resumoEspectro = Column(Text)
+    updatedAt  = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 # ===========================================================================
 # ÍNDICES COMPOSTOS ADICIONAIS
