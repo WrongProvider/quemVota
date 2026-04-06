@@ -1,6 +1,0 @@
-
-.env
-**/node_modules/
-quemvota_env/
-**/__pycache__/
-*.pyc

@@ -1,0 +1,15 @@
+deploy:
+    needs: lint-and-test # Só faz deploy se os testes passarem!
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            cd ~/Documents/2026/quemVota/backend
+            git pull origin main
+            docker compose up --build -d
