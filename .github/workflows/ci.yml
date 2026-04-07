@@ -9,6 +9,9 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
     steps:
       - uses: actions/checkout@v4
 
@@ -17,15 +20,18 @@ jobs:
         with:
           enable-cache: true # Ganhe velocidade com cache de libs
 
-      - name: Instalar Python
-        run: uv python install 3.12
+      - name: Sincronizar dependências
+        run: uv sync
+
+      #- name: Instalar Python
+      # run: uv python install 3.12
 
       - name: Rodar Linter (Ruff)
         run: uv run ruff check .
 
       - name: Security Scan (Bandit)
         # Como você é de SegInfo, isso aqui é obrigatório no seu currículo
-        run: uv run bandit -r . -x ./tests
+        run: uv run bandit -r . -x ./tests -c ./tests/bandit_conf.yml
 
       - name: Rodar Testes (Pytest)
         run: uv run pytest
