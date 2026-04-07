@@ -5,9 +5,11 @@ on:
     branches: [ main ]
 
 jobs:  
+  call-ci:
+    uses: ./.github/workflows/ci.yml
+
   deploy:
-      needs: lint-and-test # only deploy if tests pass
-      if: github.ref == 'refs/heads/main'
+      needs: call-ci # only deploy if tests pass
       runs-on: ubuntu-latest
       steps:
         - name: Deploy via SSH

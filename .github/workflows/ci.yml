@@ -5,6 +5,7 @@ on:
     branches: [ main, novaDB ] # Roda nas suas branches principais
   pull_request:
     branches: [ main ]
+  workflow_call:
 
 jobs:
   lint-and-test:
