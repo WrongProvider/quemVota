@@ -21,14 +21,15 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from rate_limit import limiter
 
+from config import settings
 # ─────────────────────────────────────────────────────────────────────────────
 # Origens permitidas — edite aqui ao adicionar novos ambientes
 # ─────────────────────────────────────────────────────────────────────────────
-ALLOWED_ORIGINS: list[str] = [
-    "http://localhost:3000",        # React CRA / dev
-    "http://localhost:5173",        # Vite dev
-    # "https://quemvota.com.br",    # produção — descomente quando necessário
-]
+# ALLOWED_ORIGINS: list[str] = [
+#     "http://localhost:3000",        # React CRA / dev
+#     "http://localhost:5173",        # Vite dev
+#     # "https://quemvota.com.br",    # produção — descomente quando necessário
+# ]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Headers que o cliente pode enviar — lista explícita (não "*")
@@ -65,8 +66,7 @@ ALLOWED_METHODS: list[str] = [
 async def lifespan(app: FastAPI):
     # STARTUP
     valkey_client = redis.from_url(
-        "redis://localhost:6379",
-        # "redis://valkey:6379", #produção — descomente quando necessário
+        settings.VALKEY_URL,
         encoding="utf8",
         decode_responses=False,
     )
@@ -106,7 +106,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=False,      # sem cookies cross-origin
     allow_methods=ALLOWED_METHODS,
     allow_headers=ALLOWED_HEADERS,
