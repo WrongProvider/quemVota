@@ -32,17 +32,19 @@ Uso:
     # Força atualização de todos (útil após uma legislatura nova)
     python backfill_deputados_detalhes.py --force
 """
-
 import argparse
 import logging
 import re
 import time
+import os
 from datetime import date
 import unicodedata
 
-from injest_banco.db.database import SessionLocal
-from injest_banco.db.models import Deputado
-from injest_banco.api_camara import camara_get
+# 1. Novos imports do SQLAlchemy Core (Substituindo o ORM)
+from sqlalchemy import create_engine, Table, MetaData, select, update
+
+# Mantém a importação da sua API
+from api_camara import camara_get
 
 logging.basicConfig(
     level=logging.INFO,
@@ -53,17 +55,16 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 # Configuração
 # ─────────────────────────────────────────────────────────────────────────────
+BATCH_SIZE = 50
+SLEEP_BETWEEN_REQUESTS = 0.25
 
-BATCH_SIZE              = 50    # commits parciais a cada N deputados
-SLEEP_BETWEEN_REQUESTS  = 0.25  # segundos entre chamadas à API (rate limit)
-
+# Usando a mesma lógica de URL do seu etl_camara.py
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/quemvota_teste")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
-
 def _parse_date(valor: str | None) -> date | None:
-    """Converte string ISO para date. Aceita 'YYYY-MM-DD' e 'YYYY-MM-DDTHH:MM:SS'."""
     if not valor:
         return None
     try:
@@ -72,155 +73,113 @@ def _parse_date(valor: str | None) -> date | None:
         logger.debug("Data inválida ignorada: %s", valor)
         return None
 
-
-def _is_incompleto(dep: Deputado) -> bool:
-    """Retorna True se o deputado ainda não tem os campos de detalhe preenchidos."""
-    return any([
-        not dep.urlFoto,
-        not dep.nomeCivil,
-        not dep.escolaridade,
-        not dep.situacao,
-        not dep.emailGabinete,
-        not dep.slug, 
-        not dep.cpf
-    ])
-
 def generate_slug(text):
     if not text: return None
-    # Remove acentos e converte para minúsculas
     text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8').lower()
-    # Remove caracteres especiais e substitui espaços por hífens
     text = re.sub(r'[^a-z0-9]+', '-', text).strip('-')
     return text
 
-def _aplicar_detalhes(dep: Deputado, dados: dict) -> bool:
-    """
-    Aplica os campos de detalhe retornados pela API no objeto ORM.
-    Retorna True se algum campo foi alterado.
-    """
-    status = dados.get("ultimoStatus") or {}
-    gabinete = status.get("gabinete") or {}
-
-    # Mapeamento: campo_modelo → valor_da_api
-    updates = {
-        "nomeCivil":         dados.get("nomeCivil"),
-        "dataNascimento":    _parse_date(dados.get("dataNascimento")),
-        "siglaSexo":         dados.get("sexo"),           # API retorna "sexo" na raiz
-        "escolaridade":      dados.get("escolaridade"),
-        "situacao":          status.get("situacao"),
-        "condicaoEleitoral": status.get("condicaoEleitoral"),
-        # Campos que também existem na listagem — atualiza caso tenham mudado
-        "siglaUF":           status.get("siglaUf"),
-        "siglaPartido":      status.get("siglaPartido"),
-        "urlFoto":           status.get("urlFoto"),
-        # Gabinete
-        "emailGabinete":     gabinete.get("email") or status.get("email"),
-        "telefoneGabinete":  gabinete.get("telefone"),
-        "slug":             generate_slug(status.get("nome")),
-        "cpf":              dados.get("cpf"),
-    }
-
-    alterado = False
-    for campo, valor in updates.items():
-        if valor is not None and getattr(dep, campo) != valor:
-            setattr(dep, campo, valor)
-            alterado = True
-
-    return alterado
-
+def _is_incompleto(dep_row: dict) -> bool:
+    """Verifica um dicionário de linha do banco, em vez de um objeto ORM."""
+    return any([
+        not dep_row.get("urlFoto"),
+        not dep_row.get("nomeCivil"),
+        not dep_row.get("escolaridade"),
+        not dep_row.get("situacao"),
+        not dep_row.get("emailGabinete"),
+        not dep_row.get("slug"), 
+        not dep_row.get("cpf")
+    ])
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Função principal
+# Entrypoint e Core Logic
 # ─────────────────────────────────────────────────────────────────────────────
-
-def rodar_backfill(force: bool = False, slug: bool = False) -> None:
-    """
-    Percorre todos os deputados (ou apenas os incompletos) e preenche
-    os campos de detalhe via GET /deputados/{id_camara}.
-
-    Args:
-        force: Se True, processa todos independentemente do estado atual.
-        slug: Se True, gera o campo slug a partir do nomeCivil.
-    """
-    logger.info("🚀 Backfill de detalhes de deputados iniciado  [force=%s]", force)
-
-    with SessionLocal() as db:
-        todos = db.query(Deputado).order_by(Deputado.id).all()
-        if slug:
-            logger.info("⚡ Gerando slugs para todos os deputados com base no nomeCivil.")
-            for dep in todos:
-                dep.slug = generate_slug(dep.nome)
-                if dep.slug in [d.slug for d in todos if d.id != dep.id]:
-                    logger.warning("⚠️  Slug duplicado gerado para '%s' (idCamara=%s): %s", dep.nome, dep.idCamara, dep.slug)
-                    dep.slug = dep.slug + f"-{dep.id}"  # Adiciona idCamara para garantir unicidade
-            db.commit()
-            logger.info("✅ Slugs gerados e salvos com sucesso.")
-            return
-        if not force:
-            alvo = [d for d in todos if _is_incompleto(d)]
-            logger.info(
-                "🔍 %d/%d deputados com dados incompletos",
-                len(alvo), len(todos),
-            )
-        else:
-            alvo = todos
-            logger.info("⚡ Modo --force: atualizando todos os %d deputados", len(alvo))
-
-        if not alvo:
-            logger.info("✅ Nada a fazer. Todos os deputados já estão completos.")
-            return
-
-        processados = 0
-        atualizados = 0
-        erros = 0
-        sem_dados = 0
-
+def run_backfill(force: bool):
+    engine = create_engine(DATABASE_URL)
+    metadata = MetaData()
+    
+    # Reflete a tabela do banco de dados direto
+    metadata.reflect(bind=engine, only=['deputados'])
+    tabela_deputados = metadata.tables['deputados']
+    
+    processados = 0
+    atualizados = 0
+    erros = 0
+    sem_dados = 0
+    
+    # Usando with engine.connect() para gerenciar transações
+    with engine.connect() as conn:
+        # Busca os deputados existentes no banco
+        query = select(tabela_deputados)
+        resultados = conn.execute(query).mappings().all()
+        
+        # Filtra os alvos com base nos argumentos
+        alvo = [dep for dep in resultados if force or _is_incompleto(dep)]
+        
+        logger.info("═" * 60)
+        logger.info(f"Iniciando Backfill: {len(alvo)} deputados na fila.")
+        
+        # Buffer para o update em lotes (batch)
+        batch_updates = []
+        
         for dep in alvo:
             try:
-                resposta = camara_get(f"/deputados/{dep.idCamara}")
-                dados = (resposta or {}).get("dados") or {}
-
-                if not dados:
-                    logger.warning(
-                        "⚠️  Sem dados para deputado idCamara=%s (%s)",
-                        dep.idCamara, dep.nome,
-                    )
+                # Cuidado para passar a coluna ID correta (verifique se chama 'id' ou 'idCamara' no seu schema)
+                dep_id = dep.get("idCamara") or dep.get("id") 
+                
+                resposta_api = camara_get(f"/deputados/{dep_id}")
+                processados += 1
+                
+                if not resposta_api or "dados" not in resposta_api:
                     sem_dados += 1
                     continue
-
-                houve_alteracao = _aplicar_detalhes(dep, dados)
-                if houve_alteracao:
-                    atualizados += 1
-
-                processados += 1
-
-                # Commit parcial a cada BATCH_SIZE
-                if processados % BATCH_SIZE == 0:
-                    db.commit()
-                    logger.info(
-                        "🔄 Progresso: %d/%d processados, %d atualizados, %d erros",
-                        processados, len(alvo), atualizados, erros,
-                    )
-
-                time.sleep(SLEEP_BETWEEN_REQUESTS)
-
-            except Exception:
+                    
+                dados = resposta_api["dados"]
+                status = dados.get("ultimoStatus") or {}
+                gabinete = status.get("gabinete") or {}
+                
+                # Monta o dicionário com os campos para realizar o UPDATE.
+                # A chave primária (id) é passada junto, o SQLAlchemy usa ela como critério do WHERE.
+                valores_update = {
+                    "id": dep["id"],  # Fundamental ter a PK mapeada aqui!
+                    "nomeCivil": dados.get("nomeCivil"),
+                    "dataNascimento": _parse_date(dados.get("dataNascimento")),
+                    "siglaSexo": dados.get("sexo"),
+                    "escolaridade": dados.get("escolaridade"),
+                    "situacao": status.get("situacao"),
+                    "condicaoEleitoral": status.get("condicaoEleitoral"),
+                    "siglaUF": status.get("siglaUf"),
+                    "siglaPartido": status.get("siglaPartido"),
+                    "urlFoto": status.get("urlFoto"),
+                    "emailGabinete": gabinete.get("email"),
+                    "telefoneGabinete": gabinete.get("telefone"),
+                    "cpf": dados.get("cpf"),
+                    "slug": generate_slug(dados.get("nomeCivil"))
+                }
+                
+                batch_updates.append(valores_update)
+                
+                # Descarrega pro banco ao atingir o BATCH_SIZE
+                if len(batch_updates) >= BATCH_SIZE:
+                    # Executando a transação via Statement 
+                    conn.execute(update(tabela_deputados), batch_updates)
+                    conn.commit()
+                    atualizados += len(batch_updates)
+                    batch_updates = []
+                
+            except Exception as e:
+                logger.error(f"Erro ao processar deputado {dep.get('id')}: {e}")
                 erros += 1
-                db.rollback()
-                logger.exception(
-                    "❌ Erro ao processar deputado idCamara=%s (%s)",
-                    dep.idCamara, dep.nome,
-                )
-                # Continua para o próximo — não aborta o backfill inteiro
+                
+            time.sleep(SLEEP_BETWEEN_REQUESTS)
+            
+        # Garante que as sobras finais do buffer também sejam commitadas
+        if batch_updates:
+            conn.execute(update(tabela_deputados), batch_updates)
+            conn.commit()
+            atualizados += len(batch_updates)
 
-        # Commit final do lote restante
-        try:
-            db.commit()
-        except Exception:
-            db.rollback()
-            logger.exception("❌ Falha no commit final")
-
-    # ── Relatório ────────────────────────────────────────────────────────────
+    # Relatório final
     logger.info("═" * 60)
     logger.info("🏁 Backfill concluído")
     logger.info("   Deputados no alvo  : %d", len(alvo))
@@ -230,37 +189,10 @@ def rodar_backfill(force: bool = False, slug: bool = False) -> None:
     logger.info("   Erros              : %d", erros)
     logger.info("═" * 60)
 
-    if erros > 0:
-        logger.warning(
-            "⚠️  %d erros ocorreram. Rode novamente sem --force para tentar "
-            "apenas os que ainda estão incompletos.",
-            erros,
-        )
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Entrypoint
-# ─────────────────────────────────────────────────────────────────────────────
-
-def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Backfill dos campos de detalhe da tabela deputados.",
-    )
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        default=False,
-        help="Atualiza todos os deputados, não só os incompletos.",
-    )
-    parser.add_argument(
-        "--slug",
-        action="store_true",
-        default=False,
-        help="Gera o campo slug a partir do nomeCivil (útil para rodar depois de corrigir nomes).",
-    )
-    return parser.parse_args()
-
 
 if __name__ == "__main__":
-    args = _parse_args()
-    rodar_backfill(force=args.force, slug=args.slug)
+    parser = argparse.ArgumentParser(description="Backfill dos campos de detalhe.")
+    parser.add_argument("--force", action="store_true", default=False, help="Atualiza todos.")
+    args = parser.parse_args()
+    
+    run_backfill(force=args.force)

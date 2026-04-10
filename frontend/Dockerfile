@@ -1,7 +1,7 @@
 # app/frontend/Dockerfile
 FROM node:20-alpine AS builder
 
-WORKDIR /app
+WORKDIR /frontend
 
 COPY package*.json ./
 RUN npm ci
