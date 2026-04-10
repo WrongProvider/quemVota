@@ -11,6 +11,7 @@ jobs:
   deploy:
       needs: call-ci # only deploy if tests pass
       runs-on: ubuntu-latest
+      environment: AWS_QUEMVOTA
       steps:
         - name: Deploy via SSH
           uses: appleboy/ssh-action@v1.0.3
