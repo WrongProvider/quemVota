@@ -21,5 +21,5 @@ jobs:
             key: ${{ secrets.AWS_SSH_KEY }}
             script: |
               cd /opt/quemVota/deploy
-              git pull origin main
-              docker compose up --build -d
+              sudo git pull origin main
+              sudo docker compose up --build -d
