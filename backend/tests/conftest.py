@@ -7,6 +7,7 @@ from httpx import AsyncClient, ASGITransport
 from main import app
 from config import settings
 
+
 @pytest.fixture(autouse=True, scope="session")
 def setup_cache():
     FastAPICache.init(InMemoryBackend(), prefix="test-cache")
