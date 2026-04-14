@@ -5,9 +5,9 @@ from sqlalchemy import create_engine
 
 # 1. URLs de Conexão
 # O Async precisa do driver +asyncpg, o Sync usa o padrão (psycopg2)
-ASYNC_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost/quemvota")
-SYNC_URL = ASYNC_URL.replace("+asyncpg", "") # Remove o driver async para o engine sync
-
+raw_url = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost/quemvota")
+ASYNC_URL = raw_url.replace("postgresql://", "postgresql+asyncpg://") if "+asyncpg" not in raw_url else raw_url
+SYNC_URL = ASYNC_URL.replace("+asyncpg", "")
 class Base(DeclarativeBase):
     pass
 
