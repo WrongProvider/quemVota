@@ -50,7 +50,7 @@ jobs:
 
       - name: Rodar migrations
         env:
-          DATABASE_URL: postgresql+asyncpg://quemvota:quemvota@localhost/quemvota_test
+          DATABASE_URL: postgresql://quemvota:quemvota@localhost/quemvota_test
         run: uv run alembic upgrade head
       #- name: Instalar Python
       # run: uv python install 3.12
@@ -63,4 +63,7 @@ jobs:
         run: uv run bandit -r . -x ./tests -c ./tests/bandit_conf.yml
 
       - name: Rodar Testes (Pytest)
+        env:
+          DATABASE_URL: postgresql+asyncpg://quemvota:quemvota@localhost/quemvota_test
+          VALKEY_URL: redis://localhost:6379
         run: uv run pytest
