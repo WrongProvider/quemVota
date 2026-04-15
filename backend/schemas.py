@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime
 from typing import Optional, List
 
@@ -16,9 +16,9 @@ class MaisPesquisadoSchema(BaseModel):
     url_foto:      str | None = None
     count:         int
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class PoliticoResponse(PoliticoBase):
     id: int
@@ -38,10 +38,11 @@ class PoliticoResponse(PoliticoBase):
     email_gabinete: str | None = None
     telefone_gabinete: str | None = None
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
-        alias_generator = None
+    model_config = ConfigDict(
+        from_attributes = True,
+        populate_by_name = True,
+        alias_generator = None,
+    )
 
     @classmethod
     def model_validate(cls, obj, *args, **kwargs):
@@ -79,9 +80,9 @@ class PoliticoVoto(BaseModel):
     tipo_votacao: Optional[str] = None
     uri: str | None = None
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class ItemRanking(BaseModel):
     nome: str
@@ -100,18 +101,18 @@ class PoliticoDespesaResumo(BaseModel):
     total_gasto: float
     qtd_despesas: int
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class PoliticoDespesaResumoCompleto(BaseModel):
     historico_mensal: List[PoliticoDespesaResumo]
     top_fornecedores: List[ItemRankingFornecedor]
     top_categorias: List[ItemRanking]
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class PoliticoDespesaDetalhe(BaseModel):
     id: int
@@ -121,7 +122,10 @@ class PoliticoDespesaDetalhe(BaseModel):
     valor_liquido: float | None = None
     url_documento: str | None = None
 
-    model_config = {"from_attributes": True, "populate_by_name": True}
+    model_config = ConfigDict(
+        from_attributes= True, 
+        populate_by_name= True,
+    )
 
     @classmethod
     def model_validate(cls, obj, *args, **kwargs):
@@ -142,9 +146,9 @@ class PoliticoFornecedor(BaseModel):
     total_recebido: float
     qtd_notas: int
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class PoliticoEstatisticasResponse(BaseModel):
     total_votacoes: int
@@ -290,9 +294,9 @@ class AutorResumo(BaseModel):
     tipo: Optional[str] = None
     proponente: Optional[bool] = None
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class TemaResumo(BaseModel):
     """
@@ -302,9 +306,9 @@ class TemaResumo(BaseModel):
     id: int
     tema: str
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class TramitacaoItem(BaseModel):
     """
@@ -327,9 +331,9 @@ class TramitacaoItem(BaseModel):
     ambito: Optional[str] = None
     apreciacao: Optional[str] = None
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 # -----------------------------------------------------------------------------
 # Proposições
@@ -364,9 +368,9 @@ class ProposicaoResponse(BaseModel):
     autores: List[AutorResumo] = []
     temas: List[TemaResumo] = []
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class ProposicaoDetalhe(ProposicaoResponse):
     """
@@ -383,9 +387,9 @@ class ProposicaoDetalhe(ProposicaoResponse):
 
     tramitacoes: List[TramitacaoItem] = []
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 # -----------------------------------------------------------------------------
 # Votações
@@ -403,9 +407,9 @@ class OrientacaoPartido(BaseModel):
     sigla_partido_bloco: Optional[str] = None
     orientacao_voto: Optional[str] = None
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class VotoDeputado(BaseModel):
     """
@@ -427,9 +431,9 @@ class VotoDeputado(BaseModel):
     voto: str
     data_hora_voto: Optional[datetime] = None
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class VotacaoResponse(BaseModel):
     """
@@ -468,9 +472,9 @@ class VotacaoResponse(BaseModel):
     proposicao_ano: Optional[int] = None
     proposicao_ementa: Optional[str] = None
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class VotacaoDetalhe(VotacaoResponse):
     """
@@ -484,10 +488,10 @@ class VotacaoDetalhe(VotacaoResponse):
     orientacoes: List[OrientacaoPartido] = []
     votos: List[VotoDeputado] = []
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
-
+    )
 # -----------------------------------------------------------------------------
 # Proposições vinculadas a um deputado
 # -----------------------------------------------------------------------------
@@ -504,17 +508,17 @@ class ProposicaoAutorResumo(BaseModel):
     tipo: Optional[str] = None
     proponente: bool = False
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class TemaResumoSimples(BaseModel):
     id: int
     tema: str
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class ProposicaoParaPolitico(BaseModel):
     """
@@ -535,9 +539,9 @@ class ProposicaoParaPolitico(BaseModel):
     autores: List[ProposicaoAutorResumo] = []
     temas: List[TemaResumoSimples] = []
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 # =============================================================================
 # SCHEMAS — Atividade Legislativa (endpoint consolidado)
@@ -567,9 +571,9 @@ class VotacaoResumida(BaseModel):
     tipo_votacao: Optional[str] = None
     sigla_orgao: Optional[str] = None
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class ProposicaoResumida(BaseModel):
     """
@@ -598,9 +602,9 @@ class ProposicaoResumida(BaseModel):
 
     temas: List[str] = []
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class AtividadeLegislativaResponse(BaseModel):
     """
@@ -619,5 +623,6 @@ class AtividadeLegislativaResponse(BaseModel):
 
     ano: Optional[int] = None
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
+    )

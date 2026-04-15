@@ -2,7 +2,7 @@ name: CI - Testes e Segurança
 
 on:
   push:
-    branches: [ main, novaDB ] # Roda nas suas branches principais
+    branches: [ main, test-env] # Roda nas suas branches principais
   pull_request:
     branches: [ main ]
   workflow_call:
@@ -10,6 +10,30 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: quemvota
+          POSTGRES_PASSWORD: quemvota
+          POSTGRES_DB: quemvota_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      valkey:
+        image: valkey/valkey:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     defaults:
       run:
         working-directory: ./backend
@@ -24,6 +48,10 @@ jobs:
       - name: Sincronizar dependências
         run: uv sync
 
+      - name: Rodar migrations
+        env:
+          DATABASE_URL: postgresql://quemvota:quemvota@localhost/quemvota_test
+        run: uv run alembic upgrade head
       #- name: Instalar Python
       # run: uv python install 3.12
 
@@ -35,4 +63,7 @@ jobs:
         run: uv run bandit -r . -x ./tests -c ./tests/bandit_conf.yml
 
       - name: Rodar Testes (Pytest)
+        env:
+          DATABASE_URL: postgresql+asyncpg://quemvota:quemvota@localhost/quemvota_test
+          VALKEY_URL: redis://localhost:6379
         run: uv run pytest

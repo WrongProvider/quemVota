@@ -1,13 +1,13 @@
-import os
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import create_engine
+from config import settings
 
 # 1. URLs de Conexão
 # O Async precisa do driver +asyncpg, o Sync usa o padrão (psycopg2)
-ASYNC_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost/quemvota")
-SYNC_URL = ASYNC_URL.replace("+asyncpg", "") # Remove o driver async para o engine sync
-
+raw_url = settings.DATABASE_URL
+ASYNC_URL = raw_url.replace("postgresql://", "postgresql+asyncpg://") if "+asyncpg" not in raw_url else raw_url
+SYNC_URL = ASYNC_URL.replace("+asyncpg", "")
 class Base(DeclarativeBase):
     pass
 

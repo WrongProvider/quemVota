@@ -1,10 +1,29 @@
-from fastapi.testclient import TestClient
-from main import app
-
-client = TestClient(app)
-
-def test_read_main():
-    response = client.get('/')
+async def test_read_main(client):
+    response = await client.get('/')
     assert response.status_code == 200
     assert response.json() == {"status":"ok","api":"Quem Vota","docs":"/docs"}
-    
+
+async def test_cors_unauthorized_origin(client):
+    # Simulate a request from a random site
+    response = await client.get("/", headers={"Origin": "https://evil-hacker-site.com"})
+    # If CORS is working, the Access-Control-Allow-Origin header should be missing 
+    # or not match the evil site.
+    assert "access-control-allow-origin" not in response.headers
+
+async def test_politicos_schema(client):
+    response = await client.get('/politicos/')
+    # print(f"STATUS: {response.status_code}")
+    # print(f"BODY: {response.text}")
+    data = response.json()
+    assert isinstance(data, list)
+    if len(data) > 0:
+        politico = data[0]
+        expected_keys = {"id", "nome", "sigla_uf", "slug"}
+        assert expected_keys.issubset(politico.keys())
+
+async def test_politico_schema(client):
+    response = await client.get('/politicos/1')
+    data = response.json()
+    # assert isinstance(data, list)
+    expected_keys = {"id", "nome", "sigla_uf", "slug"}
+    assert expected_keys.issubset(data.keys())       
