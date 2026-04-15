@@ -11,7 +11,9 @@ async def test_cors_unauthorized_origin(client):
     assert "access-control-allow-origin" not in response.headers
 
 async def test_politicos_schema(client):
-    response = await client.get('/politicos')
+    response = await client.get('/politicos/')
+    # print(f"STATUS: {response.status_code}")
+    # print(f"BODY: {response.text}")
     data = response.json()
     assert isinstance(data, list)
     if len(data) > 0:
