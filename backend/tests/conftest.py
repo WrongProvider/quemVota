@@ -15,14 +15,14 @@ def setup_cache():
 @pytest.fixture(autouse=True, scope="session")
 async def seed_db():
     engine = create_async_engine(settings.DATABASE_URL)
+    with open("tests/fixtures.sql") as f:
+        sql = f.read()
+
+    linhas = [lines for lines in sql.splitlines() if not lines.strip().startswith("--")]
+    sql_limpo = "\n".join(linhas)
+    statements = [s.strip() for s in sql_limpo.split(";") if s.strip()]    
+
     async with engine.begin() as conn:
-        with open("tests/fixtures.sql") as f:
-            sql = f.read()
-            
-        linhas = [lines for lines in sql.splitlines() if not lines.strip().startswith("--")]
-        sql_limpo = "\n".join(linhas)
-        
-        statements = [s.strip() for s in sql_limpo.split(";") if s.strip()]    
             
         for statement in statements:
             await conn.execute(text(statement))
