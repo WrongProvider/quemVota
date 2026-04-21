@@ -1235,3 +1235,22 @@
 2026-03-07 09:26:57,144 [INFO] etl_camara — ✔ Ano-2026.csv.zip (17381 linhas)
 2026-03-07 09:27:18,876 [INFO] etl_camara —   FK-insert _raw_cotas → 17304 registros
 2026-03-07 09:27:18,878 [INFO] etl_camara — ETL concluído — processados: 339 | sem alteração (304): 0 | histórico pulado: 0 | erros: 0
+2026-04-21 10:01:58,952 [INFO] etl_camara — Banco: localhost:5432/quemvota_teste
+2026-04-21 10:01:58,953 [INFO] etl_camara — Cache: etl_cache.json
+2026-04-21 10:01:58,960 [INFO] etl_camara — Iniciando ETL: 33 datasets | anos=[2026] | legislaturas=[56, 57]
+2026-04-21 10:01:59,592 [INFO] etl_camara — ✔ legislaturas.csv (57 linhas)
+2026-04-21 10:01:59,611 [ERROR] etl_camara — Upsert error [legislaturas]: (psycopg2.OperationalError) connection to server at "localhost" (127.0.0.1), port 5432 failed: FATAL:  password authentication failed for user "postgres"
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-04-21 10:02:00,109 [INFO] etl_camara — ✔ orgaos.csv (3823 linhas)
+2026-04-21 10:02:00,213 [ERROR] etl_camara — Upsert error [orgaos]: (psycopg2.OperationalError) connection to server at "localhost" (127.0.0.1), port 5432 failed: FATAL:  password authentication failed for user "postgres"
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-04-21 10:02:00,649 [INFO] etl_camara — ✔ deputados.csv (7883 linhas)
+2026-04-21 10:02:00,846 [ERROR] etl_camara — Upsert error [deputados]: (psycopg2.OperationalError) connection to server at "localhost" (127.0.0.1), port 5432 failed: FATAL:  password authentication failed for user "postgres"
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-04-21 10:02:01,611 [INFO] etl_camara — ✔ deputadosOcupacoes.csv (37459 linhas)
+2026-04-21 10:02:01,967 [ERROR] etl_camara — FK-insert error [deputadosOcupacoes]: (psycopg2.OperationalError) connection to server at "localhost" (127.0.0.1), port 5432 failed: FATAL:  password authentication failed for user "postgres"
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

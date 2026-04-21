@@ -38,14 +38,14 @@ services:
   # ── API (FastAPI) ───────────────────────────────────────────────────────────
   api:
     build:
-      context: ../          # raiz de app/ — tem requirements.txt, main.py e backend/
-      dockerfile: deploy/Dockerfile.api
+      context: ../backend          # raiz de app/ — tem requirements.txt, main.py e backend/
+      dockerfile: Dockerfile.api
     container_name: quemvota_api
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       VALKEY_URL: redis://valkey:6379
-      ALLOWED_ORIGINS: https://quemvota.com.br
+      ALLOWED_ORIGINS: '["https://quemvota.com.br"]'
       ENV: production
     depends_on:
       postgres:
@@ -67,6 +67,11 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
     container_name: quemvota_frontend
+    environment:
+      API_URL: http://api:8000  
+    depends_on:
+      api:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - frontend
@@ -92,11 +97,14 @@ services:
   # injest
   ingest:
     build:
-      context: ../          # raiz de app/ — tem requirements.txt, main.py e injest_banco/
-      dockerfile: deploy/Dockerfile.injest
+      context: ../injest_banco          # raiz de app/ — tem requirements.txt, main.py e injest_banco/
+      dockerfile: Dockerfile.injest
     container_name: quemvota_ingest
+    profiles:
+      - ingest
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_SUPERUSER}:${POSTGRES_SUPERPASSWORD}@postgres:5432/${POSTGRES_DB}
       VALKEY_URL: redis://valkey:6379 
