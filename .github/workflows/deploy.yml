@@ -18,7 +18,4 @@ jobs:
             host: ${{ secrets.AWS_HOST }}
             username: ${{ secrets.AWS_USER }}
             key: ${{ secrets.AWS_SSH_KEY }}
-            script: |
-              cd /opt/quemVota/deploy
-              git pull origin main
-              docker compose up --build -d
+            script: sudo bash /opt/quemVota/deploy/deploy.sh

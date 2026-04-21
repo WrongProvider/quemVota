@@ -1,4 +1,4 @@
-# app/frontend/Dockerfile
+# /frontend/Dockerfile
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -13,6 +13,7 @@ RUN npm run build
 FROM nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/generate-sitemap.mjs /app/generate-sitemap.mjs
 COPY nginx-spa.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 3000
