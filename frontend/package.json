@@ -11,7 +11,7 @@
     "test:run": "vitest run",  
     "test:coverage": "vitest run --coverage",
     "sitemap": "node generate-sitemap.mjs",
-    "build": "node generate-sitemap.mjs && vite build"
+    "build": "vite build"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
