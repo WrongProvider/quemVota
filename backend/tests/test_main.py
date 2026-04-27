@@ -27,3 +27,15 @@ async def test_politico_schema(client):
     # assert isinstance(data, list)
     expected_keys = {"id", "nome", "sigla_uf", "slug"}
     assert expected_keys.issubset(data.keys())       
+
+async def test_politico_slug(client):
+    response = await client.get('/politicos/fulano-silva')
+    data = response.json()
+    expected_keys = {"id", "nome", "sigla_uf", "slug"}
+    assert expected_keys.issubset(data.keys())       
+
+async def test_politico_votacoes(client):
+    response = await client.get('/politicos/1/votacoes')
+    data = response.json()
+    expected_keys = {"id_votacao", "data", "proposicao_sigla", "ementa", "voto", "resultado_da_votacao"}
+    assert expected_keys.issubset(data[0].keys())

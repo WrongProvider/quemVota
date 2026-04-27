@@ -13,3 +13,5 @@ INSERT INTO deputados (id, "idCamara", nome, slug, "siglaUF", "siglaPartido", "i
 VALUES
   (1, 204554, 'Fulano Silva', 'fulano-silva', 'SP', 'PT', 1, 'Exercício'),
   (2, 204555, 'Ciclana Souza', 'ciclana-souza', 'RJ', 'PT', 1, 'Exercício');
+
+INSERT INTO votacoes
