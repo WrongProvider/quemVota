@@ -105,6 +105,7 @@ interface DropdownSectionProps {
   defaultOpen?: boolean
   children: React.ReactNode
   badge?: string | number
+  testId?: string
 }
 
 function DropdownSection({
@@ -114,14 +115,22 @@ function DropdownSection({
   defaultOpen = false,
   children,
   badge,
+  testId,
 }: DropdownSectionProps) {
   const [open, setOpen] = useState(defaultOpen)
+  const baseId = testId ?? title.toLowerCase().replace(/\s+/g, "-")
 
   return (
-    <div className="rounded-xl border border-slate-200 overflow-hidden">
+    <div
+      className="rounded-xl border border-slate-200 overflow-hidden"
+      data-testid={`dropdown-section-${baseId}`}
+      data-state={open ? "open" : "closed"}
+    >
       <button
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-4 py-3.5 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+        data-testid={`dropdown-toggle-${baseId}`}
+        aria-expanded={open}
       >
         <div className="flex items-center gap-2.5">
           <span className="text-slate-500">{icon}</span>
@@ -132,7 +141,10 @@ function DropdownSection({
             )}
           </div>
           {badge !== undefined && (
-            <span className="bg-slate-200 text-slate-600 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+            <span
+              className="bg-slate-200 text-slate-600 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+              data-testid={`dropdown-badge-${baseId}`}
+            >
               {badge}
             </span>
           )}
@@ -145,7 +157,10 @@ function DropdownSection({
       </button>
 
       {open && (
-        <div className="divide-y divide-slate-100 animate-in fade-in slide-in-from-top-1 duration-150">
+        <div
+          className="divide-y divide-slate-100 animate-in fade-in slide-in-from-top-1 duration-150"
+          data-testid={`dropdown-content-${baseId}`}
+        >
           {children}
         </div>
       )}
@@ -172,7 +187,7 @@ function ListaFornecedores({
 }) {
   if (!fornecedores.length) {
     return (
-      <p className="text-xs text-slate-400 text-center py-5">
+      <p className="text-xs text-slate-400 text-center py-5" data-testid="fornecedores-empty">
         Sem dados de fornecedores.
       </p>
     )
@@ -182,8 +197,14 @@ function ListaFornecedores({
     <>
       {fornecedores.map((f, i) => {
         const pct = total > 0 ? (f.total / total) * 100 : 0
+        const slug = (f.nome ?? String(i)).toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
         return (
-          <div key={f.nome ?? i} className="px-4 py-3">
+          <div
+            key={f.nome ?? i}
+            className="px-4 py-3"
+            data-testid={`fornecedor-item-${i}`}
+            data-nome={f.nome}
+          >
             <div className="flex items-start gap-3">
               <span className="font-mono text-[10px] text-slate-300 w-5 flex-shrink-0 text-right mt-0.5">
                 {i + 1}
@@ -191,8 +212,8 @@ function ListaFornecedores({
               <div className="flex-1 min-w-0">
                 {/* Nome + valor */}
                 <div className="flex justify-between items-baseline gap-2">
-                  <span className="text-xs text-slate-700 font-medium truncate">{f.nome}</span>
-                  <span className="font-mono text-xs text-slate-500 flex-shrink-0">
+                  <span className="text-xs text-slate-700 font-medium truncate" data-testid={`fornecedor-nome-${i}`}>{f.nome}</span>
+                  <span className="font-mono text-xs text-slate-500 flex-shrink-0" data-testid={`fornecedor-valor-${i}`}>
                     {BRL(f.total)}
                   </span>
                 </div>
@@ -249,7 +270,7 @@ function ListaCategorias({
 }) {
   if (!categorias.length) {
     return (
-      <p className="text-xs text-slate-400 text-center py-5">
+      <p className="text-xs text-slate-400 text-center py-5" data-testid="categorias-empty">
         Sem dados de categorias.
       </p>
     )
@@ -261,7 +282,12 @@ function ListaCategorias({
         const pct = total > 0 ? (cat.total / total) * 100 : 0
         const color = CATEGORIA_COLORS[i % CATEGORIA_COLORS.length]
         return (
-          <div key={cat.nome ?? i} className="px-4 py-3">
+          <div
+            key={cat.nome ?? i}
+            className="px-4 py-3"
+            data-testid={`categoria-item-${i}`}
+            data-nome={cat.nome}
+          >
             <div className="flex items-center gap-3">
               <span
                 className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
@@ -269,8 +295,8 @@ function ListaCategorias({
               />
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-baseline gap-2">
-                  <span className="text-xs text-slate-700 font-medium truncate">{cat.nome}</span>
-                  <span className="font-mono text-xs text-slate-500 flex-shrink-0">{BRL(cat.total)}</span>
+                  <span className="text-xs text-slate-700 font-medium truncate" data-testid={`categoria-nome-${i}`}>{cat.nome}</span>
+                  <span className="font-mono text-xs text-slate-500 flex-shrink-0" data-testid={`categoria-valor-${i}`}>{BRL(cat.total)}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -312,7 +338,10 @@ function LinhaTempoNav({
   onSelect: (ano: number | null) => void
 }) {
   return (
-    <div className="relative flex items-center gap-0 overflow-x-auto pb-2 select-none">
+    <div
+      className="relative flex items-center gap-0 overflow-x-auto pb-2 select-none"
+      data-testid="linha-tempo-nav"
+    >
       <div className="absolute left-0 right-0 top-[22px] h-px bg-slate-200 z-0 pointer-events-none" />
       {anos.map((item, idx) => {
         const isActive = item.ano === anoSelecionado
@@ -323,6 +352,9 @@ function LinhaTempoNav({
           >
             <button
               onClick={() => onSelect(item.ano)}
+              data-testid={`ano-pilula-${item.ano ?? "todos"}`}
+              data-active={isActive}
+              aria-pressed={isActive}
               className={`
                 w-10 h-10 rounded-full border-2 flex items-center justify-center
                 transition-all duration-200 cursor-pointer font-semibold text-[11px]
@@ -377,31 +409,31 @@ function PainelTodos({
   return (
     <div className="space-y-5">
       {/* Cards de totais */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3" data-testid="resumo-cards">
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4" data-testid="card-total-gasto">
           <p className="text-[11px] text-blue-500 font-medium uppercase tracking-wide mb-1 flex items-center gap-1">
             <Receipt size={12} /> Total Gasto
           </p>
-          <p className="font-mono text-lg font-bold text-blue-700">{BRL(totalGeral)}</p>
+          <p className="font-mono text-lg font-bold text-blue-700" data-testid="card-total-gasto-valor">{BRL(totalGeral)}</p>
         </div>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4" data-testid="card-num-despesas">
           <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide mb-1 flex items-center gap-1">
             <CalendarDays size={12} /> Nº de Despesas
           </p>
-          <p className="font-mono text-lg font-bold text-slate-700">
+          <p className="font-mono text-lg font-bold text-slate-700" data-testid="card-num-despesas-valor">
             {totalDespesas.toLocaleString("pt-BR")}
           </p>
         </div>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 col-span-2 md:col-span-1">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 col-span-2 md:col-span-1" data-testid="card-anos-registrados">
           <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide mb-1 flex items-center gap-1">
             <TrendingDown size={12} /> Anos Registrados
           </p>
-          <p className="font-mono text-lg font-bold text-slate-700">{anosData.length}</p>
+          <p className="font-mono text-lg font-bold text-slate-700" data-testid="card-anos-registrados-valor">{anosData.length}</p>
         </div>
       </div>
 
       {/* Gráfico por ano */}
-      <div>
+      <div data-testid="grafico-anos">
         <p className="text-xs text-slate-400 font-medium mb-3 uppercase tracking-wide">
           Gastos por ano · clique para detalhar
         </p>
@@ -444,7 +476,7 @@ function PainelTodos({
       </div>
 
       {/* Tabela resumida por ano */}
-      <div className="rounded-xl border border-slate-200 overflow-hidden">
+      <div className="rounded-xl border border-slate-200 overflow-hidden" data-testid="tabela-anos">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
@@ -466,12 +498,14 @@ function PainelTodos({
                 key={row.ano}
                 className="border-b border-slate-100 last:border-0 hover:bg-blue-50 transition-colors cursor-pointer group"
                 onClick={() => onSelectAno(row.ano)}
+                data-testid={`tabela-ano-row-${row.ano}`}
+                data-ano={row.ano}
               >
-                <td className="px-4 py-3 font-semibold text-slate-700 font-mono">{row.ano}</td>
-                <td className="px-4 py-3 text-right font-mono text-slate-600">
+                <td className="px-4 py-3 font-semibold text-slate-700 font-mono" data-testid={`tabela-ano-label-${row.ano}`}>{row.ano}</td>
+                <td className="px-4 py-3 text-right font-mono text-slate-600" data-testid={`tabela-ano-total-${row.ano}`}>
                   {BRL(row.total_gasto)}
                 </td>
-                <td className="px-4 py-3 text-right text-slate-400 hidden sm:table-cell">
+                <td className="px-4 py-3 text-right text-slate-400 hidden sm:table-cell" data-testid={`tabela-ano-despesas-${row.ano}`}>
                   {row.qtd_despesas}
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -494,6 +528,7 @@ function PainelTodos({
           icon={<Building2 size={15} />}
           badge={fornecedores.length}
           defaultOpen={false}
+          testId="fornecedores-geral"
         >
           <ListaFornecedores fornecedores={fornecedores} total={totalGeral} />
         </DropdownSection>
@@ -504,6 +539,7 @@ function PainelTodos({
           icon={<Tag size={15} />}
           badge={categorias.length}
           defaultOpen={false}
+          testId="categorias-geral"
         >
           <ListaCategorias categorias={categorias} total={totalGeral} />
         </DropdownSection>
@@ -542,16 +578,16 @@ function PainelAno({
   return (
     <div className="space-y-5">
       {/* Header do ano */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between" data-testid={`painel-ano-header-${ano}`}>
         <div>
           <p className="text-xs text-slate-400 uppercase tracking-wide mb-0.5">
             Total em {ano}
           </p>
-          <p className="font-mono text-2xl font-bold text-blue-700">{BRL(totalAno)}</p>
+          <p className="font-mono text-2xl font-bold text-blue-700" data-testid="painel-ano-total">{BRL(totalAno)}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-slate-400">{mesesDoAno.length} meses</p>
-          <p className="text-sm text-slate-500 font-medium">
+          <p className="text-xs text-slate-400" data-testid="painel-ano-meses-count">{mesesDoAno.length} meses</p>
+          <p className="text-sm text-slate-500 font-medium" data-testid="painel-ano-media-mensal">
             {BRL(totalAno / (mesesDoAno.length || 1))}/mês
           </p>
         </div>
@@ -559,7 +595,7 @@ function PainelAno({
 
       {/* Gráfico mensal */}
       {mesesDoAno.length > 0 ? (
-        <div>
+        <div data-testid="grafico-mensal">
           <p className="text-xs text-slate-400 font-medium mb-3 uppercase tracking-wide">
             Mês a mês
           </p>
@@ -609,6 +645,7 @@ function PainelAno({
           icon={<Building2 size={15} />}
           badge={fornecedores.length}
           defaultOpen={true}
+          testId={`fornecedores-${ano}`}
         >
           <ListaFornecedores fornecedores={fornecedores} total={totalAno} />
         </DropdownSection>
@@ -619,6 +656,7 @@ function PainelAno({
           icon={<Tag size={15} />}
           badge={categorias.length}
           defaultOpen={true}
+          testId={`categorias-${ano}`}
         >
           <ListaCategorias categorias={categorias} total={totalAno} />
         </DropdownSection>
@@ -691,9 +729,11 @@ export default function LinhaDoTempo({ politicoId }: LinhaDoTempoProps) {
     <div
       style={{ fontFamily: "'DM Sans', sans-serif" }}
       className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+      data-testid="linha-do-tempo"
+      data-politico-id={politicoId}
     >
       {/* ── Header ── */}
-      <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+      <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between" data-testid="linha-tempo-header">
         <div className="flex items-center gap-2">
           <CalendarDays size={18} className="text-blue-500" />
           <h3
@@ -703,7 +743,10 @@ export default function LinhaDoTempo({ politicoId }: LinhaDoTempoProps) {
             Histórico de Gastos
           </h3>
           {anoSelecionado && (
-            <span className="bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+            <span
+              className="bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full"
+              data-testid="header-ano-badge"
+            >
               {anoSelecionado}
             </span>
           )}
@@ -713,6 +756,7 @@ export default function LinhaDoTempo({ politicoId }: LinhaDoTempoProps) {
           <button
             onClick={() => setAnoSelecionado(null)}
             className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-blue-600 transition-colors font-medium"
+            data-testid="btn-voltar-todos-anos"
           >
             <ChevronLeft size={13} />
             Todos os anos
@@ -732,14 +776,14 @@ export default function LinhaDoTempo({ politicoId }: LinhaDoTempoProps) {
       )}
 
       {/* ── Conteúdo ── */}
-      <div className="px-6 py-6">
+      <div className="px-6 py-6" data-testid="linha-tempo-content">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16 gap-3 text-slate-400">
+          <div className="flex items-center justify-center py-16 gap-3 text-slate-400" data-testid="loading-state">
             <Loader2 size={20} className="animate-spin" />
             <span className="text-sm">Carregando dados...</span>
           </div>
         ) : !resumo ? (
-          <p className="text-sm text-slate-400 text-center py-10">
+          <p className="text-sm text-slate-400 text-center py-10" data-testid="empty-state">
             Nenhum dado encontrado.
           </p>
         ) : anoSelecionado ? (

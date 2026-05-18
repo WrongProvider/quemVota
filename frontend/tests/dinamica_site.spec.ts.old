@@ -1,0 +1,65 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Navegação de um político padrão', () => {
+    test.beforeEach(async ({ page }) => {
+        await page.goto('/');
+        // Verificação inicial de sanidade
+        await expect(page).toHaveTitle(/quemvota — Transparência Legislativa Brasileira/);
+    });
+
+    test('deve atualizar os dados ao filtrar por ano do mandato', async ({ page }) => {
+        // 1. Acesso ao perfil (Mantivemos o link, mas você poderia usar um test-id na lista se preferir)
+        await page.getByRole('link', { name: 'Erika' }).click();
+
+        // 2. Validação do nome usando o ID específico
+        const nomePolitico = page.getByTestId('politician-name');
+        await expect(nomePolitico).toContainText('Erika Hilton');
+
+        // 3. Captura do score inicial
+        const scoreValue = page.getByTestId('performance-score');
+        const valorAntes = await scoreValue.innerText();
+
+        await test.step('Selecionar um ano específico e validar atualização', async () => {
+            // 4. Clique no botão do ano usando o ID dinâmico que criamos
+            await page.getByTestId('year-button-2026').click();
+
+            // 5. Validar visibilidade do card de estatística pelo ID
+            await expect(page.getByTestId('stat-total-votacoes')).toBeVisible();
+
+            // 6. Verificar se o valor mudou (opcional, mas boa prática)
+            const valorDepois = await scoreValue.innerText();
+            
+            // Uma asserção mais forte do que apenas console.log:
+            expect(valorDepois).not.toBe(valorAntes); 
+            
+            console.log(`Score alterado de ${valorAntes} para ${valorDepois}`);
+        });
+    });
+});
+
+test.describe('Funcionalidades Avançadas - Detalhe do Político', () => {
+    
+    test.beforeEach(async ({ page }) => {
+        // Atalho para ir direto para a página de um político e ganhar tempo
+        await page.goto('/politicos/erika-hilton'); 
+    });
+
+    test('deve filtrar a lista de votações por tipo de voto', async ({ page }) => {
+        const listaVotacoes = page.getByTestId('votacoes-list');
+        
+        await test.step('Filtrar por votos "Não"', async () => {
+            await page.getByTestId('filter-voto-select').selectOption('Não');
+            
+            // Verifica se todos os itens visíveis na lista agora contêm o texto "Não"
+            // Ou se a lista foi filtrada corretamente
+            const itensVotos = listaVotacoes.locator('button');
+            const count = await itensVotos.count();
+            
+            if (count > 0) {
+                await expect(itensVotos.first()).toContainText('Não');
+            }
+        });
+    });
+
+    test('deve filtrar historico de gastos')
+});

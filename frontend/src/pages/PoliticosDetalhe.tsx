@@ -261,7 +261,7 @@ function TimelineSelector({
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden" data-testid="year-selector-container">
       <div className="bg-slate-50 border-b border-slate-100 px-6 py-3 text-center">
         <p className="text-sm font-medium text-slate-500">
           {anoSelecionado ? (
@@ -278,6 +278,7 @@ function TimelineSelector({
           {/* Botão "Tudo" */}
           <button
             onClick={() => onChange(null)}
+            data-testid="year-button-all"
             className={`flex items-center justify-center w-12 h-10 rounded-xl border-2 text-xs font-bold transition-all ${
               anoSelecionado === null
                 ? "bg-slate-700 border-slate-700 text-white shadow-md"
@@ -294,6 +295,7 @@ function TimelineSelector({
               <button
                 key={ano}
                 onClick={() => onChange(ativo ? null : ano)}
+                data-testid={`year-button-${ano}`}
                 className={`flex items-center justify-center px-3 h-10 rounded-xl border-2 text-xs font-semibold transition-all ${
                   ativo
                     ? "bg-yellow-400 border-yellow-400 text-white shadow-md scale-105"
@@ -489,6 +491,8 @@ export default function PoliticoDetalhe() {
                   {/* ── BOTÃO COMPARAR ── */}
                   <button
                     onClick={() => setModalCompararAberto(true)}
+                    data-testid="btn-comparar"
+
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium transition-colors shadow-sm shadow-blue-200"
                   >
                     <ArrowLeftRight size={15} />
@@ -558,7 +562,7 @@ export default function PoliticoDetalhe() {
                     )}
                   </div>
 
-                  <h1 className="display-font text-3xl md:text-4xl font-bold text-slate-900 mb-3 leading-tight">
+                  <h1 data-testid="politician-name" className="display-font text-3xl md:text-4xl font-bold text-slate-900 mb-3 leading-tight">
                     {data.nome}
                   </h1>
 
@@ -608,14 +612,14 @@ export default function PoliticoDetalhe() {
 
                 {/* SCORE RING — oculto no mobile (aparece ao lado da foto) */}
                 {performance && (
-                  <div className="hidden md:flex flex-shrink-0 text-center">
+                  <div className="hidden md:flex flex-shrink-0 text-center" data-testid="performance-container">
                     <div>
                       <div
                         className="score-ring w-28 h-28"
                         style={{ "--score": performance.score_final } as React.CSSProperties}
                       >
                         <div className="score-ring-inner flex-col">
-                          <span className={`mono-font text-2xl font-bold ${scoreColor}`}>
+                          <span data-testid="performance-score" className={`mono-font text-2xl font-bold ${scoreColor}`}>
                             {performance.score_final.toFixed(0)}
                           </span>
                           <span className="text-[10px] text-slate-400 leading-tight mt-0.5">
@@ -652,7 +656,7 @@ export default function PoliticoDetalhe() {
         <div className="max-w-5xl mx-auto px-6 py-10 space-y-10">
           {/* ── SELETOR DE ANO ── */}
           {!timelineLoading && anosDisponiveis.length > 0 && (
-            <section>
+            <section data-testid="section-timeline">
               <TimelineSelector
                 anos={anosDisponiveis}
                 anoSelecionado={anoSelecionado}
@@ -683,7 +687,7 @@ export default function PoliticoDetalhe() {
 
           {/* ── ESTATÍSTICAS ── */}
           {stats && (
-            <section key={`stats-${anoSelecionado}`} className="section-fade">
+            <section data-testid="section-stats" key={`stats-${anoSelecionado}`} className="section-fade">
               <div className="flex items-center gap-2 mb-5">
                 <BarChart2 size={18} className="text-blue-500" />
                 <h2 className="display-font text-xl font-bold text-slate-800">Estatísticas</h2>
@@ -696,8 +700,8 @@ export default function PoliticoDetalhe() {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <StatCard icon={<BadgeCheck size={16} className="text-blue-500" />}    titulo="Total de Votações"   valor={stats.total_votacoes}                                                        accent="blue"    />
-                <StatCard icon={<Receipt size={16} className="text-violet-500" />}     titulo="Total de Despesas"   valor={stats.total_despesas}                                                        accent="violet"  />
+                <StatCard data-testid="stat-total-votacoes" icon={<BadgeCheck size={16} className="text-blue-500" />}    titulo="Total de Votações"   valor={stats.total_votacoes}                                                        accent="blue"    />
+                <StatCard data-testid="stat-total-despesas" icon={<Receipt size={16} className="text-violet-500" />}     titulo="Total de Despesas"   valor={stats.total_despesas}                                                        accent="violet"  />
                 <StatCard icon={<TrendingUp size={16} className="text-emerald-500" />} titulo="Cota Parlamentar"    valor={`R$ ${stats.total_gasto.toLocaleString("pt-BR")}`}                           accent="emerald" />
                 <StatCard icon={<Wallet size={16} className="text-orange-500" />}      titulo="Verba de Gabinete"   valor={`R$ ${(stats.total_gasto_gabinete ?? 0).toLocaleString("pt-BR")}`}           accent="amber"   />
                 <StatCard icon={<Receipt size={16} className="text-red-500" />}        titulo="Gasto Total"         valor={`R$ ${(stats.total_gasto_combinado ?? stats.total_gasto).toLocaleString("pt-BR")}`} accent="slate" />
@@ -782,7 +786,7 @@ export default function PoliticoDetalhe() {
           )}
 
           {/* ── HISTÓRICO DE GASTOS ── */}
-          <section className="mt-10">
+          <section className="mt-10" data-testid="section-historico-de-gastos">
             <div className="flex items-center gap-2 mb-5">
               <Receipt size={18} className="text-blue-500" />
               <h2 className="display-font text-xl font-bold text-slate-800">Histórico de Gastos</h2>
@@ -791,7 +795,9 @@ export default function PoliticoDetalhe() {
           </section>
 
           {/* ── HISTÓRICO DE VOTAÇÕES ── */}
-          <HistoricoVotacoes politicoId={data.id} anoSelecionado={anoSelecionado} />
+          <section data-testid="section-votacoes">
+            <HistoricoVotacoes politicoId={data.id} anoSelecionado={anoSelecionado} />
+          </section>
         </div>
       </div>
 
@@ -882,6 +888,7 @@ function PainelDetalheVotacao({
 
       {/* Painel deslizante */}
       <div
+        data-testid="painel-detalhe-votacao"
         className="fixed right-0 top-0 h-full w-full max-w-[440px] z-50 bg-white shadow-2xl flex flex-col"
         style={{ animation: "slideInRight 0.25s cubic-bezier(0.22, 1, 0.36, 1) both" }}
       >
@@ -1127,6 +1134,7 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
 
           <div className="relative">
             <select
+              data-testid="filter-voto-select"
               value={filtroVoto}
               onChange={(e) => setFiltroVoto(e.target.value)}
               className="appearance-none text-sm border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all cursor-pointer"
@@ -1167,12 +1175,13 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
                 <span /> {/* coluna do chevron */}
               </div>
 
-              <div className="divide-y divide-slate-100">
+              <div data-testid="votacoes-list" className="divide-y divide-slate-100">
                 {votacoesFiltradas.map((v, i) => {
                   const ativo = votacaoAberta?.id === v.id_votacao
                   return (
                     <button
                       key={`${v.id_votacao}-${i}`}
+                      data-testid={`votacao-item-${v.id_votacao}`}
                       onClick={() => setVotacaoAberta(ativo ? null : { id: v.id_votacao, voto: v.voto })}
                       className={`w-full text-left px-5 py-3.5 transition-colors group ${
                         ativo
@@ -1281,15 +1290,16 @@ const accentMap: Record<string, string> = {
 }
 
 function StatCard({
-  icon, titulo, valor, accent = "slate",
+  icon, titulo, valor, accent = "slate", "data-testid": testId
 }: {
   icon: React.ReactNode
   titulo: string
   valor: any
   accent?: string
+  "data-testid"?: string
 }) {
   return (
-    <div className={`stat-card rounded-xl border p-4 transition-colors duration-200 cursor-default ${accentMap[accent] ?? accentMap.slate}`}>
+    <div data-testid={testId} className={`stat-card rounded-xl border p-4 transition-colors duration-200 cursor-default ${accentMap[accent] ?? accentMap.slate}`}>
       <div className="flex items-center gap-2 mb-2">
         {icon}
         <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide leading-tight">{titulo}</p>
