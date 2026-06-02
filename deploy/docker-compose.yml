@@ -93,7 +93,14 @@ services:
       - frontend
     networks:
       - frontend
-
+  
+  # - tunnel cloudflare
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel run --token SEU_TOKEN_AQUI
+    networks:
+      - frontend
+      
   # injest
   ingest:
     build:
