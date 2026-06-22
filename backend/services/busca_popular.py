@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
-from models import Deputado, BuscaPopular
+from shared.models import Deputado, BuscaPopular
 from typing import List
 
 async def registrar_busca(db: AsyncSession, deputado_id: int) -> None:

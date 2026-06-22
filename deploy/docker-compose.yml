@@ -2,7 +2,7 @@ services:
 
   # ── Banco de dados ──────────────────────────────────────────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: quemvota_postgres
     restart: unless-stopped
     environment:

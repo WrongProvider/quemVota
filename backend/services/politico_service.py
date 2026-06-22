@@ -10,25 +10,28 @@ Segurança (OWASP):
   - A06 / Vulnerable Components: nenhuma dependência desnecessária; lógica de
     negócio isolada do transporte HTTP.
 """
+
 import asyncio
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException, status
 
-from repositories.politico_repository import PoliticoRepository
-from repositories.ranking_repository import RankingRepository
-from schemas import PoliticoResponse, AtividadeLegislativaResponse
-from services.performance_calc import calcular_score 
+from fastapi import HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.repositories.politico_repository import PoliticoRepository
+from backend.repositories.ranking_repository import RankingRepository
+from backend.schemas import AtividadeLegislativaResponse, PoliticoResponse
+from backend.services.performance_calc import calcular_score
+
 from .ranking_service import RankingService
 
 logger = logging.getLogger(__name__)
 
 # Limites de paginação (segunda linha de defesa)
-_MAX_LIMIT_DEPUTADOS   = 600
-_MAX_LIMIT_VOTACOES    = 20
-_MAX_LIMIT_DESPESAS    = 20
-_MAX_LIMIT_RESUMO      = 60
-_MAX_LIMIT_ATIVIDADE   = 100
+_MAX_LIMIT_DEPUTADOS = 600
+_MAX_LIMIT_VOTACOES = 20
+_MAX_LIMIT_DESPESAS = 20
+_MAX_LIMIT_RESUMO = 60
+_MAX_LIMIT_ATIVIDADE = 100
 
 
 class PoliticoService:
@@ -38,9 +41,9 @@ class PoliticoService:
     """
 
     def __init__(self, db: AsyncSession) -> None:
-        self._repo         = PoliticoRepository(db)
+        self._repo = PoliticoRepository(db)
         self._ranking_repo = RankingRepository(db)
-        self._db           = db
+        self._db = db
 
     # ------------------------------------------------------------------
     # Listagem
@@ -55,9 +58,9 @@ class PoliticoService:
         partido: str | None = None,
         offset: int = 0,
     ) -> list[PoliticoResponse]:
-        safe_limit  = min(abs(limit), _MAX_LIMIT_DEPUTADOS)
+        safe_limit = min(abs(limit), _MAX_LIMIT_DEPUTADOS)
         safe_offset = max(offset, 0)
-        deputados   = await self._repo.get_politicos_repo(
+        deputados = await self._repo.get_politicos_repo(
             q=q, uf=uf, partido=partido, limit=safe_limit, offset=safe_offset
         )
         return [PoliticoResponse.model_validate(p) for p in deputados]
@@ -84,7 +87,9 @@ class PoliticoService:
             )
         return PoliticoResponse.model_validate(deputado)
 
-    async def get_politico_by_id_or_slug_service(self, id_or_slug: str) -> PoliticoResponse:
+    async def get_politico_by_id_or_slug_service(
+        self, id_or_slug: str
+    ) -> PoliticoResponse:
         """
         Resolve um deputado por ID numérico ou slug de nome.
 
@@ -170,9 +175,7 @@ class PoliticoService:
             ano: quando fornecido, filtra votações e despesas pelo ano,
                  permitindo comparação justa na linha do tempo.
         """
-        return await self._repo.get_politicos_estatisticas_repo(
-            deputado_id, ano=ano
-        )
+        return await self._repo.get_politicos_estatisticas_repo(deputado_id, ano=ano)
 
     # ------------------------------------------------------------------
     # Performance — com filtro de ano
@@ -218,31 +221,31 @@ class PoliticoService:
             )
 
         result = calcular_score(raw_row)
-        meta   = result.pop("_meta")
+        meta = result.pop("_meta")
 
         media_global = await RankingService(self._db).get_media_global_cached()
 
         return {
-            "politico_id":  deputado_id,
-            "ano":          ano,
-            "score_final":  result["score"],
+            "politico_id": deputado_id,
+            "ano": ano,
+            "score_final": result["score"],
             "media_global": round(media_global, 2),
             "detalhes": {
                 "nota_assiduidade": result["notas"]["assiduidade"],
-                "nota_economia":    result["notas"]["economia"],
-                "nota_producao":    result["notas"]["producao"],
+                "nota_economia": result["notas"]["economia"],
+                "nota_producao": result["notas"]["producao"],
             },
             "info": {
-                "valor_cota_mensal":       meta["cota_mensal"],
-                "meses_considerados":      meta["meses_mandato"],
+                "valor_cota_mensal": meta["cota_mensal"],
+                "meses_considerados": meta["meses_mandato"],
                 # Breakdown de gastos — apos inclusao da verba de gabinete
-                "total_gasto":             meta["gasto_ceap"],
-                "gasto_gabinete":          meta["gasto_gabinete"],
-                "gasto_total":             meta["gasto_total"],
-                "orcamento_total":         meta["orcamento_total"],
+                "total_gasto": meta["gasto_ceap"],
+                "gasto_gabinete": meta["gasto_gabinete"],
+                "gasto_total": meta["gasto_total"],
+                "orcamento_total": meta["orcamento_total"],
                 "orcamento_utilizado_pct": meta["orcamento_utilizado_pct"],
                 # Mantido por retrocompatibilidade
-                "cota_utilizada_pct":      meta["orcamento_utilizado_pct"],
+                "cota_utilizada_pct": meta["orcamento_utilizado_pct"],
             },
         }
 
@@ -270,40 +273,44 @@ class PoliticoService:
 
         resultado = []
         for entry in timeline_raw:
-            raw  = entry["raw"]
+            raw = entry["raw"]
             calc = calcular_score(raw)
             meta = calc.pop("_meta")
 
-            meses_ativos   = meta["meses_mandato"]
-            gasto_ceap     = meta["gasto_ceap"]
+            meses_ativos = meta["meses_mandato"]
+            gasto_ceap = meta["gasto_ceap"]
             gasto_gabinete = meta["gasto_gabinete"]
-            gasto_total    = meta["gasto_total"]
+            gasto_total = meta["gasto_total"]
 
-            resultado.append({
-                "ano":   entry["ano"],
-                "score": calc["score"],
-                "notas": calc["notas"],
-                "estatisticas": {
-                    "total_votacoes": entry["total_votacoes"],
-                    "total_despesas": entry["total_despesas"],
-                    "total_gasto":    round(gasto_ceap, 2),
-                    "media_mensal":   round(gasto_ceap / meses_ativos, 2) if meses_ativos else 0.0,
-                },
-                "info": {
-                    "valor_cota_mensal":       meta["cota_mensal"],
-                    "meses_ativos":            meses_ativos,
-                    "cota_total":              round(meta["cota_total"], 2),
-                    # Breakdown de gastos — apos inclusao da verba de gabinete
-                    "gasto_ceap":              round(gasto_ceap, 2),
-                    "gasto_gabinete":          round(gasto_gabinete, 2),
-                    "gasto_total":             round(gasto_total, 2),
-                    "verba_gabinete_total":    round(meta["verba_gabinete_total"], 2),
-                    "orcamento_total":         round(meta["orcamento_total"], 2),
-                    "orcamento_utilizado_pct": meta["orcamento_utilizado_pct"],
-                    # Mantido por retrocompatibilidade
-                    "cota_utilizada_pct":      meta["orcamento_utilizado_pct"],
-                },
-            })
+            resultado.append(
+                {
+                    "ano": entry["ano"],
+                    "score": calc["score"],
+                    "notas": calc["notas"],
+                    "estatisticas": {
+                        "total_votacoes": entry["total_votacoes"],
+                        "total_despesas": entry["total_despesas"],
+                        "total_gasto": round(gasto_ceap, 2),
+                        "media_mensal": round(gasto_ceap / meses_ativos, 2)
+                        if meses_ativos
+                        else 0.0,
+                    },
+                    "info": {
+                        "valor_cota_mensal": meta["cota_mensal"],
+                        "meses_ativos": meses_ativos,
+                        "cota_total": round(meta["cota_total"], 2),
+                        # Breakdown de gastos — apos inclusao da verba de gabinete
+                        "gasto_ceap": round(gasto_ceap, 2),
+                        "gasto_gabinete": round(gasto_gabinete, 2),
+                        "gasto_total": round(gasto_total, 2),
+                        "verba_gabinete_total": round(meta["verba_gabinete_total"], 2),
+                        "orcamento_total": round(meta["orcamento_total"], 2),
+                        "orcamento_utilizado_pct": meta["orcamento_utilizado_pct"],
+                        # Mantido por retrocompatibilidade
+                        "cota_utilizada_pct": meta["orcamento_utilizado_pct"],
+                    },
+                }
+            )
 
         return resultado
 
@@ -345,10 +352,10 @@ class PoliticoService:
                 detail="Deputado não encontrado.",
             )
 
-        safe_lv  = min(abs(limit_votacoes),    100)
-        safe_lp  = min(abs(limit_proposicoes), 100)
-        safe_ov  = max(offset_votacoes, 0)
-        safe_op  = max(offset_proposicoes, 0)
+        safe_lv = min(abs(limit_votacoes), 100)
+        safe_lp = min(abs(limit_proposicoes), 100)
+        safe_ov = max(offset_votacoes, 0)
+        safe_op = max(offset_proposicoes, 0)
 
         # Queries paralelas — reduz latência
         (votacoes, total_v), (proposicoes, total_p) = await asyncio.gather(

@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from database import get_db
 from typing import List
-from schemas import MaisPesquisadoSchema
-from services.busca_popular import registrar_busca, obter_mais_pesquisados
-from rate_limit import limiter
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from shared.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.rate_limit import limiter
+from backend.schemas import MaisPesquisadoSchema
+from backend.services.busca_popular import obter_mais_pesquisados, registrar_busca
+
 router = APIRouter(prefix="/busca", tags=["busca"])
 
 

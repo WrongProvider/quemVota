@@ -24,19 +24,19 @@ Endpoints expostos:
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Path 
+from fastapi import APIRouter, Depends, Path, Query
+from fastapi_cache.decorator import cache
+from shared.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import get_db
-from schemas import (
+from backend.api.v1.keybuilder import politico_key_builder
+from backend.schemas import (
     ProposicaoDetalhe,
     ProposicaoResponse,
     VotacaoDetalhe,
     VotacaoResponse,
 )
-from api.v1.keybuilder import politico_key_builder
-from services.proposicao_service import ProposicaoService
-from fastapi_cache.decorator import cache
+from backend.services.proposicao_service import ProposicaoService
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +44,13 @@ logger = logging.getLogger(__name__)
 # Tipos anotados para Query params — evita repetição e garante validação
 # ---------------------------------------------------------------------------
 
-LimitQuery  = Annotated[int, Query(ge=1, le=100, description="Máximo de itens por página")]
+LimitQuery = Annotated[
+    int, Query(ge=1, le=100, description="Máximo de itens por página")
+]
 OffsetQuery = Annotated[int, Query(ge=0, description="Deslocamento para paginação")]
 
 ProposicaoIdPath = Annotated[int, Path(gt=0, description="ID interno da proposição")]
-VotacaoIdPath    = Annotated[int, Path(gt=0, description="ID interno da votação")]
+VotacaoIdPath = Annotated[int, Path(gt=0, description="ID interno da votação")]
 
 # ---------------------------------------------------------------------------
 # Routers — prefixos e tags separados para o Swagger ficar organizado
@@ -68,6 +70,7 @@ router_votacoes = APIRouter(
 # Helpers de injeção de dependência
 # ---------------------------------------------------------------------------
 
+
 def _proposicao_service(db: AsyncSession = Depends(get_db)) -> ProposicaoService:
     """Factory para injeção de dependência do serviço."""
     return ProposicaoService(db)
@@ -76,6 +79,7 @@ def _proposicao_service(db: AsyncSession = Depends(get_db)) -> ProposicaoService
 # ===========================================================================
 # PROPOSIÇÕES
 # ===========================================================================
+
 
 @router_proposicoes.get(
     "/",
@@ -117,7 +121,12 @@ async def listar_proposicoes(
     """
     logger.info(
         "Listando proposições | q=%s sigla_tipo=%s ano=%s tema_id=%s limit=%s offset=%s",
-        q, sigla_tipo, ano, tema_id, limit, offset,
+        q,
+        sigla_tipo,
+        ano,
+        tema_id,
+        limit,
+        offset,
     )
     return await service.listar_proposicoes_service(
         q=q,
@@ -184,6 +193,7 @@ async def get_votacoes_da_proposicao(
 # VOTAÇÕES
 # ===========================================================================
 
+
 @router_votacoes.get(
     "/",
     response_model=list[VotacaoResponse],
@@ -222,7 +232,11 @@ async def listar_votacoes(
     """
     logger.info(
         "Listando votações | ano=%s aprovacao=%s sigla_tipo=%s limit=%s offset=%s",
-        ano, aprovacao, sigla_tipo, limit, offset,
+        ano,
+        aprovacao,
+        sigla_tipo,
+        limit,
+        offset,
     )
     return await service.listar_votacoes_service(
         ano=ano,

@@ -10,12 +10,22 @@ Segurança (OWASP):
 """
 
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from shared.models import (
+    Deputado,
+    Despesa,
+    Proposicao,
+    ProposicaoAutor,
+    VerbaGabinete,
+    Votacao,
+    Voto,
+)
 from sqlalchemy import desc, func, select
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from schemas import (
+from backend.schemas import (
     ItemRanking,
     ItemRankingFornecedor,
     PoliticoDespesaDetalhe,
@@ -26,24 +36,15 @@ from schemas import (
     ProposicaoAutorResumo,
     ProposicaoParaPolitico,
     TemaResumoSimples,
-    VotacaoResumida
-)
-from models import (
-    Despesa,
-    Deputado,
-    ProposicaoAutor,
-    Proposicao,
-    Votacao,
-    Voto,
-    VerbaGabinete,
+    VotacaoResumida,
 )
 
 logger = logging.getLogger(__name__)
 
 _MAX_LIMIT_DEPUTADOS = 600
-_MAX_LIMIT_VOTACOES  = 20
-_MAX_LIMIT_DESPESAS  = 20
-_MAX_LIMIT_RESUMO    = 60
+_MAX_LIMIT_VOTACOES = 20
+_MAX_LIMIT_DESPESAS = 20
+_MAX_LIMIT_RESUMO = 60
 
 
 class PoliticoRepository:
@@ -65,7 +66,7 @@ class PoliticoRepository:
         limit: int = 100,
         offset: int = 0,
     ) -> list[Deputado]:
-        safe_limit  = min(abs(limit), _MAX_LIMIT_DEPUTADOS)
+        safe_limit = min(abs(limit), _MAX_LIMIT_DEPUTADOS)
         safe_offset = max(offset, 0)
 
         stmt = select(Deputado)
@@ -177,27 +178,28 @@ class PoliticoRepository:
         limit: int = 20,
         offset: int = 0,
     ) -> list[PoliticoDespesaDetalhe]:
-        safe_limit  = min(abs(limit), _MAX_LIMIT_DESPESAS)
+        safe_limit = min(abs(limit), _MAX_LIMIT_DESPESAS)
         safe_offset = max(offset, 0)
 
-        stmt = (
-            select(
-                Despesa.id,
-                Despesa.dataDocumento,
-                Despesa.valorLiquido,
-                Despesa.nomeFornecedor,
-                Despesa.tipoDespesa,
-                Despesa.urlDocumento,
-            )
-            .where(Despesa.idDeputado == politico_id)
-        )
+        stmt = select(
+            Despesa.id,
+            Despesa.dataDocumento,
+            Despesa.valorLiquido,
+            Despesa.nomeFornecedor,
+            Despesa.tipoDespesa,
+            Despesa.urlDocumento,
+        ).where(Despesa.idDeputado == politico_id)
 
         if ano is not None:
             stmt = stmt.where(Despesa.ano == ano)
         if mes is not None:
             stmt = stmt.where(Despesa.mes == mes)
 
-        stmt = stmt.order_by(Despesa.dataDocumento.desc()).limit(safe_limit).offset(safe_offset)
+        stmt = (
+            stmt.order_by(Despesa.dataDocumento.desc())
+            .limit(safe_limit)
+            .offset(safe_offset)
+        )
 
         try:
             result = await self.db.execute(stmt)
@@ -246,7 +248,9 @@ class PoliticoRepository:
                 for row in result.mappings()
             ]
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar resumo de despesas do deputado id=%s", politico_id)
+            logger.exception(
+                "Erro ao buscar resumo de despesas do deputado id=%s", politico_id
+            )
             raise
 
     # ------------------------------------------------------------------
@@ -348,7 +352,9 @@ class PoliticoRepository:
             res_e = await self.db.execute(stmt_empresas)
             res_c = await self.db.execute(stmt_categorias)
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar resumo completo do deputado id=%s", politico_id)
+            logger.exception(
+                "Erro ao buscar resumo completo do deputado id=%s", politico_id
+            )
             raise
 
         return PoliticoDespesaResumoCompleto(
@@ -390,10 +396,8 @@ class PoliticoRepository:
             Voto.idDeputado == politico_id
         )
         if ano is not None:
-            stmt_votos = (
-                stmt_votos
-                .join(Votacao, Votacao.id == Voto.idVotacao)
-                .where(func.extract("year", Votacao.data) == ano)
+            stmt_votos = stmt_votos.join(Votacao, Votacao.id == Voto.idVotacao).where(
+                func.extract("year", Votacao.data) == ano
             )
 
         # --- Despesas ---
@@ -415,11 +419,13 @@ class PoliticoRepository:
             stmt_gabinete = stmt_gabinete.where(VerbaGabinete.ano == ano)
 
         try:
-            res_votos    = await self.db.execute(stmt_votos)
+            res_votos = await self.db.execute(stmt_votos)
             res_despesas = await self.db.execute(stmt_despesas)
             res_gabinete = await self.db.execute(stmt_gabinete)
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar estatísticas do deputado id=%s", politico_id)
+            logger.exception(
+                "Erro ao buscar estatísticas do deputado id=%s", politico_id
+            )
             raise
 
         total_votacoes = res_votos.scalar() or 0
@@ -427,14 +433,16 @@ class PoliticoRepository:
         total_gasto_gabinete = float(res_gabinete.scalar() or 0)
 
         if ano is not None:
-            stmt_meses = select(
-                func.count(func.distinct(Despesa.mes))
-            ).where(Despesa.idDeputado == politico_id, Despesa.ano == ano)
+            stmt_meses = select(func.count(func.distinct(Despesa.mes))).where(
+                Despesa.idDeputado == politico_id, Despesa.ano == ano
+            )
             try:
-                res_meses   = await self.db.execute(stmt_meses)
+                res_meses = await self.db.execute(stmt_meses)
                 total_meses = res_meses.scalar() or 1
             except SQLAlchemyError:
-                logger.exception("Erro ao buscar meses ativos do deputado id=%s", politico_id)
+                logger.exception(
+                    "Erro ao buscar meses ativos do deputado id=%s", politico_id
+                )
                 raise
         else:
             total_meses = (
@@ -443,7 +451,7 @@ class PoliticoRepository:
                 else 1
             )
 
-        gasto_ceap     = float(total_gasto or 0)
+        gasto_ceap = float(total_gasto or 0)
         gasto_combinado = round(gasto_ceap + total_gasto_gabinete, 2)
 
         media_mensal = (
@@ -485,7 +493,9 @@ class PoliticoRepository:
             result_ids = await self.db.execute(stmt_ids)
             proposicao_ids = [row[0] for row in result_ids.all()]
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar ids de proposições do deputado id=%s", politico_id)
+            logger.exception(
+                "Erro ao buscar ids de proposições do deputado id=%s", politico_id
+            )
             raise
 
         if not proposicao_ids:
@@ -506,7 +516,9 @@ class PoliticoRepository:
             result = await self.db.execute(stmt)
             proposicoes = result.scalars().all()
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar proposições do deputado id=%s", politico_id)
+            logger.exception(
+                "Erro ao buscar proposições do deputado id=%s", politico_id
+            )
             raise
 
         return [
@@ -530,10 +542,7 @@ class PoliticoRepository:
                     )
                     for a in p.autores
                 ],
-                temas=[
-                    TemaResumoSimples(id=t.id, tema=t.tema)
-                    for t in p.temas
-                ],
+                temas=[TemaResumoSimples(id=t.id, tema=t.tema) for t in p.temas],
             )
             for p in proposicoes
         ]
@@ -557,7 +566,9 @@ class PoliticoRepository:
             result = await self.db.execute(stmt)
             return float(result.scalar() or 0)
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar verba de gabinete do deputado id=%s", politico_id)
+            logger.exception(
+                "Erro ao buscar verba de gabinete do deputado id=%s", politico_id
+            )
             raise
 
     # ------------------------------------------------------------------
@@ -573,7 +584,7 @@ class PoliticoRepository:
         offset: int = 0,
         q: str | None = None,
     ) -> tuple[list, int]:
-        safe_limit  = min(abs(limit), 100)
+        safe_limit = min(abs(limit), 100)
         safe_offset = max(offset, 0)
 
         base_filter = [Voto.idDeputado == politico_id]
@@ -620,13 +631,15 @@ class PoliticoRepository:
 
         try:
             res_count = await self.db.execute(stmt_count)
-            res_data  = await self.db.execute(stmt_data)
+            res_data = await self.db.execute(stmt_data)
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar votações (atividade) do deputado id=%s", politico_id)
+            logger.exception(
+                "Erro ao buscar votações (atividade) do deputado id=%s", politico_id
+            )
             raise
 
         total = res_count.scalar() or 0
-        rows  = res_data.mappings().all()
+        rows = res_data.mappings().all()
 
         votacoes = [
             VotacaoResumida(
@@ -662,13 +675,13 @@ class PoliticoRepository:
     ) -> tuple[list, int]:
         from schemas import ProposicaoResumida  # import local evita circular
 
-        safe_limit  = min(abs(limit), 100)
+        safe_limit = min(abs(limit), 100)
         safe_offset = max(offset, 0)
 
         base_filter = [ProposicaoAutor.idDeputadoAutor == politico_id]
         if ano is not None:
             base_filter.append(Proposicao.ano == ano)
-        
+
         # if q:
         #     termo = f"%{q}%"
         #     stmt = stmt.where(
@@ -699,12 +712,14 @@ class PoliticoRepository:
 
         try:
             res_count = await self.db.execute(stmt_count)
-            res_ids   = await self.db.execute(stmt_ids)
+            res_ids = await self.db.execute(stmt_ids)
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar proposições (atividade) do deputado id=%s", politico_id)
+            logger.exception(
+                "Erro ao buscar proposições (atividade) do deputado id=%s", politico_id
+            )
             raise
 
-        total        = res_count.scalar() or 0
+        total = res_count.scalar() or 0
         autoria_rows = res_ids.mappings().all()
 
         if not autoria_rows:
@@ -712,7 +727,7 @@ class PoliticoRepository:
 
         autoria_map: dict[int, dict] = {
             row["idProposicao"]: {
-                "proponente":   bool(row["proponente"]),
+                "proponente": bool(row["proponente"]),
                 "tipo_autoria": row["tipo_autoria"],
             }
             for row in autoria_rows
@@ -729,7 +744,9 @@ class PoliticoRepository:
         try:
             res_props = await self.db.execute(stmt_props)
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar detalhes de proposições do deputado id=%s", politico_id)
+            logger.exception(
+                "Erro ao buscar detalhes de proposições do deputado id=%s", politico_id
+            )
             raise
 
         proposicoes_orm = res_props.scalars().all()

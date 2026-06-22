@@ -5,8 +5,8 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from httpx import AsyncClient, ASGITransport
 from main import app
-from database import get_db
-from config import settings
+from shared.database import get_db
+from shared.config import settings
 
 
 @pytest.fixture(autouse=True, scope="session")

@@ -11,20 +11,21 @@ Segurança (OWASP):
 """
 
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import desc, func, select
-from sqlalchemy.orm import selectinload
-from sqlalchemy.exc import SQLAlchemyError
 
-from models import (
-    VotacaoOrientacao,
-    Voto,
+from shared.models import (
+    Deputado,
     Proposicao,
     Tema,
     Votacao,
-    Deputado,
+    VotacaoOrientacao,
+    Voto,
 )
-from schemas import (
+from sqlalchemy import desc, func, select
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from backend.schemas import (
     AutorResumo,
     OrientacaoPartido,
     ProposicaoDetalhe,
@@ -39,7 +40,7 @@ from schemas import (
 logger = logging.getLogger(__name__)
 
 _MAX_LIMIT_PROPOSICOES = 100
-_MAX_LIMIT_VOTACOES    = 100
+_MAX_LIMIT_VOTACOES = 100
 
 
 class ProposicaoRepository:
@@ -74,10 +75,7 @@ class ProposicaoRepository:
                 )
                 for a in p.autores
             ],
-            temas=[
-                TemaResumo(id=t.id, tema=t.tema)
-                for t in p.temas
-            ],
+            temas=[TemaResumo(id=t.id, tema=t.tema) for t in p.temas],
         )
 
     @staticmethod
@@ -115,15 +113,12 @@ class ProposicaoRepository:
         limit: int = 20,
         offset: int = 0,
     ) -> list[ProposicaoResponse]:
-        safe_limit  = min(abs(limit), _MAX_LIMIT_PROPOSICOES)
+        safe_limit = min(abs(limit), _MAX_LIMIT_PROPOSICOES)
         safe_offset = max(offset, 0)
 
-        stmt = (
-            select(Proposicao)
-            .options(
-                selectinload(Proposicao.autores),
-                selectinload(Proposicao.temas),
-            )
+        stmt = select(Proposicao).options(
+            selectinload(Proposicao.autores),
+            selectinload(Proposicao.temas),
         )
 
         if q:
@@ -135,7 +130,11 @@ class ProposicaoRepository:
         if tema_id:
             stmt = stmt.where(Proposicao.temas.any(Tema.id == tema_id))
 
-        stmt = stmt.order_by(desc(Proposicao.dataApresentacao)).limit(safe_limit).offset(safe_offset)
+        stmt = (
+            stmt.order_by(desc(Proposicao.dataApresentacao))
+            .limit(safe_limit)
+            .offset(safe_offset)
+        )
 
         try:
             result = await self.db.execute(stmt)
@@ -144,7 +143,10 @@ class ProposicaoRepository:
         except SQLAlchemyError:
             logger.exception(
                 "Erro ao listar proposições | q=%s sigla_tipo=%s ano=%s tema_id=%s",
-                q, sigla_tipo, ano, tema_id,
+                q,
+                sigla_tipo,
+                ano,
+                tema_id,
             )
             raise
 
@@ -193,10 +195,7 @@ class ProposicaoRepository:
                 )
                 for a in p.autores
             ],
-            temas=[
-                TemaResumo(id=t.id, tema=t.tema)
-                for t in p.temas
-            ],
+            temas=[TemaResumo(id=t.id, tema=t.tema) for t in p.temas],
             ementa_detalhada=p.ementaDetalhada,
             justificativa=p.justificativa,
             urn_final=p.urnFinal,
@@ -253,7 +252,9 @@ class ProposicaoRepository:
             result = await self.db.execute(stmt)
             return [self._build_votacao_response(row) for row in result.mappings()]
         except SQLAlchemyError:
-            logger.exception("Erro ao buscar votações da proposição id=%s", proposicao_id)
+            logger.exception(
+                "Erro ao buscar votações da proposição id=%s", proposicao_id
+            )
             raise
 
     # ------------------------------------------------------------------
@@ -269,30 +270,28 @@ class ProposicaoRepository:
         limit: int = 20,
         offset: int = 0,
     ) -> list[VotacaoResponse]:
-        safe_limit  = min(abs(limit), _MAX_LIMIT_VOTACOES)
+        safe_limit = min(abs(limit), _MAX_LIMIT_VOTACOES)
         safe_offset = max(offset, 0)
 
         join_proposicao = (Proposicao, Votacao.idProposicao == Proposicao.id)
 
-        stmt = (
-            select(
-                Votacao.id,
-                Votacao.idCamara.label("id_camara"),
-                Votacao.data,
-                Votacao.dataHoraRegistro.label("data_hora_registro"),
-                Votacao.tipoVotacao.label("tipo_votacao"),
-                Votacao.descricao,
-                Votacao.aprovacao,
-                Votacao.votosSim.label("votos_sim"),
-                Votacao.votosNao.label("votos_nao"),
-                Votacao.votosOutros.label("votos_outros"),
-                Votacao.siglaOrgao.label("sigla_orgao"),
-                Proposicao.id.label("proposicao_id"),
-                Proposicao.siglaTipo.label("proposicao_sigla"),
-                Proposicao.numero.label("proposicao_numero"),
-                Proposicao.ano.label("proposicao_ano"),
-                Proposicao.ementa.label("proposicao_ementa"),
-            )
+        stmt = select(
+            Votacao.id,
+            Votacao.idCamara.label("id_camara"),
+            Votacao.data,
+            Votacao.dataHoraRegistro.label("data_hora_registro"),
+            Votacao.tipoVotacao.label("tipo_votacao"),
+            Votacao.descricao,
+            Votacao.aprovacao,
+            Votacao.votosSim.label("votos_sim"),
+            Votacao.votosNao.label("votos_nao"),
+            Votacao.votosOutros.label("votos_outros"),
+            Votacao.siglaOrgao.label("sigla_orgao"),
+            Proposicao.id.label("proposicao_id"),
+            Proposicao.siglaTipo.label("proposicao_sigla"),
+            Proposicao.numero.label("proposicao_numero"),
+            Proposicao.ano.label("proposicao_ano"),
+            Proposicao.ementa.label("proposicao_ementa"),
         )
 
         if sigla_tipo:
@@ -316,7 +315,9 @@ class ProposicaoRepository:
         except SQLAlchemyError:
             logger.exception(
                 "Erro ao listar votações | ano=%s aprovacao=%s sigla_tipo=%s",
-                ano, aprovacao, sigla_tipo,
+                ano,
+                aprovacao,
+                sigla_tipo,
             )
             raise
 

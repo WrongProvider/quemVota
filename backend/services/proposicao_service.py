@@ -25,8 +25,8 @@ import logging
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from repositories.proposicao_repository import ProposicaoRepository
-from schemas import (
+from backend.repositories.proposicao_repository import ProposicaoRepository
+from backend.schemas import (
     ProposicaoDetalhe,
     ProposicaoResponse,
     VotacaoDetalhe,
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 # Limites máximos — segunda linha de defesa (repositório também limita)
 _MAX_LIMIT_PROPOSICOES = 100
-_MAX_LIMIT_VOTACOES    = 100
+_MAX_LIMIT_VOTACOES = 100
 
 
 class ProposicaoService:
@@ -80,7 +80,7 @@ class ProposicaoService:
         Retorna lista vazia se nenhum resultado for encontrado
         (não lança 404 — ausência de resultados é válida em listagens).
         """
-        safe_limit  = min(abs(limit), _MAX_LIMIT_PROPOSICOES)
+        safe_limit = min(abs(limit), _MAX_LIMIT_PROPOSICOES)
         safe_offset = max(offset, 0)
 
         # Normaliza sigla para maiúsculas — evita bypass de filtro
@@ -88,7 +88,12 @@ class ProposicaoService:
 
         logger.info(
             "Listando proposições | q=%s sigla_tipo=%s ano=%s tema_id=%s limit=%s offset=%s",
-            q, sigla_normalizada, ano, tema_id, safe_limit, safe_offset,
+            q,
+            sigla_normalizada,
+            ano,
+            tema_id,
+            safe_limit,
+            safe_offset,
         )
 
         return await self._repo.listar_proposicoes_repo(
@@ -171,7 +176,7 @@ class ProposicaoService:
         Valida o campo `aprovacao` — aceita apenas 1, 0 ou -1.
         Retorna lista vazia se nenhum resultado for encontrado.
         """
-        safe_limit  = min(abs(limit), _MAX_LIMIT_VOTACOES)
+        safe_limit = min(abs(limit), _MAX_LIMIT_VOTACOES)
         safe_offset = max(offset, 0)
 
         # Valida aprovacao — valor fora do domínio causa confusão silenciosa
@@ -185,7 +190,11 @@ class ProposicaoService:
 
         logger.info(
             "Listando votações | ano=%s aprovacao=%s sigla_tipo=%s limit=%s offset=%s",
-            ano, aprovacao, sigla_normalizada, safe_limit, safe_offset,
+            ano,
+            aprovacao,
+            sigla_normalizada,
+            safe_limit,
+            safe_offset,
         )
 
         return await self._repo.listar_votacoes_repo(

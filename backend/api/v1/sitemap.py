@@ -11,8 +11,8 @@ from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from database import get_db
-from models import Deputado
+from shared.database import get_db
+from shared.models import Deputado
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Configuração — edite ao colocar em produção

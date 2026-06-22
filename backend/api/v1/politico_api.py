@@ -19,10 +19,12 @@ import logging
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Path, Query
+from fastapi_cache.decorator import cache
+from shared.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import get_db
-from schemas import (
+from backend.api.v1.keybuilder import politico_key_builder
+from backend.schemas import (
     AtividadeLegislativaResponse,
     PoliticoDespesaDetalhe,
     PoliticoDespesaResumo,
@@ -32,20 +34,22 @@ from schemas import (
     PoliticoVoto,
     ProposicaoParaPolitico,
 )
-from services.politico_service import PoliticoService
-from api.v1.keybuilder import politico_key_builder
-from fastapi_cache.decorator import cache
+from backend.services.politico_service import PoliticoService
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Tipos anotados para Query params
 # ---------------------------------------------------------------------------
-LimitQuery      = Annotated[int, Query(ge=1, le=100, description="Máximo de itens por página")]
-OffsetQuery     = Annotated[int, Query(ge=0, description="Deslocamento para paginação")]
-DeputadoIdPath    = Annotated[int, Path(gt=0, description="ID interno do deputado")]
-DeputadoSlugPath  = Annotated[str, Path(min_length=1, max_length=120, description="Slug ou ID do deputado")]
-AnoQuery        = Annotated[int | None, Query(ge=2000, le=2100, description="Filtro por ano")]
+LimitQuery = Annotated[
+    int, Query(ge=1, le=100, description="Máximo de itens por página")
+]
+OffsetQuery = Annotated[int, Query(ge=0, description="Deslocamento para paginação")]
+DeputadoIdPath = Annotated[int, Path(gt=0, description="ID interno do deputado")]
+DeputadoSlugPath = Annotated[
+    str, Path(min_length=1, max_length=120, description="Slug ou ID do deputado")
+]
+AnoQuery = Annotated[int | None, Query(ge=2000, le=2100, description="Filtro por ano")]
 
 # ---------------------------------------------------------------------------
 # Router
@@ -64,6 +68,7 @@ def _politico_service(db: AsyncSession = Depends(get_db)) -> PoliticoService:
 # Rotas — somente leitura
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/",
     response_model=list[PoliticoResponse],
@@ -71,15 +76,30 @@ def _politico_service(db: AsyncSession = Depends(get_db)) -> PoliticoService:
 )
 @cache(expire=3600, key_builder=politico_key_builder)
 async def listar_politicos(
-    q: Annotated[str | None, Query(max_length=150, description="Busca por nome")] = None,
-    uf: Annotated[str | None, Query(min_length=2, max_length=2, description="Sigla do estado")] = None,
-    partido: Annotated[str | None, Query(min_length=1, max_length=20, description="Sigla do partido")] = None,
+    q: Annotated[
+        str | None, Query(max_length=150, description="Busca por nome")
+    ] = None,
+    uf: Annotated[
+        str | None, Query(min_length=2, max_length=2, description="Sigla do estado")
+    ] = None,
+    partido: Annotated[
+        str | None, Query(min_length=1, max_length=20, description="Sigla do partido")
+    ] = None,
     limit: LimitQuery = 100,
     offset: OffsetQuery = 0,
     service: PoliticoService = Depends(_politico_service),
 ):
-    logger.info("Listando deputados | q=%s uf=%s partido=%s limit=%s offset=%s", q, uf, partido, limit, offset)
-    return await service.get_politicos_service(q=q, uf=uf, partido=partido, limit=limit, offset=offset)
+    logger.info(
+        "Listando deputados | q=%s uf=%s partido=%s limit=%s offset=%s",
+        q,
+        uf,
+        partido,
+        limit,
+        offset,
+    )
+    return await service.get_politicos_service(
+        q=q, uf=uf, partido=partido, limit=limit, offset=offset
+    )
 
 
 @router.get(
@@ -90,7 +110,9 @@ async def listar_politicos(
 )
 @cache(expire=3600, key_builder=politico_key_builder)
 async def get_politico_by_slug(
-    slug: Annotated[str, Path(min_length=1, max_length=120, description="Slug do nome do deputado")],
+    slug: Annotated[
+        str, Path(min_length=1, max_length=120, description="Slug do nome do deputado")
+    ],
     service: PoliticoService = Depends(_politico_service),
 ):
     """
@@ -133,7 +155,9 @@ async def ultimas_votacoes(
     service: PoliticoService = Depends(_politico_service),
 ):
     logger.info("Votações | deputado id=%s limit=%s ano=%s", politico_id, limit, ano)
-    return await service.get_politicos_votacoes_service(politico_id, limit=limit, ano=ano)
+    return await service.get_politicos_votacoes_service(
+        politico_id, limit=limit, ano=ano
+    )
 
 
 @router.get(
@@ -150,7 +174,9 @@ async def listar_despesas_detalhadas(
     service: PoliticoService = Depends(_politico_service),
 ):
     logger.info("Despesas | deputado id=%s ano=%s mes=%s", politico_id, ano, mes)
-    return await service.get_politicos_despesas_services(politico_id, ano=ano, mes=mes, limit=limit)
+    return await service.get_politicos_despesas_services(
+        politico_id, ano=ano, mes=mes, limit=limit
+    )
 
 
 @router.get(
@@ -166,7 +192,9 @@ async def resumo_despesas(
     service: PoliticoService = Depends(_politico_service),
 ):
     logger.info("Resumo despesas | deputado id=%s ano=%s", politico_id, ano)
-    return await service.get_politicos_despesas_resumo_services(politico_id, ano=ano, limit=limit)
+    return await service.get_politicos_despesas_resumo_services(
+        politico_id, ano=ano, limit=limit
+    )
 
 
 @router.get(
@@ -266,12 +294,17 @@ async def proposicoes_do_politico(
     return await service.get_politico_proposicoes_service(politico_id, limit=limit)
 
 
-@router.get("/{politico_id}/atividade-legislativa", response_model=AtividadeLegislativaResponse)
+@router.get(
+    "/{politico_id}/atividade-legislativa", response_model=AtividadeLegislativaResponse
+)
 @cache(expire=86400, key_builder=politico_key_builder)
 async def atividade_legislativa(
     politico_id: DeputadoIdPath,
     ano: AnoQuery = None,
-    q: Annotated[Optional[str], Query(max_length=150, description="Busca por termo na ementa ou sigla")] = None, 
+    q: Annotated[
+        Optional[str],
+        Query(max_length=150, description="Busca por termo na ementa ou sigla"),
+    ] = None,
     limit_votacoes: Annotated[int, Query(ge=1, le=100)] = 20,
     limit_proposicoes: Annotated[int, Query(ge=1, le=100)] = 20,
     offset_votacoes: Annotated[int, Query(ge=0)] = 0,
@@ -280,11 +313,17 @@ async def atividade_legislativa(
 ):
     logger.info(
         "Atividade legislativa | deputado id=%s ano=%s q=%s lv=%s lp=%s ov=%s op=%s",
-        politico_id, ano, q, limit_votacoes, limit_proposicoes, offset_votacoes, offset_proposicoes,
+        politico_id,
+        ano,
+        q,
+        limit_votacoes,
+        limit_proposicoes,
+        offset_votacoes,
+        offset_proposicoes,
     )
-    
+
     # Repassar 'q' para o serviço
-    return await service.get_politico_atividade_legislativa_service( 
+    return await service.get_politico_atividade_legislativa_service(
         deputado_id=politico_id,
         ano=ano,
         q=q,  # <- NOVO

@@ -9,16 +9,17 @@ Seguranca (OWASP):
 """
 
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi_cache import FastAPICache
 
-from repositories.ranking_repository import RankingRepository
-from services.performance_calc import calcular_score  # ← fonte única da verdade
+from fastapi_cache import FastAPICache
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.repositories.ranking_repository import RankingRepository
+from backend.services.performance_calc import calcular_score  # ← fonte única da verdade
 
 logger = logging.getLogger(__name__)
 
 # Limites de paginacao (segunda linha de defesa)
-_MAX_LIMIT_RANKING   = 100
+_MAX_LIMIT_RANKING = 100
 _MAX_LIMIT_DISCURSOS = 500
 
 # TTL do cache da media global (24h)
@@ -50,7 +51,7 @@ class RankingService:
         uf: str | None = None,
         offset: int = 0,
     ):
-        safe_limit  = min(abs(limit), _MAX_LIMIT_RANKING)
+        safe_limit = min(abs(limit), _MAX_LIMIT_RANKING)
         safe_offset = max(offset, 0)
         return await self._repo.get_ranking_despesas_politicos(
             q=q, uf=uf, limit=safe_limit, offset=safe_offset
@@ -61,18 +62,24 @@ class RankingService:
     # ------------------------------------------------------------------
 
     async def get_ranking_lucro_empresas(self, *, limit: int = 100, offset: int = 0):
-        safe_limit  = min(abs(limit), _MAX_LIMIT_RANKING)
+        safe_limit = min(abs(limit), _MAX_LIMIT_RANKING)
         safe_offset = max(offset, 0)
-        return await self._repo.get_ranking_lucro_empresas(limit=safe_limit, offset=safe_offset)
+        return await self._repo.get_ranking_lucro_empresas(
+            limit=safe_limit, offset=safe_offset
+        )
 
     # ------------------------------------------------------------------
     # Rankings de discursos
     # ------------------------------------------------------------------
 
-    async def get_ranking_discursos_politicos(self, *, limit: int = 100, offset: int = 0):
-        safe_limit  = min(abs(limit), _MAX_LIMIT_DISCURSOS)
+    async def get_ranking_discursos_politicos(
+        self, *, limit: int = 100, offset: int = 0
+    ):
+        safe_limit = min(abs(limit), _MAX_LIMIT_DISCURSOS)
         safe_offset = max(offset, 0)
-        return await self._repo.get_ranking_discursos_politicos(limit=safe_limit, offset=safe_offset)
+        return await self._repo.get_ranking_discursos_politicos(
+            limit=safe_limit, offset=safe_offset
+        )
 
     # ------------------------------------------------------------------
     # Rankings de performance
@@ -116,7 +123,7 @@ class RankingService:
             return []
 
         dep_map = {d["id"]: d for d in deputados}
-        ids     = list(dep_map.keys())
+        ids = list(dep_map.keys())
 
         # 2. Busca timelines em batch, restringindo ao ano se fornecido
         timelines = await self._repo.get_timeline_data_batch(ids, ano=ano)
@@ -127,12 +134,14 @@ class RankingService:
             if not entradas:
                 continue
 
-            dep  = dep_map[dep_id]
+            dep = dep_map[dep_id]
             anos = len(entradas)
 
             scores_anuais = []
             notas_por_dim: dict[str, list[float]] = {
-                "assiduidade": [], "economia": [], "producao": []
+                "assiduidade": [],
+                "economia": [],
+                "producao": [],
             }
 
             for entrada in entradas:
@@ -153,19 +162,19 @@ class RankingService:
                 confianca = "baixa"
 
             entry: dict = {
-                "id":      dep_id,
-                "nome":    dep["nome"],
-                "uf":      dep["siglaUF"],
+                "id": dep_id,
+                "nome": dep["nome"],
+                "uf": dep["siglaUF"],
                 "partido": dep["siglaPartido"],
-                "foto":    dep["urlFoto"],
-                "score":   score_medio,
+                "foto": dep["urlFoto"],
+                "score": score_medio,
                 "notas": {
                     "assiduidade": round(sum(notas_por_dim["assiduidade"]) / anos, 2),
-                    "economia":    round(sum(notas_por_dim["economia"])    / anos, 2),
-                    "producao":    round(sum(notas_por_dim["producao"])    / anos, 2),
+                    "economia": round(sum(notas_por_dim["economia"]) / anos, 2),
+                    "producao": round(sum(notas_por_dim["producao"]) / anos, 2),
                 },
                 "anos_com_dados": anos,
-                "confianca":      confianca,
+                "confianca": confianca,
             }
 
             # Quando o ranking é filtrado por ano, expõe o ano de referência
@@ -188,7 +197,11 @@ class RankingService:
         Evita recalcular o ranking completo a cada requisicao de performance individual.
         A chave de cache é diferenciada por ano para evitar colisão entre períodos.
         """
-        cache_key = f"{_CACHE_MEDIA_GLOBAL_KEY}:{ano}" if ano is not None else _CACHE_MEDIA_GLOBAL_KEY
+        cache_key = (
+            f"{_CACHE_MEDIA_GLOBAL_KEY}:{ano}"
+            if ano is not None
+            else _CACHE_MEDIA_GLOBAL_KEY
+        )
         media = await self._cache.get(cache_key)
 
         if media is None:

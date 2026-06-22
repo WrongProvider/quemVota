@@ -13,26 +13,52 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
+from fastapi_cache.decorator import cache
+from shared.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.v1.keybuilder import politico_key_builder
-from database import get_db
-from schemas import RankingDespesaPolitico, RankingDiscursoPolitico, RankingEmpresaLucro
-from services.ranking_service import RankingService
-from fastapi_cache.decorator import cache
+from backend.api.v1.keybuilder import politico_key_builder
+from backend.schemas import (
+    RankingDespesaPolitico,
+    RankingDiscursoPolitico,
+    RankingEmpresaLucro,
+)
+from backend.services.ranking_service import RankingService
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Tipos anotados para Query params - evita repeticao e garante validacao (OWASP A04)
 # ---------------------------------------------------------------------------
-LimitRankingQuery  = Annotated[int, Query(ge=1, le=100, description="Maximo de itens por pagina")]
-LimitDiscursoQuery = Annotated[int, Query(ge=1, le=500, description="Maximo de discursos por pagina")]
-OffsetQuery        = Annotated[int, Query(ge=0, description="Deslocamento para paginacao")]
-AnoQuery           = Annotated[int | None, Query(ge=2011, le=2030, description="Ano de referência (2011+). Quando informado, o ranking compara apenas deputados com dados naquele ano, eliminando vantagem de mandatos mais longos.")]
-QNomeQuery         = Annotated[str | None, Query(max_length=150, description="Busca parcial por nome do parlamentar (case-insensitive)")]
-UFQuery            = Annotated[str | None, Query(min_length=2, max_length=2, description="Sigla do estado (ex: SP, RJ)")]
-PartidoQuery       = Annotated[str | None, Query(max_length=20, description="Sigla do partido (ex: PT, PL)")]
+LimitRankingQuery = Annotated[
+    int, Query(ge=1, le=100, description="Maximo de itens por pagina")
+]
+LimitDiscursoQuery = Annotated[
+    int, Query(ge=1, le=500, description="Maximo de discursos por pagina")
+]
+OffsetQuery = Annotated[int, Query(ge=0, description="Deslocamento para paginacao")]
+AnoQuery = Annotated[
+    int | None,
+    Query(
+        ge=2011,
+        le=2030,
+        description="Ano de referência (2011+). Quando informado, o ranking compara apenas deputados com dados naquele ano, eliminando vantagem de mandatos mais longos.",
+    ),
+]
+QNomeQuery = Annotated[
+    str | None,
+    Query(
+        max_length=150,
+        description="Busca parcial por nome do parlamentar (case-insensitive)",
+    ),
+]
+UFQuery = Annotated[
+    str | None,
+    Query(min_length=2, max_length=2, description="Sigla do estado (ex: SP, RJ)"),
+]
+PartidoQuery = Annotated[
+    str | None, Query(max_length=20, description="Sigla do partido (ex: PT, PL)")
+]
 
 router = APIRouter(
     prefix="/ranking",
@@ -44,6 +70,7 @@ router = APIRouter(
 # Helper interno
 # ---------------------------------------------------------------------------
 
+
 def _ranking_service(db: AsyncSession = Depends(get_db)) -> RankingService:
     """Factory para injecao de dependencia do servico."""
     return RankingService(db)
@@ -53,6 +80,7 @@ def _ranking_service(db: AsyncSession = Depends(get_db)) -> RankingService:
 # Rotas - somente leitura (A01)
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/despesa_politico",
     response_model=list[RankingDespesaPolitico],
@@ -60,15 +88,23 @@ def _ranking_service(db: AsyncSession = Depends(get_db)) -> RankingService:
 )
 @cache(expire=86400, key_builder=politico_key_builder)
 async def ranking_despesas_politicos(
-    q: Annotated[str | None, Query(max_length=150, description="Busca por nome")] = None,
-    uf: Annotated[str | None, Query(min_length=2, max_length=2, description="Sigla do estado")] = None,
+    q: Annotated[
+        str | None, Query(max_length=150, description="Busca por nome")
+    ] = None,
+    uf: Annotated[
+        str | None, Query(min_length=2, max_length=2, description="Sigla do estado")
+    ] = None,
     limit: LimitRankingQuery = 100,
     offset: OffsetQuery = 0,
     service: RankingService = Depends(_ranking_service),
 ):
     """Retorna politicos ordenados do maior para o menor gasto total."""
-    logger.info("Ranking despesas | q=%s uf=%s limit=%s offset=%s", q, uf, limit, offset)
-    return await service.get_ranking_despesas_politicos(q=q, uf=uf, limit=limit, offset=offset)
+    logger.info(
+        "Ranking despesas | q=%s uf=%s limit=%s offset=%s", q, uf, limit, offset
+    )
+    return await service.get_ranking_despesas_politicos(
+        q=q, uf=uf, limit=limit, offset=offset
+    )
 
 
 @router.get(
@@ -137,7 +173,10 @@ async def ranking_performance_politicos(
     """
     logger.info(
         "Ranking performance parlamentar | ano=%s q=%s uf=%s partido=%s",
-        ano, q, uf, partido,
+        ano,
+        q,
+        uf,
+        partido,
     )
     ranking = await service.get_ranking_performance_politicos(
         ano=ano, q=q, uf=uf, partido=partido
@@ -190,8 +229,8 @@ async def get_stats_geral(
     )
 
     scores = [p["score"] for p in ranking_completo]
-    total  = len(scores)
-    media  = sum(scores) / total if total > 0 else 0.0
+    total = len(scores)
+    media = sum(scores) / total if total > 0 else 0.0
 
     aviso = (
         "Estatísticas calculadas apenas sobre parlamentares eleitos a partir de 2010 "

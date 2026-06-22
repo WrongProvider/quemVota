@@ -11,17 +11,25 @@ Segurança (OWASP):
 from contextlib import asynccontextmanager
 
 import redis.asyncio as redis
-from fastapi import FastAPI 
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
-from api.v1 import politico_api, ranking_api, proposicao_api, busca_popular, sitemap
+from shared.config import settings
+
 # rate limiting (descomente para ativar)
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from rate_limit import limiter
 
-from config import settings
+from backend.api.v1 import (
+    busca_popular,
+    politico_api,
+    proposicao_api,
+    ranking_api,
+    sitemap,
+)
+from backend.rate_limit import limiter
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Origens permitidas — edite aqui ao adicionar novos ambientes
 # ─────────────────────────────────────────────────────────────────────────────
@@ -40,7 +48,7 @@ from config import settings
 ALLOWED_HEADERS: list[str] = [
     "Accept",
     "Content-Type",
-    "X-Requested-With",   # adicionado pelo client.ts refatorado
+    "X-Requested-With",  # adicionado pelo client.ts refatorado
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -54,13 +62,14 @@ ALLOWED_METHODS: list[str] = [
     "GET",
     "HEAD",
     "OPTIONS",
-    "POST" # necessário para o endpoint de registro de buscas populares
+    "POST",  # necessário para o endpoint de registro de buscas populares
 ]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Ciclo de vida da aplicação
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -89,7 +98,6 @@ app = FastAPI(
     description="API pública de transparência legislativa",
     version="0.1.0",
     lifespan=lifespan,
-    
 )
 
 app.state.limiter = limiter
@@ -107,11 +115,11 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=False,      # sem cookies cross-origin
+    allow_credentials=False,  # sem cookies cross-origin
     allow_methods=ALLOWED_METHODS,
     allow_headers=ALLOWED_HEADERS,
-    max_age=600,                  # browser cacheia o preflight por 10 min
-                                  # reduz número de requisições OPTIONS
+    max_age=600,  # browser cacheia o preflight por 10 min
+    # reduz número de requisições OPTIONS
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -128,6 +136,7 @@ app.include_router(sitemap.router)
 # ─────────────────────────────────────────────────────────────────────────────
 # Health check
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @app.get("/", tags=["Root"])
 async def root() -> dict:
