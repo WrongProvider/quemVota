@@ -1254,3 +1254,143 @@
 2026-04-21 10:02:01,967 [ERROR] etl_camara — FK-insert error [deputadosOcupacoes]: (psycopg2.OperationalError) connection to server at "localhost" (127.0.0.1), port 5432 failed: FATAL:  password authentication failed for user "postgres"
 
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-06-22 16:42:28,107 [INFO] etl_camara — Banco: localhost:5432/quemvota
+2026-06-22 16:42:28,107 [INFO] etl_camara — Cache: etl_cache.json
+2026-06-22 16:42:28,107 [INFO] etl_camara — Workers — download: 8 | backfill: 4
+2026-06-22 16:42:28,124 [INFO] etl_camara — Iniciando ETL: 89 datasets | anos=[2026] | legislaturas=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57]
+2026-06-22 16:42:28,124 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-06-22 16:42:28,124 [INFO] etl_camara — 🌊 Onda 0 — 10 datasets | workers=8
+2026-06-22 16:42:28,388 [INFO] etl_camara — ✔ tecadCategorias.csv (79 linhas)
+2026-06-22 16:42:28,441 [INFO] etl_camara —   upsert tecadCategorias → 79 registros
+2026-06-22 16:42:28,566 [INFO] etl_camara — ✔ orgaos.csv (3849 linhas)
+2026-06-22 16:42:28,743 [INFO] etl_camara — ✔ legislaturas.csv (57 linhas)
+2026-06-22 16:42:28,824 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/licitacoes/csv/licitacoes.csv
+2026-06-22 16:42:29,001 [INFO] etl_camara —   upsert legislaturas → 57 registros
+2026-06-22 16:42:29,124 [INFO] etl_camara — ✔ eventos-2026.csv (1238 linhas)
+2026-06-22 16:42:29,207 [INFO] etl_camara — ✔ licitacoes-2026.csv (84 linhas)
+2026-06-22 16:42:29,377 [INFO] etl_camara — ✔ deputados.csv (7889 linhas)
+2026-06-22 16:42:29,518 [INFO] etl_camara —   upsert licitacoes_2026 → 84 registros
+2026-06-22 16:42:29,948 [INFO] etl_camara —   upsert orgaos → 3849 registros
+2026-06-22 16:42:30,028 [INFO] etl_camara —   upsert eventos_2026 → 1238 registros
+2026-06-22 16:42:30,113 [INFO] etl_camara — ✔ funcionarios.csv (15490 linhas)
+2026-06-22 16:42:32,576 [INFO] etl_camara —   upsert deputados → 7889 registros
+2026-06-22 16:42:33,641 [INFO] etl_camara — ✔ tecadTermos.csv (80126 linhas)
+2026-06-22 16:42:34,348 [INFO] etl_camara — ✔ proposicoes-2026.csv (33245 linhas)
+2026-06-22 16:42:35,407 [INFO] etl_camara —   upsert funcionarios → 15485 registros
+2026-06-22 16:43:05,160 [INFO] etl_camara —   upsert tecadTermos → 80126 registros
+2026-06-22 16:43:06,780 [INFO] etl_camara —   upsert proposicoes_2026 → 33245 registros
+2026-06-22 16:43:06,807 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-06-22 16:43:06,807 [INFO] etl_camara — 🌊 Onda 1 — 73 datasets | workers=8
+2026-06-22 16:43:07,026 [INFO] etl_camara — ✔ eventosRequerimentos-2026.csv (761 linhas)
+2026-06-22 16:43:07,110 [INFO] etl_camara — ✔ deputadosProfissoes.csv (12589 linhas)
+2026-06-22 16:43:07,212 [INFO] etl_camara — ✔ grupos.csv (118 linhas)
+2026-06-22 16:43:07,213 [INFO] etl_camara — ✔ legislaturasMesas.csv (177 linhas)
+2026-06-22 16:43:07,327 [INFO] etl_camara —   upsert grupos → 118 registros
+2026-06-22 16:43:07,348 [INFO] etl_camara — ✔ deputadosOcupacoes.csv (37471 linhas)
+2026-06-22 16:43:07,520 [INFO] etl_camara — ✔ eventosOrgaos-2026.csv (1238 linhas)
+2026-06-22 16:43:07,532 [INFO] etl_camara —   upsert legislaturasMesas → 177 registros
+2026-06-22 16:43:07,676 [INFO] etl_camara — ✔ frentes.csv (1443 linhas)
+2026-06-22 16:43:08,088 [INFO] etl_camara — ✔ proposicoesTemas-2026.csv (16161 linhas)
+2026-06-22 16:43:08,469 [INFO] etl_camara — ✔ eventosPresencaDeputados-2026.csv (46668 linhas)
+2026-06-22 16:43:09,335 [INFO] etl_camara — ✔ proposicoesAutores-2026.csv (42574 linhas)
+2026-06-22 16:43:09,623 [INFO] etl_camara —   FK-insert eventosRequerimentos_2026 → 761 registros
+2026-06-22 16:43:10,409 [INFO] etl_camara — ✔ votacoes-2026.csv (5712 linhas)
+2026-06-22 16:43:12,706 [INFO] etl_camara —   FK-insert frentes → 1443 registros
+2026-06-22 16:43:12,923 [INFO] etl_camara — ✔ licitacoesPedidos-2026.csv (83 linhas)
+2026-06-22 16:43:13,064 [INFO] etl_camara —   FK-insert licitacoesPedidos_2026 → 83 registros
+2026-06-22 16:43:13,229 [INFO] etl_camara —   FK-insert eventosOrgaos_2026 → 1238 registros
+2026-06-22 16:43:13,268 [INFO] etl_camara — ✔ licitacoesPropostas-2026.csv (265 linhas)
+2026-06-22 16:43:13,537 [INFO] etl_camara — ✔ licitacoesItens-2026.csv (679 linhas)
+2026-06-22 16:43:13,768 [INFO] etl_camara —   FK-insert licitacoesPropostas_2026 → 265 registros
+2026-06-22 16:43:13,954 [INFO] etl_camara — ✔ licitacoesContratos-2026.csv (31 linhas)
+2026-06-22 16:43:14,033 [INFO] etl_camara —   FK-insert licitacoesContratos_2026 → 31 registros
+2026-06-22 16:43:14,204 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L1.csv
+2026-06-22 16:43:14,361 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L2.csv
+2026-06-22 16:43:14,514 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L3.csv
+2026-06-22 16:43:14,658 [INFO] etl_camara —   FK-insert licitacoesItens_2026 → 679 registros
+2026-06-22 16:43:14,715 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L4.csv
+2026-06-22 16:43:14,885 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L6.csv
+2026-06-22 16:43:14,918 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L5.csv
+2026-06-22 16:43:15,071 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L7.csv
+2026-06-22 16:43:15,233 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L9.csv
+2026-06-22 16:43:15,270 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L8.csv
+2026-06-22 16:43:15,432 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L11.csv
+2026-06-22 16:43:15,471 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L10.csv
+2026-06-22 16:43:15,629 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L12.csv
+2026-06-22 16:43:15,675 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L13.csv
+2026-06-22 16:43:15,843 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L15.csv
+2026-06-22 16:43:15,876 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L14.csv
+2026-06-22 16:43:16,043 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L16.csv
+2026-06-22 16:43:16,056 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L17.csv
+2026-06-22 16:43:16,243 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L18.csv
+2026-06-22 16:43:16,417 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L20.csv
+2026-06-22 16:43:16,443 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L19.csv
+2026-06-22 16:43:16,587 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L21.csv
+2026-06-22 16:43:16,620 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L22.csv
+2026-06-22 16:43:16,783 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L23.csv
+2026-06-22 16:43:16,815 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L24.csv
+2026-06-22 16:43:16,945 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L25.csv
+2026-06-22 16:43:17,020 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L26.csv
+2026-06-22 16:43:17,147 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L27.csv
+2026-06-22 16:43:17,303 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L29.csv
+2026-06-22 16:43:17,347 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L28.csv
+2026-06-22 16:43:17,516 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L31.csv
+2026-06-22 16:43:17,547 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L30.csv
+2026-06-22 16:43:17,745 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L32.csv
+2026-06-22 16:43:17,943 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L33.csv
+2026-06-22 16:43:18,109 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L35.csv
+2026-06-22 16:43:18,141 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L34.csv
+2026-06-22 16:43:18,294 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L37.csv
+2026-06-22 16:43:18,346 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L36.csv
+2026-06-22 16:43:18,492 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L38.csv
+2026-06-22 16:43:18,551 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L39.csv
+2026-06-22 16:43:18,714 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L41.csv
+2026-06-22 16:43:18,748 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L40.csv
+2026-06-22 16:43:18,857 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L42.csv
+2026-06-22 16:43:18,942 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L43.csv
+2026-06-22 16:43:19,063 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L44.csv
+2026-06-22 16:43:19,089 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L45.csv
+2026-06-22 16:43:19,288 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L46.csv
+2026-06-22 16:43:19,455 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L48.csv
+2026-06-22 16:43:19,488 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L47.csv
+2026-06-22 16:43:19,604 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L49.csv
+2026-06-22 16:43:19,688 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L50.csv
+2026-06-22 16:43:20,177 [INFO] etl_camara — ✔ orgaosDeputados-L51.csv (12158 linhas)
+2026-06-22 16:43:20,642 [INFO] etl_camara — ✔ orgaosDeputados-L52.csv (12512 linhas)
+2026-06-22 16:43:27,268 [INFO] etl_camara —   FK-insert deputadosProfissoes → 12589 registros
+2026-06-22 16:43:27,734 [INFO] etl_camara — ✔ orgaosDeputados-L53.csv (10994 linhas)
+2026-06-22 16:43:27,807 [INFO] etl_camara —   FK-insert votacoes_2026 → 5712 registros
+2026-06-22 16:43:28,318 [INFO] etl_camara — ✔ orgaosDeputados-L54.csv (13591 linhas)
+2026-06-22 16:43:37,126 [INFO] etl_camara —   FK-insert orgaosDeputados_L51 → 12158 registros
+2026-06-22 16:43:37,686 [INFO] etl_camara — ✔ orgaosDeputados-L55.csv (17815 linhas)
+2026-06-22 16:43:43,003 [INFO] etl_camara —   FK-insert proposicoesTemas_2026 → 16161 registros
+2026-06-22 16:43:43,457 [INFO] etl_camara — ✔ orgaosDeputados-L56.csv (14519 linhas)
+2026-06-22 16:43:44,527 [INFO] etl_camara —   FK-insert deputadosOcupacoes → 33036 registros
+2026-06-22 16:43:44,956 [INFO] etl_camara — ✔ orgaosDeputados-L57.csv (13197 linhas)
+2026-06-22 16:43:51,339 [INFO] etl_camara —   FK-insert orgaosDeputados_L52 → 12512 registros
+2026-06-22 16:43:52,283 [INFO] etl_camara — ✔ Ano-2026.csv.zip (69368 linhas)
+2026-06-22 16:44:03,023 [INFO] etl_camara —   FK-insert orgaosDeputados_L56 → 14519 registros
+2026-06-22 16:44:07,888 [INFO] etl_camara —   FK-insert orgaosDeputados_L57 → 13197 registros
+2026-06-22 16:44:13,142 [INFO] etl_camara —   FK-insert eventosPresenca_2026 → 46668 registros
+2026-06-22 16:44:17,071 [INFO] etl_camara —   FK-insert orgaosDeputados_L54 → 13591 registros
+2026-06-22 16:44:29,514 [INFO] etl_camara —   FK-insert orgaosDeputados_L55 → 17815 registros
+2026-06-22 16:44:32,201 [INFO] etl_camara —   FK-insert proposicoesAutores_2026 → 42574 registros
+2026-06-22 16:44:36,327 [INFO] etl_camara —   FK-insert orgaosDeputados_L53 → 10994 registros
+2026-06-22 16:45:25,846 [INFO] etl_camara —   FK-insert cotas_2026 → 68979 registros
+2026-06-22 16:45:25,882 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-06-22 16:45:25,882 [INFO] etl_camara — 🌊 Onda 2 — 6 datasets | workers=8
+2026-06-22 16:45:26,116 [INFO] etl_camara — ✔ votacoesOrientacoes-2026.csv (1625 linhas)
+2026-06-22 16:45:26,230 [INFO] etl_camara — ✔ votacoesProposicoes-2026.csv (4246 linhas)
+2026-06-22 16:45:26,516 [INFO] etl_camara — ✔ gruposHistorico.csv (408 linhas)
+2026-06-22 16:45:26,847 [INFO] etl_camara —   FK-insert gruposHistorico → 408 registros
+2026-06-22 16:45:27,100 [INFO] etl_camara — ✔ gruposMembros.csv (7088 linhas)
+2026-06-22 16:45:27,172 [INFO] etl_camara — ✔ votacoesVotos-2026.csv (45887 linhas)
+2026-06-22 16:45:28,140 [INFO] etl_camara —   FK-insert votacoesOrientacoes_2026 → 1625 registros
+2026-06-22 16:45:29,681 [INFO] etl_camara — ✔ frentesDeputados.csv (262247 linhas)
+2026-06-22 16:45:35,003 [INFO] etl_camara —   FK-insert votacoesObjetos_2026 → 4246 registros
+2026-06-22 16:45:36,997 [INFO] etl_camara —   FK-insert gruposMembros → 7088 registros
+2026-06-22 16:46:00,532 [INFO] etl_camara —   FK-insert votacoesVotos_2026 → 45887 registros
+2026-06-22 16:50:48,449 [INFO] etl_camara —   FK-insert frentesDeputados → 262247 registros
+2026-06-22 16:50:48,482 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-06-22 16:50:48,482 [INFO] etl_camara — 🏁 ETL concluído — processados: 38 | sem alteração (304): 0 | histórico pulado: 0 | erros: 51 | total: 89
+2026-06-22 16:50:48,483 [WARNING] etl_camara — Datasets com falha (51): ['licitacoes', 'orgaosDeputados_L1', 'orgaosDeputados_L2', 'orgaosDeputados_L3', 'orgaosDeputados_L4', 'orgaosDeputados_L6', 'orgaosDeputados_L5', 'orgaosDeputados_L7', 'orgaosDeputados_L9', 'orgaosDeputados_L8', 'orgaosDeputados_L11', 'orgaosDeputados_L10', 'orgaosDeputados_L12', 'orgaosDeputados_L13', 'orgaosDeputados_L15', 'orgaosDeputados_L14', 'orgaosDeputados_L16', 'orgaosDeputados_L17', 'orgaosDeputados_L18', 'orgaosDeputados_L20', 'orgaosDeputados_L19', 'orgaosDeputados_L21', 'orgaosDeputados_L22', 'orgaosDeputados_L23', 'orgaosDeputados_L24', 'orgaosDeputados_L25', 'orgaosDeputados_L26', 'orgaosDeputados_L27', 'orgaosDeputados_L29', 'orgaosDeputados_L28', 'orgaosDeputados_L31', 'orgaosDeputados_L30', 'orgaosDeputados_L32', 'orgaosDeputados_L33', 'orgaosDeputados_L35', 'orgaosDeputados_L34', 'orgaosDeputados_L37', 'orgaosDeputados_L36', 'orgaosDeputados_L38', 'orgaosDeputados_L39', 'orgaosDeputados_L41', 'orgaosDeputados_L40', 'orgaosDeputados_L42', 'orgaosDeputados_L43', 'orgaosDeputados_L44', 'orgaosDeputados_L45', 'orgaosDeputados_L46', 'orgaosDeputados_L48', 'orgaosDeputados_L47', 'orgaosDeputados_L49', 'orgaosDeputados_L50']
