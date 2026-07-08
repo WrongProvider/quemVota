@@ -103,7 +103,7 @@ services:
   frontend:
     build:
       context: ../frontend
-      dockerfile: Dockerfile.frontend
+      dockerfile: Dockerfile
     container_name: quemvota_frontend
     environment:
       API_URL: http://api:8000
