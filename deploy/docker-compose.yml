@@ -27,7 +27,7 @@ x-airflow-common:
 services:
   # ── Banco de Dados (Produção - QuemVota) ───────────────────────────────────
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:0.8.5-pg18-trixie
     container_name: quemvota_postgres
     restart: unless-stopped
     environment:
@@ -35,7 +35,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     networks:
       - backend
     healthcheck:
@@ -82,14 +82,15 @@ services:
   # ── API (FastAPI) ───────────────────────────────────────────────────────────
   api:
     build:
-      context: ../backend
-      dockerfile: Dockerfile.api
+      context: ../
+      dockerfile: backend/Dockerfile.api
     container_name: quemvota_api
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_URL: ${DATABASE_URL}
+      VALKEY_URL: ${VALKEY_URL}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      ENV: production
     depends_on:
       postgres:
         condition: service_healthy
@@ -98,6 +99,11 @@ services:
     networks:
       - backend
       - frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://api:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # ── Frontend ────────────────────────────────────────────────────────────────
   frontend:
