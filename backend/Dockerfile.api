@@ -30,7 +30,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Copia todo o conteúdo da pasta backend para a raiz do WORKDIR (/app)
 # Assim o main.py fica acessível diretamente para o uvicorn
-COPY backend/ /app/backend
+COPY backend/ /app/backend/
 
 COPY shared/ /app/shared/
 

@@ -1394,3 +1394,210 @@
 2026-06-22 16:50:48,482 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 2026-06-22 16:50:48,482 [INFO] etl_camara — 🏁 ETL concluído — processados: 38 | sem alteração (304): 0 | histórico pulado: 0 | erros: 51 | total: 89
 2026-06-22 16:50:48,483 [WARNING] etl_camara — Datasets com falha (51): ['licitacoes', 'orgaosDeputados_L1', 'orgaosDeputados_L2', 'orgaosDeputados_L3', 'orgaosDeputados_L4', 'orgaosDeputados_L6', 'orgaosDeputados_L5', 'orgaosDeputados_L7', 'orgaosDeputados_L9', 'orgaosDeputados_L8', 'orgaosDeputados_L11', 'orgaosDeputados_L10', 'orgaosDeputados_L12', 'orgaosDeputados_L13', 'orgaosDeputados_L15', 'orgaosDeputados_L14', 'orgaosDeputados_L16', 'orgaosDeputados_L17', 'orgaosDeputados_L18', 'orgaosDeputados_L20', 'orgaosDeputados_L19', 'orgaosDeputados_L21', 'orgaosDeputados_L22', 'orgaosDeputados_L23', 'orgaosDeputados_L24', 'orgaosDeputados_L25', 'orgaosDeputados_L26', 'orgaosDeputados_L27', 'orgaosDeputados_L29', 'orgaosDeputados_L28', 'orgaosDeputados_L31', 'orgaosDeputados_L30', 'orgaosDeputados_L32', 'orgaosDeputados_L33', 'orgaosDeputados_L35', 'orgaosDeputados_L34', 'orgaosDeputados_L37', 'orgaosDeputados_L36', 'orgaosDeputados_L38', 'orgaosDeputados_L39', 'orgaosDeputados_L41', 'orgaosDeputados_L40', 'orgaosDeputados_L42', 'orgaosDeputados_L43', 'orgaosDeputados_L44', 'orgaosDeputados_L45', 'orgaosDeputados_L46', 'orgaosDeputados_L48', 'orgaosDeputados_L47', 'orgaosDeputados_L49', 'orgaosDeputados_L50']
+2026-07-15 02:50:24,008 [INFO] etl_camara — Banco: postgres:5432/quemvota
+2026-07-15 02:50:24,009 [INFO] etl_camara — Cache: etl_cache.json
+2026-07-15 02:50:24,009 [INFO] etl_camara — Workers — download: 8 | backfill: 4
+2026-07-15 02:50:24,010 [INFO] etl_camara — Iniciando ETL: 34 datasets | anos=[2026] | legislaturas=[56, 57]
+2026-07-15 02:50:24,010 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 02:50:24,011 [INFO] etl_camara — 🌊 Onda 0 — 10 datasets | workers=8
+2026-07-15 02:50:24,434 [INFO] etl_camara — ✔ orgaos.csv (3859 linhas)
+2026-07-15 02:50:24,447 [INFO] etl_camara — ✔ eventos-2026.csv (1404 linhas)
+2026-07-15 02:50:24,487 [INFO] etl_camara — ✔ tecadCategorias.csv (79 linhas)
+2026-07-15 02:50:24,526 [ERROR] etl_camara — Load error [tecadCategorias]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:24,559 [ERROR] etl_camara — Load error [eventos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:24,642 [ERROR] etl_camara — Load error [orgaos]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:24,691 [INFO] etl_camara — ✔ deputados.csv (7889 linhas)
+2026-07-15 02:50:24,729 [INFO] etl_camara — ✔ funcionarios.csv (15423 linhas)
+2026-07-15 02:50:24,895 [INFO] etl_camara — ✔ legislaturas.csv (57 linhas)
+2026-07-15 02:50:24,921 [ERROR] etl_camara — Load error [legislaturas]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:24,988 [ERROR] etl_camara — Load error [deputados]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:25,071 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/licitacoes/csv/licitacoes.csv
+2026-07-15 02:50:25,202 [ERROR] etl_camara — Load error [funcionarios]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:25,292 [INFO] etl_camara — ✔ licitacoes-2026.csv (91 linhas)
+2026-07-15 02:50:25,311 [ERROR] etl_camara — Load error [licitacoes_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:25,658 [INFO] etl_camara — Banco: postgres:5432/quemvota
+2026-07-15 02:50:25,658 [INFO] etl_camara — Cache: etl_cache.json
+2026-07-15 02:50:25,658 [INFO] etl_camara — Workers — download: 8 | backfill: 4
+2026-07-15 02:50:25,658 [INFO] etl_camara — Iniciando ETL: 34 datasets | anos=[2026] | legislaturas=[56, 57]
+2026-07-15 02:50:25,659 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 02:50:25,659 [INFO] etl_camara — 🌊 Onda 0 — 10 datasets | workers=8
+2026-07-15 02:50:25,805 [INFO] etl_camara — ✔ tecadCategorias.csv (79 linhas)
+2026-07-15 02:50:25,808 [INFO] etl_camara — ✔ legislaturas.csv (57 linhas)
+2026-07-15 02:50:25,827 [ERROR] etl_camara — Load error [tecadCategorias]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:25,828 [ERROR] etl_camara — Load error [legislaturas]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:25,957 [INFO] etl_camara — ✔ eventos-2026.csv (1404 linhas)
+2026-07-15 02:50:25,990 [ERROR] etl_camara — Load error [eventos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:26,201 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/licitacoes/csv/licitacoes.csv
+2026-07-15 02:50:26,265 [INFO] etl_camara — ✔ licitacoes-2026.csv (91 linhas)
+2026-07-15 02:50:26,287 [ERROR] etl_camara — Load error [licitacoes_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:26,299 [INFO] etl_camara — ✔ orgaos.csv (3859 linhas)
+2026-07-15 02:50:26,361 [INFO] etl_camara — ✔ tecadTermos.csv (80445 linhas)
+2026-07-15 02:50:26,380 [INFO] etl_camara — ✔ proposicoes-2026.csv (37905 linhas)
+2026-07-15 02:50:26,412 [ERROR] etl_camara — Load error [orgaos]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:26,650 [INFO] etl_camara — ✔ deputados.csv (7889 linhas)
+2026-07-15 02:50:26,892 [INFO] etl_camara — ✔ tecadTermos.csv (80445 linhas)
+2026-07-15 02:50:27,056 [INFO] etl_camara — ✔ funcionarios.csv (15423 linhas)
+2026-07-15 02:50:27,218 [ERROR] etl_camara — Load error [deputados]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:27,802 [ERROR] etl_camara — Load error [funcionarios]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:28,381 [ERROR] etl_camara — Load error [tecadTermos]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:28,742 [ERROR] etl_camara — Load error [tecadTermos]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:29,305 [INFO] etl_camara — ✔ proposicoes-2026.csv (37905 linhas)
+2026-07-15 02:50:29,326 [ERROR] etl_camara — Load error [proposicoes_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:29,343 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 02:50:29,343 [INFO] etl_camara — 🌊 Onda 1 — 18 datasets | workers=8
+2026-07-15 02:50:29,525 [INFO] etl_camara — ✔ grupos.csv (118 linhas)
+2026-07-15 02:50:29,547 [ERROR] etl_camara — Load error [grupos]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:29,640 [INFO] etl_camara — ✔ frentes.csv (1443 linhas)
+2026-07-15 02:50:29,706 [ERROR] etl_camara — Load error [frentes]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:29,771 [INFO] etl_camara — ✔ eventosRequerimentos-2026.csv (827 linhas)
+2026-07-15 02:50:29,783 [ERROR] etl_camara — Load error [eventosRequerimentos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:29,828 [INFO] etl_camara — ✔ eventosPresencaDeputados-2026.csv (51276 linhas)
+2026-07-15 02:50:29,831 [INFO] etl_camara — ✔ eventosOrgaos-2026.csv (1404 linhas)
+2026-07-15 02:50:29,873 [ERROR] etl_camara — Load error [eventosOrgaos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:30,010 [INFO] etl_camara — ✔ legislaturasMesas.csv (177 linhas)
+2026-07-15 02:50:30,037 [ERROR] etl_camara — Load error [legislaturasMesas]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:30,319 [ERROR] etl_camara — Load error [eventosPresenca_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:30,349 [INFO] etl_camara — ✔ licitacoesPropostas-2026.csv (275 linhas)
+2026-07-15 02:50:30,371 [ERROR] etl_camara — Load error [licitacoesPropostas_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:30,402 [INFO] etl_camara — ✔ deputadosOcupacoes.csv (37492 linhas)
+2026-07-15 02:50:30,515 [INFO] etl_camara — ✔ deputadosProfissoes.csv (12594 linhas)
+2026-07-15 02:50:30,748 [ERROR] etl_camara — Load error [deputadosProfissoes]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:30,819 [INFO] etl_camara — ✔ licitacoesPedidos-2026.csv (90 linhas)
+2026-07-15 02:50:30,821 [INFO] etl_camara — ✔ proposicoesTemas-2026.csv (19209 linhas)
+2026-07-15 02:50:30,845 [ERROR] etl_camara — Load error [licitacoesPedidos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:30,919 [ERROR] etl_camara — Load error [proposicoes_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:30,934 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 02:50:30,934 [INFO] etl_camara — 🌊 Onda 1 — 18 datasets | workers=8
+2026-07-15 02:50:30,982 [INFO] etl_camara — ✔ proposicoesAutores-2026.csv (47833 linhas)
+2026-07-15 02:50:31,158 [INFO] etl_camara — ✔ legislaturasMesas.csv (177 linhas)
+2026-07-15 02:50:31,173 [ERROR] etl_camara — Load error [legislaturasMesas]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:31,209 [INFO] etl_camara — ✔ licitacoesItens-2026.csv (718 linhas)
+2026-07-15 02:50:31,222 [INFO] etl_camara — ✔ licitacoesContratos-2026.csv (36 linhas)
+2026-07-15 02:50:31,311 [ERROR] etl_camara — Load error [licitacoesContratos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:31,313 [INFO] etl_camara — ✔ eventosRequerimentos-2026.csv (827 linhas)
+2026-07-15 02:50:31,324 [ERROR] etl_camara — Load error [eventosRequerimentos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:31,398 [ERROR] etl_camara — Load error [proposicoesTemas_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:31,454 [ERROR] etl_camara — Load error [deputadosOcupacoes]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:31,570 [ERROR] etl_camara — Load error [licitacoesItens_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:31,592 [INFO] etl_camara — ✔ frentes.csv (1443 linhas)
+2026-07-15 02:50:31,602 [INFO] etl_camara — ✔ votacoes-2026.csv (6244 linhas)
+2026-07-15 02:50:31,651 [ERROR] etl_camara — Load error [frentes]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:31,732 [INFO] etl_camara — ✔ grupos.csv (118 linhas)
+2026-07-15 02:50:31,755 [ERROR] etl_camara — Load error [grupos]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:31,811 [INFO] etl_camara — ✔ deputadosOcupacoes.csv (37492 linhas)
+2026-07-15 02:50:31,934 [INFO] etl_camara — ✔ deputadosProfissoes.csv (12594 linhas)
+2026-07-15 02:50:31,995 [INFO] etl_camara — ✔ eventosOrgaos-2026.csv (1404 linhas)
+2026-07-15 02:50:32,050 [ERROR] etl_camara — Load error [eventosOrgaos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:32,082 [ERROR] etl_camara — Load error [votacoes_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:32,167 [ERROR] etl_camara — Load error [deputadosProfissoes]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:32,305 [INFO] etl_camara — ✔ orgaosDeputados-L57.csv (13217 linhas)
+2026-07-15 02:50:32,323 [INFO] etl_camara — ✔ proposicoesTemas-2026.csv (19209 linhas)
+2026-07-15 02:50:32,374 [INFO] etl_camara — ✔ licitacoesPedidos-2026.csv (90 linhas)
+2026-07-15 02:50:32,412 [ERROR] etl_camara — Load error [licitacoesPedidos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:32,412 [ERROR] etl_camara — Load error [deputadosOcupacoes]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:32,496 [ERROR] etl_camara — Load error [proposicoesAutores_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:32,514 [INFO] etl_camara — ✔ licitacoesPropostas-2026.csv (275 linhas)
+2026-07-15 02:50:32,535 [ERROR] etl_camara — Load error [licitacoesPropostas_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:32,625 [ERROR] etl_camara — Load error [proposicoesTemas_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:32,637 [INFO] etl_camara — ✔ licitacoesItens-2026.csv (718 linhas)
+2026-07-15 02:50:32,640 [INFO] etl_camara — ✔ licitacoesContratos-2026.csv (36 linhas)
+2026-07-15 02:50:32,669 [ERROR] etl_camara — Load error [licitacoesContratos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:32,730 [ERROR] etl_camara — Load error [licitacoesItens_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:32,751 [INFO] etl_camara — ✔ votacoes-2026.csv (6244 linhas)
+2026-07-15 02:50:32,760 [INFO] etl_camara — ✔ orgaosDeputados-L56.csv (14519 linhas)
+2026-07-15 02:50:32,774 [ERROR] etl_camara — Load error [orgaosDeputados_L57]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:32,950 [ERROR] etl_camara — Load error [votacoes_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:33,021 [ERROR] etl_camara — Load error [orgaosDeputados_L56]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:33,131 [INFO] etl_camara — ✔ proposicoesAutores-2026.csv (47833 linhas)
+2026-07-15 02:50:33,318 [INFO] etl_camara — ✔ eventosPresencaDeputados-2026.csv (51276 linhas)
+2026-07-15 02:50:33,428 [INFO] etl_camara — ✔ Ano-2026.csv.zip (81298 linhas)
+2026-07-15 02:50:33,822 [INFO] etl_camara — ✔ orgaosDeputados-L57.csv (13217 linhas)
+2026-07-15 02:50:33,970 [ERROR] etl_camara — Load error [eventosPresenca_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:34,506 [ERROR] etl_camara — Load error [proposicoesAutores_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:34,644 [ERROR] etl_camara — Load error [orgaosDeputados_L57]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:35,036 [INFO] etl_camara — ✔ Ano-2026.csv.zip (81298 linhas)
+2026-07-15 02:50:35,064 [INFO] etl_camara — ✔ orgaosDeputados-L56.csv (14519 linhas)
+2026-07-15 02:50:35,617 [ERROR] etl_camara — Load error [orgaosDeputados_L56]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:36,258 [ERROR] etl_camara — Load error [cotas_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:36,278 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 02:50:36,279 [INFO] etl_camara — 🌊 Onda 2 — 6 datasets | workers=8
+2026-07-15 02:50:36,494 [INFO] etl_camara — ✔ votacoesOrientacoes-2026.csv (1704 linhas)
+2026-07-15 02:50:36,559 [ERROR] etl_camara — Load error [votacoesOrientacoes_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:36,793 [INFO] etl_camara — ✔ gruposHistorico.csv (412 linhas)
+2026-07-15 02:50:36,812 [ERROR] etl_camara — Load error [gruposHistorico]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:37,075 [INFO] etl_camara — ✔ votacoesVotos-2026.csv (47806 linhas)
+2026-07-15 02:50:37,148 [INFO] etl_camara — ✔ votacoesProposicoes-2026.csv (4719 linhas)
+2026-07-15 02:50:37,170 [INFO] etl_camara — ✔ gruposMembros.csv (7091 linhas)
+2026-07-15 02:50:37,385 [ERROR] etl_camara — Load error [votacoesObjetos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:37,557 [ERROR] etl_camara — Load error [gruposMembros]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:38,034 [ERROR] etl_camara — Load error [votacoesVotos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:38,073 [ERROR] etl_camara — Load error [cotas_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:38,089 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 02:50:38,089 [INFO] etl_camara — 🌊 Onda 2 — 6 datasets | workers=8
+2026-07-15 02:50:38,480 [INFO] etl_camara — ✔ votacoesProposicoes-2026.csv (4719 linhas)
+2026-07-15 02:50:38,534 [INFO] etl_camara — ✔ gruposHistorico.csv (412 linhas)
+2026-07-15 02:50:38,616 [ERROR] etl_camara — Load error [gruposHistorico]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:38,637 [ERROR] etl_camara — Load error [votacoesObjetos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:38,746 [INFO] etl_camara — ✔ votacoesOrientacoes-2026.csv (1704 linhas)
+2026-07-15 02:50:38,813 [INFO] etl_camara — ✔ votacoesVotos-2026.csv (47806 linhas)
+2026-07-15 02:50:38,826 [ERROR] etl_camara — Load error [votacoesOrientacoes_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:38,844 [INFO] etl_camara — ✔ gruposMembros.csv (7091 linhas)
+2026-07-15 02:50:39,114 [ERROR] etl_camara — Load error [gruposMembros]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:39,639 [ERROR] etl_camara — Load error [votacoesVotos_2026]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:40,901 [INFO] etl_camara — ✔ frentesDeputados.csv (262257 linhas)
+2026-07-15 02:50:43,848 [INFO] etl_camara — ✔ frentesDeputados.csv (262257 linhas)
+2026-07-15 02:50:45,025 [ERROR] etl_camara — Load error [frentesDeputados]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:45,045 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 02:50:45,045 [INFO] etl_camara — 🏁 ETL concluído — processados: 0 | sem alteração (304): 0 | histórico pulado: 0 | erros: 34 | total: 34
+2026-07-15 02:50:45,045 [WARNING] etl_camara — Datasets com falha (34): ['tecadCategorias', 'eventos_2026', 'orgaos', 'legislaturas', 'deputados', 'licitacoes', 'funcionarios', 'licitacoes_2026', 'tecadTermos', 'proposicoes_2026', 'grupos', 'frentes', 'eventosRequerimentos_2026', 'eventosOrgaos_2026', 'legislaturasMesas', 'eventosPresenca_2026', 'licitacoesPropostas_2026', 'deputadosProfissoes', 'licitacoesPedidos_2026', 'licitacoesContratos_2026', 'proposicoesTemas_2026', 'deputadosOcupacoes', 'licitacoesItens_2026', 'votacoes_2026', 'proposicoesAutores_2026', 'orgaosDeputados_L57', 'orgaosDeputados_L56', 'cotas_2026', 'votacoesOrientacoes_2026', 'gruposHistorico', 'votacoesObjetos_2026', 'gruposMembros', 'votacoesVotos_2026', 'frentesDeputados']
+2026-07-15 02:50:48,058 [ERROR] etl_camara — Load error [frentesDeputados]: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+2026-07-15 02:50:48,078 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 02:50:48,078 [INFO] etl_camara — 🏁 ETL concluído — processados: 0 | sem alteração (304): 0 | histórico pulado: 0 | erros: 34 | total: 34
+2026-07-15 02:50:48,078 [WARNING] etl_camara — Datasets com falha (34): ['tecadCategorias', 'legislaturas', 'eventos_2026', 'licitacoes', 'licitacoes_2026', 'orgaos', 'deputados', 'funcionarios', 'tecadTermos', 'proposicoes_2026', 'legislaturasMesas', 'eventosRequerimentos_2026', 'frentes', 'grupos', 'eventosOrgaos_2026', 'deputadosProfissoes', 'licitacoesPedidos_2026', 'deputadosOcupacoes', 'licitacoesPropostas_2026', 'proposicoesTemas_2026', 'licitacoesContratos_2026', 'licitacoesItens_2026', 'votacoes_2026', 'eventosPresenca_2026', 'proposicoesAutores_2026', 'orgaosDeputados_L57', 'orgaosDeputados_L56', 'cotas_2026', 'gruposHistorico', 'votacoesObjetos_2026', 'votacoesOrientacoes_2026', 'gruposMembros', 'votacoesVotos_2026', 'frentesDeputados']
+2026-07-15 02:52:09,498 [INFO] etl_camara — Banco: postgres:5432/quemvota
+2026-07-15 02:52:09,498 [INFO] etl_camara — Cache: etl_cache.json
+2026-07-15 02:52:09,498 [INFO] etl_camara — Workers — download: 8 | backfill: 4
+2026-07-15 02:52:09,498 [INFO] etl_camara — Iniciando ETL: 34 datasets | anos=[2026] | legislaturas=[56, 57]
+2026-07-15 02:52:09,498 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 02:52:09,498 [INFO] etl_camara — 🌊 Onda 0 — 10 datasets | workers=8
+2026-07-15 02:52:09,642 [INFO] etl_camara — → sem alterações (304): eventos-2026.csv
+2026-07-15 02:52:09,642 [INFO] etl_camara — → sem alterações (304): deputados.csv
+2026-07-15 02:52:09,653 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/licitacoes/csv/licitacoes.csv
+2026-07-15 02:52:09,843 [INFO] etl_camara — → sem alterações (304): funcionarios.csv
+2026-07-15 02:52:09,844 [INFO] etl_camara — → sem alterações (304): tecadCategorias.csv
+2026-07-15 02:52:10,041 [INFO] etl_camara — → sem alterações (304): tecadTermos.csv
+2026-07-15 02:52:10,042 [INFO] etl_camara — → sem alterações (304): orgaos.csv
+2026-07-15 02:52:10,244 [INFO] etl_camara — → sem alterações (304): proposicoes-2026.csv
+2026-07-15 02:52:10,259 [INFO] etl_camara — → sem alterações (304): legislaturas.csv
+2026-07-15 02:52:10,440 [INFO] etl_camara — → sem alterações (304): licitacoes-2026.csv
+2026-07-15 02:52:10,442 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 02:52:10,442 [INFO] etl_camara — 🌊 Onda 1 — 18 datasets | workers=8
+2026-07-15 02:52:10,573 [INFO] etl_camara — → sem alterações (304): eventosOrgaos-2026.csv
+2026-07-15 02:52:10,589 [INFO] etl_camara — → sem alterações (304): frentes.csv
+2026-07-15 02:52:10,648 [INFO] etl_camara — → sem alterações (304): deputadosProfissoes.csv
+2026-07-15 02:52:10,770 [INFO] etl_camara — → sem alterações (304): deputadosOcupacoes.csv
+2026-07-15 02:52:10,781 [INFO] etl_camara — → sem alterações (304): proposicoesTemas-2026.csv
+2026-07-15 02:52:10,852 [INFO] etl_camara — → sem alterações (304): eventosRequerimentos-2026.csv
+2026-07-15 02:52:10,973 [INFO] etl_camara — → sem alterações (304): legislaturasMesas.csv
+2026-07-15 02:52:10,986 [INFO] etl_camara — → sem alterações (304): proposicoesAutores-2026.csv
+2026-07-15 02:52:11,046 [INFO] etl_camara — → sem alterações (304): eventosPresencaDeputados-2026.csv
+2026-07-15 02:52:11,172 [INFO] etl_camara — → sem alterações (304): grupos.csv
+2026-07-15 02:52:11,243 [INFO] etl_camara — → sem alterações (304): votacoes-2026.csv
+2026-07-15 02:52:11,307 [INFO] etl_camara — → sem alterações (304): Ano-2026.csv.zip
+2026-07-15 02:52:11,377 [INFO] etl_camara — → sem alterações (304): licitacoesPedidos-2026.csv
+2026-07-15 02:52:11,461 [INFO] etl_camara — → sem alterações (304): licitacoesPropostas-2026.csv
+2026-07-15 02:52:11,579 [INFO] etl_camara — → sem alterações (304): licitacoesItens-2026.csv
+2026-07-15 02:52:11,641 [INFO] etl_camara — → sem alterações (304): licitacoesContratos-2026.csv
+2026-07-15 02:52:11,779 [INFO] etl_camara — → sem alterações (304): orgaosDeputados-L56.csv
+2026-07-15 02:52:11,848 [INFO] etl_camara — → sem alterações (304): orgaosDeputados-L57.csv
+2026-07-15 02:52:11,850 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 02:52:11,850 [INFO] etl_camara — 🌊 Onda 2 — 6 datasets | workers=8
+2026-07-15 02:52:11,991 [INFO] etl_camara — → sem alterações (304): votacoesVotos-2026.csv
+2026-07-15 02:52:12,013 [INFO] etl_camara — → sem alterações (304): votacoesProposicoes-2026.csv
+2026-07-15 02:52:12,049 [INFO] etl_camara — → sem alterações (304): frentesDeputados.csv
+2026-07-15 02:52:12,188 [INFO] etl_camara — → sem alterações (304): gruposHistorico.csv
+2026-07-15 02:52:12,248 [INFO] etl_camara — → sem alterações (304): votacoesOrientacoes-2026.csv
+2026-07-15 02:52:12,386 [INFO] etl_camara — → sem alterações (304): gruposMembros.csv
+2026-07-15 02:52:12,388 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 02:52:12,388 [INFO] etl_camara — 🏁 ETL concluído — processados: 0 | sem alteração (304): 33 | histórico pulado: 0 | erros: 1 | total: 34
+2026-07-15 02:52:12,388 [WARNING] etl_camara — Datasets com falha (1): ['licitacoes']

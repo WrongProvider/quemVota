@@ -1,9 +1,11 @@
+
 # ── Configurações Comuns do Airflow ──────────────────────────────────────────
 x-airflow-common:
   &airflow-common # Substituímos 'image' por 'build' apontando para o seu novo Dockerfile
   build:
     context: ..
     dockerfile: airflow/Dockerfile
+
   environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
@@ -11,20 +13,42 @@ x-airflow-common:
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
     POSTGRES_USER: ${POSTGRES_USER}
     POSTGRES_DB: ${POSTGRES_DB}
+    DATABASE_URL: ${DATABASE_URL}
+    PYTHONPATH: /opt/airflow
+    DOCKER_HOST: tcp://docker-socket-proxy:2375
+    UV_CACHE_DIR: /tmp/uv-cache
+    UV_NO_SYNC: "1"
+  user: "${AIRFLOW_UID:-50000}:0"
   volumes:
     - ../airflow/dags:/opt/airflow/dags
     - ../airflow/logs:/opt/airflow/logs
     - ../airflow/plugins:/opt/airflow/plugins
     - ../airflow/config:/opt/airflow/config
     - ../injest_banco/:/opt/airflow/injest_banco
-    - /var/run/docker.sock:/var/run/docker.sock
-  user: "${AIRFLOW_UID:-50000}:0"
+    - ../shared/:/opt/airflow/shared
   networks:
     - backend
   depends_on:
     postgres-airflow:
       condition: service_healthy
+    docker-socket-proxy:
+      condition: service_started
+
 services:
+  # proxy docker
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: quemvota_docker_proxy
+    environment:
+      EXEC: "1"          # permite docker exec
+      CONTAINERS: "1"    # permite inspecionar/listar containers (necessário p/ exec funcionar)
+      POST: "1"          # exec é um POST na API do Docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - backend
+    restart: unless-stopped
+
   # ── Banco de Dados (Produção - QuemVota) ───────────────────────────────────
   postgres:
     image: pgvector/pgvector:0.8.5-pg18-trixie
@@ -144,20 +168,6 @@ services:
     command: tunnel run --token SEU_TOKEN_AQUI
     networks:
       - frontend
-
-  # ── Ingest (Script legado ou Job avulso) ────────────────────────────────────
-  ingest:
-    build:
-      context: ../injest_banco
-      dockerfile: Dockerfile.injest
-    container_name: quemvota_ingest
-    profiles:
-      - ingest
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - backend
 
   # ── Componentes do Apache Airflow ──────────────────────────────────────────
   airflow-webserver:
