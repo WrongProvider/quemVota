@@ -1601,3 +1601,97 @@
 2026-07-15 02:52:12,388 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 2026-07-15 02:52:12,388 [INFO] etl_camara — 🏁 ETL concluído — processados: 0 | sem alteração (304): 33 | histórico pulado: 0 | erros: 1 | total: 34
 2026-07-15 02:52:12,388 [WARNING] etl_camara — Datasets com falha (1): ['licitacoes']
+2026-07-15 03:00:05,502 [INFO] etl_camara — Banco: postgres:5432/quemvota
+2026-07-15 03:00:05,503 [INFO] etl_camara — Cache: etl_cache.json
+2026-07-15 03:00:05,503 [INFO] etl_camara — Workers — download: 8 | backfill: 4
+2026-07-15 03:00:05,503 [INFO] etl_camara — Iniciando ETL: 34 datasets | anos=[2026] | legislaturas=[56, 57]
+2026-07-15 03:00:05,503 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 03:00:05,503 [INFO] etl_camara — 🌊 Onda 0 — 10 datasets | workers=8
+2026-07-15 03:00:05,738 [INFO] etl_camara — → sem alterações (304): deputados.csv
+2026-07-15 03:00:05,744 [INFO] etl_camara — → sem alterações (304): legislaturas.csv
+2026-07-15 03:00:05,928 [INFO] etl_camara — → sem alterações (304): tecadCategorias.csv
+2026-07-15 03:00:05,959 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/licitacoes/csv/licitacoes.csv
+2026-07-15 03:00:06,101 [INFO] etl_camara — → sem alterações (304): orgaos.csv
+2026-07-15 03:00:06,139 [INFO] etl_camara — → sem alterações (304): licitacoes-2026.csv
+2026-07-15 03:00:06,315 [INFO] etl_camara — → sem alterações (304): funcionarios.csv
+2026-07-15 03:00:06,548 [INFO] etl_camara — → sem alterações (304): eventos-2026.csv
+2026-07-15 03:00:06,790 [INFO] etl_camara — → sem alterações (304): tecadTermos.csv
+2026-07-15 03:00:06,914 [INFO] etl_camara — → sem alterações (304): proposicoes-2026.csv
+2026-07-15 03:00:06,916 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 03:00:06,916 [INFO] etl_camara — 🌊 Onda 1 — 18 datasets | workers=8
+2026-07-15 03:00:07,057 [INFO] etl_camara — → sem alterações (304): frentes.csv
+2026-07-15 03:00:07,061 [INFO] etl_camara — → sem alterações (304): eventosOrgaos-2026.csv
+2026-07-15 03:00:07,207 [INFO] etl_camara — → sem alterações (304): eventosPresencaDeputados-2026.csv
+2026-07-15 03:00:07,254 [INFO] etl_camara — → sem alterações (304): eventosRequerimentos-2026.csv
+2026-07-15 03:00:07,265 [INFO] etl_camara — → sem alterações (304): grupos.csv
+2026-07-15 03:00:07,392 [INFO] etl_camara — → sem alterações (304): proposicoesAutores-2026.csv
+2026-07-15 03:00:07,458 [INFO] etl_camara — → sem alterações (304): proposicoesTemas-2026.csv
+2026-07-15 03:00:07,461 [INFO] etl_camara — → sem alterações (304): deputadosProfissoes.csv
+2026-07-15 03:00:07,668 [INFO] etl_camara — → sem alterações (304): licitacoesPropostas-2026.csv
+2026-07-15 03:00:07,670 [INFO] etl_camara — → sem alterações (304): deputadosOcupacoes.csv
+2026-07-15 03:00:07,673 [INFO] etl_camara — → sem alterações (304): licitacoesContratos-2026.csv
+2026-07-15 03:00:07,829 [INFO] etl_camara — → sem alterações (304): Ano-2026.csv.zip
+2026-07-15 03:00:07,847 [INFO] etl_camara — → sem alterações (304): orgaosDeputados-L57.csv
+2026-07-15 03:00:07,854 [INFO] etl_camara — → sem alterações (304): orgaosDeputados-L56.csv
+2026-07-15 03:00:07,863 [INFO] etl_camara — → sem alterações (304): legislaturasMesas.csv
+2026-07-15 03:00:08,055 [INFO] etl_camara — → sem alterações (304): votacoes-2026.csv
+2026-07-15 03:00:08,258 [INFO] etl_camara — → sem alterações (304): licitacoesPedidos-2026.csv
+2026-07-15 03:00:08,458 [INFO] etl_camara — → sem alterações (304): licitacoesItens-2026.csv
+2026-07-15 03:00:08,460 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 03:00:08,460 [INFO] etl_camara — 🌊 Onda 2 — 6 datasets | workers=8
+2026-07-15 03:00:08,626 [INFO] etl_camara — → sem alterações (304): gruposHistorico.csv
+2026-07-15 03:00:08,648 [INFO] etl_camara — → sem alterações (304): frentesDeputados.csv
+2026-07-15 03:00:08,658 [INFO] etl_camara — → sem alterações (304): gruposMembros.csv
+2026-07-15 03:00:08,819 [INFO] etl_camara — → sem alterações (304): votacoesOrientacoes-2026.csv
+2026-07-15 03:00:08,845 [INFO] etl_camara — → sem alterações (304): votacoesProposicoes-2026.csv
+2026-07-15 03:00:09,023 [INFO] etl_camara — → sem alterações (304): votacoesVotos-2026.csv
+2026-07-15 03:00:09,026 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 03:00:09,026 [INFO] etl_camara — 🏁 ETL concluído — processados: 0 | sem alteração (304): 33 | histórico pulado: 0 | erros: 1 | total: 34
+2026-07-15 03:00:09,026 [WARNING] etl_camara — Datasets com falha (1): ['licitacoes']
+2026-07-15 03:01:44,400 [INFO] etl_camara — Banco: postgres:5432/quemvota
+2026-07-15 03:01:44,400 [INFO] etl_camara — Cache: etl_cache.json
+2026-07-15 03:01:44,400 [INFO] etl_camara — Workers — download: 8 | backfill: 4
+2026-07-15 03:01:44,400 [INFO] etl_camara — Iniciando ETL: 34 datasets | anos=[2026] | legislaturas=[56, 57]
+2026-07-15 03:01:44,401 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 03:01:44,401 [INFO] etl_camara — 🌊 Onda 0 — 10 datasets | workers=8
+2026-07-15 03:01:44,543 [INFO] etl_camara — → sem alterações (304): deputados.csv
+2026-07-15 03:01:44,543 [INFO] etl_camara — → sem alterações (304): tecadTermos.csv
+2026-07-15 03:01:44,560 [INFO] etl_camara — → sem alterações (304): orgaos.csv
+2026-07-15 03:01:44,742 [INFO] etl_camara — → sem alterações (304): eventos-2026.csv
+2026-07-15 03:01:44,753 [INFO] etl_camara — → sem alterações (304): funcionarios.csv
+2026-07-15 03:01:44,755 [INFO] etl_camara — → sem alterações (304): legislaturas.csv
+2026-07-15 03:01:44,941 [INFO] etl_camara — → sem alterações (304): proposicoes-2026.csv
+2026-07-15 03:01:44,945 [INFO] etl_camara — → sem alterações (304): tecadCategorias.csv
+2026-07-15 03:01:44,959 [WARNING] etl_camara — 404 — não encontrado: http://dadosabertos.camara.leg.br/arquivos/licitacoes/csv/licitacoes.csv
+2026-07-15 03:01:45,154 [INFO] etl_camara — → sem alterações (304): licitacoes-2026.csv
+2026-07-15 03:01:45,156 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 03:01:45,156 [INFO] etl_camara — 🌊 Onda 1 — 18 datasets | workers=8
+2026-07-15 03:01:45,303 [INFO] etl_camara — → sem alterações (304): eventosRequerimentos-2026.csv
+2026-07-15 03:01:45,317 [INFO] etl_camara — → sem alterações (304): frentes.csv
+2026-07-15 03:01:45,351 [INFO] etl_camara — → sem alterações (304): grupos.csv
+2026-07-15 03:01:45,496 [INFO] etl_camara — → sem alterações (304): eventosOrgaos-2026.csv
+2026-07-15 03:01:45,549 [INFO] etl_camara — → sem alterações (304): deputadosProfissoes.csv
+2026-07-15 03:01:45,751 [INFO] etl_camara — → sem alterações (304): deputadosOcupacoes.csv
+2026-07-15 03:01:45,771 [INFO] etl_camara — → sem alterações (304): licitacoesPropostas-2026.csv
+2026-07-15 03:01:45,780 [INFO] etl_camara — → sem alterações (304): proposicoesTemas-2026.csv
+2026-07-15 03:01:45,894 [INFO] etl_camara — → sem alterações (304): votacoes-2026.csv
+2026-07-15 03:01:45,958 [INFO] etl_camara — → sem alterações (304): legislaturasMesas.csv
+2026-07-15 03:01:46,008 [INFO] etl_camara — → sem alterações (304): licitacoesItens-2026.csv
+2026-07-15 03:01:46,096 [INFO] etl_camara — → sem alterações (304): licitacoesPedidos-2026.csv
+2026-07-15 03:01:46,130 [INFO] etl_camara — → sem alterações (304): Ano-2026.csv.zip
+2026-07-15 03:01:46,153 [INFO] etl_camara — → sem alterações (304): eventosPresencaDeputados-2026.csv
+2026-07-15 03:01:46,290 [INFO] etl_camara — → sem alterações (304): licitacoesContratos-2026.csv
+2026-07-15 03:01:46,352 [INFO] etl_camara — → sem alterações (304): proposicoesAutores-2026.csv
+2026-07-15 03:01:46,494 [INFO] etl_camara — → sem alterações (304): orgaosDeputados-L57.csv
+2026-07-15 03:01:46,556 [INFO] etl_camara — → sem alterações (304): orgaosDeputados-L56.csv
+2026-07-15 03:01:46,558 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 03:01:46,558 [INFO] etl_camara — 🌊 Onda 2 — 6 datasets | workers=8
+2026-07-15 03:01:46,701 [INFO] etl_camara — → sem alterações (304): votacoesOrientacoes-2026.csv
+2026-07-15 03:01:46,716 [INFO] etl_camara — → sem alterações (304): votacoesProposicoes-2026.csv
+2026-07-15 03:01:46,754 [INFO] etl_camara — → sem alterações (304): frentesDeputados.csv
+2026-07-15 03:01:46,907 [INFO] etl_camara — → sem alterações (304): gruposMembros.csv
+2026-07-15 03:01:46,957 [INFO] etl_camara — → sem alterações (304): votacoesVotos-2026.csv
+2026-07-15 03:01:47,158 [INFO] etl_camara — → sem alterações (304): gruposHistorico.csv
+2026-07-15 03:01:47,161 [INFO] etl_camara — ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2026-07-15 03:01:47,161 [INFO] etl_camara — 🏁 ETL concluído — processados: 0 | sem alteração (304): 33 | histórico pulado: 0 | erros: 1 | total: 34
+2026-07-15 03:01:47,161 [WARNING] etl_camara — Datasets com falha (1): ['licitacoes']

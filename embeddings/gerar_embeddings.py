@@ -1,7 +1,7 @@
 import hashlib
 
 from sentence_transformers import SentenceTransformer
-
+from sqlalchemy.dialects.postgresql import insert
 from shared.database import SessionLocal
 from shared.models import Proposicao
 from shared.models_vetorial import DocumentEmbedding
@@ -12,7 +12,16 @@ session = SessionLocal()
 
 
 def gerar_embeddings():
-    proposicoes = session.query(Proposicao).limit(10).all()
+    proposicoes = session.query(Proposicao).outerjoin(
+                DocumentEmbedding,
+                (DocumentEmbedding.idEntidade == Proposicao.id) &
+                (DocumentEmbedding.tipoEntidade == "proposicao") &
+        (DocumentEmbedding.modelo == "BAAI/bge-m3")
+    ).filter(DocumentEmbedding.id.is_(None)).limit(10).all()
+
+    if not proposicoes:
+        print("Nenhuma proposição encontrada para processar.")
+        return
 
     for proposicao in proposicoes:
         print(f"Processando proposição {proposicao.id}")
@@ -25,7 +34,7 @@ def gerar_embeddings():
 
         embedding = model.encode(texto, normalize_embeddings=True).tolist()
 
-        registro = DocumentEmbedding(
+        stmt = insert(DocumentEmbedding).values(
             tipoEntidade="proposicao",
             idEntidade=proposicao.id,
             textoFonte=texto,
@@ -35,7 +44,17 @@ def gerar_embeddings():
             dimensao=1024,
         )
 
-        session.add(registro)
+        stmt_up = stmt.on_conflict_do_update(
+            index_elements=[],
+            set_={
+                "textoFonte": texto,
+                "textoHash": texto_hash,
+                "embedding": embedding,
+                "modelo": "BAAI/bge-m3",
+                "dimensao": 1024,
+            },
+        )
+        session.execute(stmt_up)
     session.commit()
 
 

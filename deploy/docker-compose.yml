@@ -16,7 +16,9 @@ x-airflow-common:
     DATABASE_URL: ${DATABASE_URL}
     PYTHONPATH: /opt/airflow
     DOCKER_HOST: tcp://docker-socket-proxy:2375
-    UV_CACHE_DIR: /tmp/uv-cache
+    HOME: /opt/airflow
+    UV_CACHE_DIR: /tmp/.uv-cache
+    HF_HOME: "/opt/airflow/.cache/huggingface"
     UV_NO_SYNC: "1"
   user: "${AIRFLOW_UID:-50000}:0"
   volumes:
@@ -25,7 +27,9 @@ x-airflow-common:
     - ../airflow/plugins:/opt/airflow/plugins
     - ../airflow/config:/opt/airflow/config
     - ../injest_banco/:/opt/airflow/injest_banco
+    - ../embeddings/:/opt/airflow/embeddings
     - ../shared/:/opt/airflow/shared
+    - airflow_hf_cache:/opt/airflow/.cache/huggingface
   networks:
     - backend
   depends_on:
@@ -182,24 +186,52 @@ services:
       timeout: 10s
       retries: 5
     restart: unless-stopped
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully # 👈 Garante que o init corrigiu as pastas antes de subir os serviços
 
   airflow-scheduler:
     <<: *airflow-common
     container_name: quemvota_airflow_scheduler
     command: scheduler
     restart: unless-stopped
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully # 👈 Garante que o init corrigiu as pastas antes de subir os serviços
 
   airflow-init:
-    <<: *airflow-common
-    container_name: quemvota_airflow_init
-    environment:
-      <<: *airflow-common-env
-      _AIRFLOW_DB_UPGRADE: "true"
-      _AIRFLOW_WWW_USER_CREATE: "true"
-      _AIRFLOW_WWW_USER_USERNAME: admin
-      _AIRFLOW_WWW_USER_PASSWORD: admin_password # Altere em produção
-      _AIRFLOW_WWW_USER_ROLE: Admin
-      _AIRFLOW_WWW_USER_EMAIL: admin@quemvota.com
+      <<: *airflow-common
+      container_name: quemvota_airflow_init
+      user: "0:0" # 👈 Roda como root para poder aplicar o chown
+      entrypoint: /bin/bash
+      command:
+        - -c
+        - |
+          # Garante que as pastas básicas existam no volume
+          mkdir -v -p /opt/airflow/{logs,dags,plugins,config,embeddings}
+
+          # Alinha as permissões de tudo dentro de /opt/airflow para o UID correto e Grupo 0
+          echo "Corrigindo permissões de arquivos para ${AIRFLOW_UID:-50000}:0..."
+          chown -R "${AIRFLOW_UID:-50000}:0" /opt/airflow/
+
+          echo "Inicializando o banco de dados do Airflow..."
+          /entrypoint airflow db init
+
+          # Cria o usuário padrão caso não exista
+          airflow users create \
+            --username admin \
+            --password admin_password \
+            --firstname Admin \
+            --lastname Admin \
+            --role Admin \
+            --email admin@quemvota.com || true
+      environment:
+        <<: *airflow-common-env
+        _AIRFLOW_DB_UPGRADE: "true" # Mantém a migration ativa para a sua versão 2.8.1
 
 networks:
   backend:
@@ -209,3 +241,4 @@ volumes:
   postgres_data:
   postgres_airflow_data:
   valkey_data:
+  airflow_hf_cache:
