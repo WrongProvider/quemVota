@@ -9,7 +9,7 @@ x-airflow-common:
   environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
-    AIRFLOW__CORE__FERNET_KEY: "EisUmaChaveFernetAleatoriaGereUmaComCryptography="
+    AIRFLOW__CORE__FERNET_KEY: "XKjh1bt0Um1X0dKiJLMY02wkf5K_j5BZwKJLAEuYvC8="
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
     POSTGRES_USER: ${POSTGRES_USER}
     POSTGRES_DB: ${POSTGRES_DB}
@@ -222,7 +222,7 @@ services:
           /entrypoint airflow db init
 
           # Cria o usuário padrão caso não exista
-          airflow users create \
+          /entrypoint airflow users create \
             --username admin \
             --password admin_password \
             --firstname Admin \
