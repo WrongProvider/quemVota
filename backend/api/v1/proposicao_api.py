@@ -101,6 +101,14 @@ async def listar_proposicoes(
         int | None,
         Query(ge=1988, le=2100, description="Ano de apresentação da proposição"),
     ] = None,
+    ano_votacao: Annotated[
+        int | None,
+        Query(
+            ge=1988,
+            le=2100,
+            description="Ano em que a proposição foi votada em plenário ou comissão",
+        ),
+    ] = None,
     tema_id: Annotated[
         int | None,
         Query(gt=0, description="ID interno de um tema legislativo"),
@@ -115,16 +123,18 @@ async def listar_proposicoes(
     Todos os filtros são opcionais e combináveis:
     - **q**: busca livre na ementa (ex: `?q=reforma tributária`)
     - **sigla_tipo**: filtra por tipo (`PL`, `PEC`, `MPV`, `PDC`, `PRC`...)
-    - **ano**: filtra por ano de apresentação
+    - **ano**: filtra por ano de apresentação da matéria
+    - **ano_votacao**: filtra por ano em que a matéria foi votada
     - **tema_id**: filtra por tema legislativo (use `GET /temas` para listar)
 
     Retorna lista vazia se nenhum resultado for encontrado.
     """
     logger.info(
-        "Listando proposições | q=%s sigla_tipo=%s ano=%s tema_id=%s limit=%s offset=%s",
+        "Listando proposições | q=%s sigla_tipo=%s ano=%s ano_votacao=%s tema_id=%s limit=%s offset=%s",
         q,
         sigla_tipo,
         ano,
+        ano_votacao,
         tema_id,
         limit,
         offset,
@@ -133,6 +143,7 @@ async def listar_proposicoes(
         q=q,
         sigla_tipo=sigla_tipo,
         ano=ano,
+        ano_votacao=ano_votacao,
         tema_id=tema_id,
         limit=limit,
         offset=offset,

@@ -39,6 +39,7 @@ import {
   ChevronDown,
   Loader2,
   ArrowLeftRight,
+  Clock,
 } from "lucide-react"
 import { useRegistrarBusca } from "../hooks/useBuscaPopular"
 import { useVotacao } from "../hooks/useProposicoes"
@@ -948,6 +949,23 @@ function PainelDetalheVotacao({
               </div>
             )}
           </div>
+
+          {/* Contexto temporal se a proposição tiver 2+ anos em relação à votação */}
+          {(() => {
+            const anoV = votacao?.data ? new Date(votacao.data).getFullYear() : null
+            if (anoV && votacao?.proposicao_ano && anoV - votacao.proposicao_ano >= 2) {
+              const diff = anoV - votacao.proposicao_ano
+              return (
+                <div className="mt-3 p-2.5 bg-amber-50/90 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2">
+                  <Clock size={14} className="text-amber-700 flex-shrink-0 mt-0.5" />
+                  <p className="leading-snug">
+                    Votação ocorrida em <strong>{formatarData(votacao.data)}</strong> sobre matéria apresentada em <strong>{votacao.proposicao_ano}</strong> ({diff} anos em tramitação).
+                  </p>
+                </div>
+              )
+            }
+            return null
+          })()}
         </div>
 
         {/* ── Conteúdo scrollável ── */}
@@ -1195,6 +1213,8 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
               <div data-testid="votacoes-list" className="divide-y divide-slate-100">
                 {votacoesFiltradas.map((v, i) => {
                   const ativo = votacaoAberta?.id === v.id_votacao
+                  const anoVoto = v.data ? new Date(v.data).getFullYear() : null
+                  const gapAnos = anoVoto && v.proposicao_ano ? anoVoto - v.proposicao_ano : 0
                   return (
                     <button
                       key={`${v.id_votacao}-${i}`}
@@ -1211,9 +1231,17 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             {(v.proposicao_sigla || v.proposicao_numero) && (
-                              <span className="text-[11px] font-semibold text-blue-600 font-mono">
-                                {v.proposicao_sigla} {v.proposicao_numero}/{v.proposicao_ano}
-                              </span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[11px] font-semibold text-blue-600 font-mono">
+                                  {v.proposicao_sigla} {v.proposicao_numero}/{v.proposicao_ano}
+                                </span>
+                                {gapAnos >= 2 && (
+                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200/70 px-1.5 py-0.2 rounded">
+                                    <Clock size={9} className="text-amber-600" />
+                                    Projeto de {v.proposicao_ano}
+                                  </span>
+                                )}
+                              </div>
                             )}
                             <p className="text-sm text-slate-700 leading-snug mt-0.5 line-clamp-2">
                               {v.proposicao_ementa ?? v.tipo_votacao ?? "—"}
@@ -1234,8 +1262,19 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
                       <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 items-center">
                         <div className="min-w-0">
                           {(v.proposicao_sigla || v.proposicao_numero) && (
-                            <span className="text-[11px] font-semibold text-blue-600 font-mono mr-2">
-                              {v.proposicao_sigla} {v.proposicao_numero}/{v.proposicao_ano}
+                            <span className="inline-flex items-center gap-1.5 mr-2">
+                              <span className="text-[11px] font-semibold text-blue-600 font-mono">
+                                {v.proposicao_sigla} {v.proposicao_numero}/{v.proposicao_ano}
+                              </span>
+                              {gapAnos >= 2 && (
+                                <span
+                                  className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200/70 px-1.5 py-0.2 rounded"
+                                  title={`Proposição apresentada em ${v.proposicao_ano}`}
+                                >
+                                  <Clock size={9} className="text-amber-600" />
+                                  Projeto de {v.proposicao_ano}
+                                </span>
+                              )}
                             </span>
                           )}
                           <p className="text-sm text-slate-700 leading-snug truncate">

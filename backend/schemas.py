@@ -373,6 +373,11 @@ class ProposicaoResponse(BaseModel):
     autores: List[AutorResumo] = []
     temas: List[TemaResumo] = []
 
+    # Informações factuais de tramitação recente
+    ultimo_status_data: Optional[datetime] = None
+    ultimo_status_situacao: Optional[str] = None
+    ultimo_status_orgao: Optional[str] = None
+
     model_config = ConfigDict(from_attributes=True)
 
 

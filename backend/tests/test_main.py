@@ -69,3 +69,33 @@ async def test_politico_atividade_legislativa(client):
     assert "total_proposicoes" in data
     assert isinstance(data["votacoes"], list)
 
+
+async def test_proposicoes_schema_com_ultimo_status(client):
+    response = await client.get("/proposicoes/?limit=5")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    if len(data) > 0:
+        p = data[0]
+        expected_keys = {
+            "id",
+            "id_camara",
+            "sigla_tipo",
+            "numero",
+            "ano",
+            "ementa",
+            "data_apresentacao",
+            "ultimo_status_data",
+            "ultimo_status_situacao",
+            "ultimo_status_orgao",
+        }
+        assert expected_keys.issubset(p.keys())
+
+
+async def test_proposicoes_filtro_ano_votacao(client):
+    response = await client.get("/proposicoes/?ano_votacao=2026&limit=5")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+
+

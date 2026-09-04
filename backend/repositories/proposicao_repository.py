@@ -76,6 +76,9 @@ class ProposicaoRepository:
                 for a in p.autores
             ],
             temas=[TemaResumo(id=t.id, tema=t.tema) for t in p.temas],
+            ultimo_status_data=p.ultimoStatus_dataHora,
+            ultimo_status_situacao=p.ultimoStatus_descricaoSituacao,
+            ultimo_status_orgao=p.ultimoStatus_siglaOrgao,
         )
 
     @staticmethod
@@ -109,6 +112,7 @@ class ProposicaoRepository:
         q: str | None = None,
         sigla_tipo: str | None = None,
         ano: int | None = None,
+        ano_votacao: int | None = None,
         tema_id: int | None = None,
         limit: int = 20,
         offset: int = 0,
@@ -127,6 +131,12 @@ class ProposicaoRepository:
             stmt = stmt.where(Proposicao.siglaTipo == sigla_tipo.upper()[:10])
         if ano:
             stmt = stmt.where(Proposicao.ano == ano)
+        if ano_votacao:
+            stmt = stmt.where(
+                Proposicao.votacoes.any(
+                    func.extract("year", Votacao.data) == ano_votacao
+                )
+            )
         if tema_id:
             stmt = stmt.where(Proposicao.temas.any(Tema.id == tema_id))
 
@@ -142,10 +152,11 @@ class ProposicaoRepository:
             return [self._build_proposicao_response(p) for p in proposicoes]
         except SQLAlchemyError:
             logger.exception(
-                "Erro ao listar proposições | q=%s sigla_tipo=%s ano=%s tema_id=%s",
+                "Erro ao listar proposições | q=%s sigla_tipo=%s ano=%s ano_votacao=%s tema_id=%s",
                 q,
                 sigla_tipo,
                 ano,
+                ano_votacao,
                 tema_id,
             )
             raise
@@ -196,6 +207,9 @@ class ProposicaoRepository:
                 for a in p.autores
             ],
             temas=[TemaResumo(id=t.id, tema=t.tema) for t in p.temas],
+            ultimo_status_data=p.ultimoStatus_dataHora,
+            ultimo_status_situacao=p.ultimoStatus_descricaoSituacao,
+            ultimo_status_orgao=p.ultimoStatus_siglaOrgao,
             ementa_detalhada=p.ementaDetalhada,
             justificativa=p.justificativa,
             urn_final=p.urnFinal,

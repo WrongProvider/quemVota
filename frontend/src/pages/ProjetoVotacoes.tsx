@@ -70,6 +70,19 @@ function truncar(texto: string | null | undefined, max = 160): string {
   return texto.length > max ? texto.slice(0, max) + "…" : texto
 }
 
+function calcularGapTramitacao(
+  anoApresentacao: number | null | undefined,
+  anoRef?: number | null,
+): { diff: number; texto: string } | null {
+  if (!anoApresentacao) return null
+  const ref = anoRef ?? new Date().getFullYear()
+  const diff = ref - anoApresentacao
+  if (diff >= 2) {
+    return { diff, texto: `${diff} anos em tramitação` }
+  }
+  return null
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Badge de tipo de proposição
 // ─────────────────────────────────────────────────────────────────────────────
@@ -185,6 +198,7 @@ function CardProposicao({
   onClick: () => void
 }) {
   const autorPrincipal = proposicao.autores.find((a) => a.proponente) ?? proposicao.autores[0]
+  const gap = calcularGapTramitacao(proposicao.ano)
 
   return (
     <button
@@ -193,15 +207,21 @@ function CardProposicao({
         selecionada ? "bg-blue-50 border-l-2 border-l-blue-500" : ""
       }`}
     >
-      {/* Linha 1: tipo + número + ano + data */}
-      <div className="flex items-center gap-2 mb-2">
+      {/* Linha 1: tipo + número/ano + badge temporal + data apresentação */}
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         <TipoBadge sigla={proposicao.sigla_tipo} />
-        <span className="text-xs font-mono text-slate-500">
+        <span className="text-xs font-mono font-semibold text-slate-700">
           {proposicao.numero}/{proposicao.ano}
         </span>
+        {gap && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded">
+            <Clock size={10} className="text-amber-600" />
+            {gap.texto}
+          </span>
+        )}
         {proposicao.data_apresentacao && (
           <span className="ml-auto text-[11px] text-slate-400 flex-shrink-0">
-            {formatarData(proposicao.data_apresentacao)}
+            Apresentada em {formatarData(proposicao.data_apresentacao)}
           </span>
         )}
       </div>
@@ -210,6 +230,19 @@ function CardProposicao({
       <p className="text-sm text-slate-700 leading-snug mb-2">
         {truncar(proposicao.ementa)}
       </p>
+
+      {/* Situação recente */}
+      {(proposicao.ultimo_status_situacao || proposicao.ultimo_status_orgao) && (
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-2.5">
+          <span className="font-medium text-slate-600">Última situação:</span>
+          <span className="truncate">{proposicao.ultimo_status_situacao ?? "Em tramitação"}</span>
+          {proposicao.ultimo_status_orgao && (
+            <span className="bg-slate-100 text-slate-600 font-mono text-[10px] px-1.5 py-0.5 rounded flex-shrink-0">
+              {proposicao.ultimo_status_orgao}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Linha 3: autor + temas */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -281,6 +314,41 @@ function PainelProposicao({
           <EstadoVazio mensagem="Proposição não encontrada." />
         ) : (
           <>
+            {/* Contexto temporal da proposição */}
+            {(() => {
+              const gap = calcularGapTramitacao(prop.ano)
+              if (!gap) return null
+              return (
+                <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+                  <Clock size={15} className="text-amber-700 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-amber-950">Tramitação Prolongada</p>
+                    <p className="text-amber-800 mt-0.5 leading-relaxed">
+                      Matéria apresentada em <strong>{prop.ano}</strong> (há {gap.diff} anos), atualmente em tramitação no Congresso Nacional.
+                    </p>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Informações de Registro e Situação Recente */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl">
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Apresentação</p>
+                <p className="text-xs text-slate-700 font-medium mt-0.5 flex items-center gap-1">
+                  <Calendar size={12} className="text-slate-400" />
+                  {formatarData(prop.data_apresentacao)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Último Status</p>
+                <p className="text-xs text-slate-700 font-medium mt-0.5">
+                  {prop.ultimo_status_situacao ?? "Em tramitação"}{" "}
+                  {prop.ultimo_status_orgao ? `(${prop.ultimo_status_orgao})` : ""}
+                </p>
+              </div>
+            </div>
+
             {/* Ementa */}
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Ementa</p>
@@ -436,6 +504,9 @@ function CardVotacao({
   selecionada: boolean
   onClick: () => void
 }) {
+  const anoVotacao = votacao.data ? new Date(votacao.data).getFullYear() : null
+  const gap = calcularGapTramitacao(votacao.proposicao_ano, anoVotacao)
+
   return (
     <button
       onClick={onClick}
@@ -443,12 +514,18 @@ function CardVotacao({
         selecionada ? "bg-blue-50 border-l-2 border-l-blue-500" : ""
       }`}
     >
-      {/* Linha 1: tipo + número/ano + resultado */}
+      {/* Linha 1: tipo + número/ano + contexto temporal + resultado */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         {votacao.proposicao_sigla && <TipoBadge sigla={votacao.proposicao_sigla} />}
         {votacao.proposicao_numero && (
-          <span className="text-xs font-mono text-slate-500">
+          <span className="text-xs font-mono font-semibold text-slate-700">
             {votacao.proposicao_numero}/{votacao.proposicao_ano}
+          </span>
+        )}
+        {gap && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded">
+            <Clock size={10} className="text-amber-600" />
+            Projeto de {votacao.proposicao_ano} • Votado em {anoVotacao}
           </span>
         )}
         <span className="ml-auto flex items-center gap-2 flex-shrink-0">
@@ -461,13 +538,13 @@ function CardVotacao({
         {truncar(votacao.proposicao_ementa ?? votacao.descricao)}
       </p>
 
-      {/* Linha 3: data + órgão + contagem de votos */}
-      <div className="flex items-center gap-3 text-[11px] text-slate-400 flex-wrap">
-        <span className="flex items-center gap-1">
-          <Calendar size={10} /> {formatarData(votacao.data)}
+      {/* Linha 3: data de votação + órgão + contagem de votos */}
+      <div className="flex items-center gap-3 text-[11px] text-slate-500 flex-wrap">
+        <span className="flex items-center gap-1 font-medium text-slate-600">
+          <Calendar size={11} className="text-slate-400" /> Votada em {formatarData(votacao.data)}
         </span>
         {votacao.sigla_orgao && (
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 text-slate-400">
             <Building size={10} /> {votacao.sigla_orgao}
           </span>
         )}
@@ -518,7 +595,7 @@ function PainelVotacao({
         <div className="flex items-center gap-2 flex-wrap">
           {votacao && <TipoBadge sigla={votacao.proposicao_sigla} />}
           {votacao?.proposicao_numero && (
-            <span className="text-sm font-mono text-slate-500">
+            <span className="text-sm font-mono text-slate-700 font-semibold">
               {votacao.proposicao_numero}/{votacao.proposicao_ano}
             </span>
           )}
@@ -540,6 +617,24 @@ function PainelVotacao({
           <EstadoVazio mensagem="Votação não encontrada." />
         ) : (
           <>
+            {/* Box contextual quando matéria for originária de anos anteriores */}
+            {(() => {
+              const anoV = votacao.data ? new Date(votacao.data).getFullYear() : null
+              const g = calcularGapTramitacao(votacao.proposicao_ano, anoV)
+              if (!g) return null
+              return (
+                <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+                  <Clock size={15} className="text-amber-700 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-amber-950">Contexto Temporal da Matéria</p>
+                    <p className="text-amber-800 mt-0.5 leading-relaxed">
+                      Esta votação foi realizada em <strong>{formatarData(votacao.data)}</strong> e deliberou sobre proposição apresentada originalmente em <strong>{votacao.proposicao_ano}</strong> ({g.diff} anos de tramitação até a deliberação).
+                    </p>
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Ementa */}
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Proposição</p>
@@ -551,7 +646,7 @@ function PainelVotacao({
             {/* Meta */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">Data</p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">Data da Votação</p>
                 <p className="text-sm font-medium text-slate-700">{formatarData(votacao.data)}</p>
               </div>
               <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
@@ -720,17 +815,35 @@ function FiltrosProposicoes({
         ))}
       </select>
 
-      {/* Ano */}
-      <select
-        value={filtros.ano ?? ""}
-        onChange={(e) => onChange({ ...filtros, ano: e.target.value ? Number(e.target.value) : undefined, offset: 0 })}
-        className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-slate-600"
-      >
-        <option value="">Todos os anos</option>
-        {ANOS.map((a) => (
-          <option key={a} value={a}>{a}</option>
-        ))}
-      </select>
+      {/* Ano de Apresentação */}
+      <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5">
+        <span className="text-xs text-slate-400 whitespace-nowrap">Apresentada:</span>
+        <select
+          value={filtros.ano ?? ""}
+          onChange={(e) => onChange({ ...filtros, ano: e.target.value ? Number(e.target.value) : undefined, offset: 0 })}
+          className="text-xs bg-transparent focus:outline-none text-slate-700 font-medium cursor-pointer"
+        >
+          <option value="">Todos os anos</option>
+          {ANOS.map((a) => (
+            <option key={a} value={a}>{a}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Ano de Votação */}
+      <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5">
+        <span className="text-xs text-slate-400 whitespace-nowrap">Votada em:</span>
+        <select
+          value={filtros.ano_votacao ?? ""}
+          onChange={(e) => onChange({ ...filtros, ano_votacao: e.target.value ? Number(e.target.value) : undefined, offset: 0 })}
+          className="text-xs bg-transparent focus:outline-none text-slate-700 font-medium cursor-pointer"
+        >
+          <option value="">Qualquer ano</option>
+          {ANOS.map((a) => (
+            <option key={a} value={a}>{a}</option>
+          ))}
+        </select>
+      </div>
     </div>
   )
 }

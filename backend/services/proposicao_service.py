@@ -65,6 +65,7 @@ class ProposicaoService:
         q: str | None = None,
         sigla_tipo: str | None = None,
         ano: int | None = None,
+        ano_votacao: int | None = None,
         tema_id: int | None = None,
         limit: int = 20,
         offset: int = 0,
@@ -73,13 +74,14 @@ class ProposicaoService:
         Lista proposições com filtros e paginação.
 
         Parâmetros:
-          q          — texto livre buscado na ementa
-          sigla_tipo — tipo da proposição ("PL", "PEC", "MPV", etc.)
-                       normalizado para maiúsculas antes do repasse
-          ano        — ano de apresentação da proposição
-          tema_id    — filtra por tema legislativo (ID interno)
-          limit      — máximo de itens (cap: 100)
-          offset     — deslocamento para paginação
+          q           — texto livre buscado na ementa
+          sigla_tipo  — tipo da proposição ("PL", "PEC", "MPV", etc.)
+                        normalizado para maiúsculas antes do repasse
+          ano         — ano de apresentação da proposição
+          ano_votacao — ano em que a matéria foi votada
+          tema_id     — filtra por tema legislativo (ID interno)
+          limit       — máximo de itens (cap: 100)
+          offset      — deslocamento para paginação
 
         Retorna lista vazia se nenhum resultado for encontrado
         (não lança 404 — ausência de resultados é válida em listagens).
@@ -91,10 +93,11 @@ class ProposicaoService:
         sigla_normalizada = sigla_tipo.upper().strip() if sigla_tipo else None
 
         logger.info(
-            "Listando proposições | q=%s sigla_tipo=%s ano=%s tema_id=%s limit=%s offset=%s",
+            "Listando proposições | q=%s sigla_tipo=%s ano=%s ano_votacao=%s tema_id=%s limit=%s offset=%s",
             q,
             sigla_normalizada,
             ano,
+            ano_votacao,
             tema_id,
             safe_limit,
             safe_offset,
@@ -104,6 +107,7 @@ class ProposicaoService:
             q=q,
             sigla_tipo=sigla_normalizada,
             ano=ano,
+            ano_votacao=ano_votacao,
             tema_id=tema_id,
             limit=safe_limit,
             offset=safe_offset,

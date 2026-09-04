@@ -57,6 +57,10 @@ export interface ProposicaoResponse {
   readonly url_inteiro_teor: string | null
   readonly autores: AutorResumo[]
   readonly temas: TemaResumo[]
+  // Situação recente de tramitação
+  readonly ultimo_status_data?: string | null
+  readonly ultimo_status_situacao?: string | null
+  readonly ultimo_status_orgao?: string | null
 }
 
 /** Proposição no detalhe — herda tudo de ProposicaoResponse + tramitação */
@@ -130,7 +134,8 @@ export interface VotacaoDetalhe extends VotacaoResponse {
 export interface ProposicoesFiltros {
   q?: string          // busca na ementa
   sigla_tipo?: string // "PL", "PEC", "MPV"...
-  ano?: number
+  ano?: number        // ano de apresentação
+  ano_votacao?: number // ano em que foi votada
   tema_id?: number
   limit?: number      // padrão: 20, máx: 100
   offset?: number
