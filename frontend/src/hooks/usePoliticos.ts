@@ -11,7 +11,7 @@
  *    `error` do hook — sem stack traces ou dados sensíveis expostos.
  */
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { useQuery, keepPreviousData, type UseQueryResult } from "@tanstack/react-query"
 import {
   listarPoliticosService,
   obterPoliticoDetalheService,
@@ -20,6 +20,7 @@ import {
   obterPoliticoTimelineService,
   obterPoliticoDetalheBySlugService,
   obterPoliticoAtividadeService,
+  obterComparacaoPoliticosService,
   PoliticoServiceError,
 } from "../services/politicos.service"
 import type {
@@ -31,6 +32,8 @@ import type {
   TimelineEntrada,
   AtividadeLegislativaParams,
   AtividadeLegislativaResponse,
+  ComparacaoPoliticosGrafoResponse,
+  CompararPoliticosParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -84,6 +87,8 @@ export const politicoKeys = {
   slug:         (slug: string) => [...politicoKeys.details(), "slug", slug] as const,
   atividade:    (id: number, params?: AtividadeLegislativaParams) =>
     [...politicoKeys.detail(id), "atividade", params ?? {}] as const,
+  comparacao:   (idOrSlug1: string | number, idOrSlug2: string | number, params?: CompararPoliticosParams) =>
+    [...politicoKeys.all, "comparacao", String(idOrSlug1), String(idOrSlug2), params ?? {}] as const,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -230,10 +235,13 @@ export function usePoliticoTimeline(
 export function usePoliticoDetalheBySlug(
   slug: string | undefined,
 ): UseQueryResult<PoliticoDetalhe, PoliticoServiceError> {
+  const isValido = Boolean(
+    slug && slug !== "null" && slug !== "undefined" && slug.trim().length > 0
+  )
   return useQuery({
     queryKey: politicoKeys.slug(slug ?? ""),
     queryFn: ({ signal }) => obterPoliticoDetalheBySlugService(slug!, signal),
-    enabled: !!slug && !/^\d+$/.test(slug),
+    enabled: isValido,
     staleTime: STALE_TIME_MS,
     gcTime: GC_TIME_MS,
     retry: shouldRetry,
@@ -270,6 +278,40 @@ export function usePoliticoAtividade(
     queryKey: politicoKeys.atividade(id, params),
     queryFn: ({ signal }) => obterPoliticoAtividadeService(id, params, signal),
     enabled: Number.isInteger(id) && id > 0,
+    staleTime: STALE_TIME_MS,
+    gcTime: GC_TIME_MS,
+    retry: shouldRetry,
+    retryDelay,
+  })
+}
+
+/**
+ * Compara o posicionamento de votações e alinhamento entre 2 políticos.
+ * Prioriza dados do grafo Apache AGE com fallback relacional.
+ */
+export function useComparacaoPoliticos(
+  idOrSlug1?: string | number,
+  idOrSlug2?: string | number,
+  params?: CompararPoliticosParams,
+): UseQueryResult<ComparacaoPoliticosGrafoResponse, PoliticoServiceError> {
+  const s1 = String(idOrSlug1 ?? "").trim()
+  const s2 = String(idOrSlug2 ?? "").trim()
+  const enabled = Boolean(
+    s1 &&
+    s2 &&
+    s1 !== "null" &&
+    s2 !== "null" &&
+    s1 !== "undefined" &&
+    s2 !== "undefined" &&
+    s1 !== s2
+  )
+
+  return useQuery({
+    queryKey: politicoKeys.comparacao(idOrSlug1 ?? "", idOrSlug2 ?? "", params),
+    queryFn: ({ signal }) =>
+      obterComparacaoPoliticosService(idOrSlug1!, idOrSlug2!, params, signal),
+    placeholderData: keepPreviousData,
+    enabled,
     staleTime: STALE_TIME_MS,
     gcTime: GC_TIME_MS,
     retry: shouldRetry,

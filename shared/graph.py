@@ -17,6 +17,7 @@ Arestas:
 import logging
 from typing import Any, Dict, List, Optional
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from shared.models import Deputado, Proposicao, Tema, Votacao, ProposicaoAutor
@@ -107,6 +108,34 @@ def execute_cypher(
         return res.fetchall()
     except Exception as e:
         logger.error(f"Erro ao executar Cypher: {e}")
+        raise
+
+
+async def execute_cypher_async(
+    session: AsyncSession,
+    cypher_query: str,
+    columns_spec: str = "result agtype",
+    params: Optional[Dict[str, Any]] = None,
+) -> List[Any]:
+    """
+    Executa uma consulta Cypher sobre o grafo Apache AGE de forma assíncrona (AsyncSession).
+    """
+    conn = await session.connection()
+    await conn.exec_driver_sql("LOAD 'age';")
+    await conn.exec_driver_sql("SET search_path = ag_catalog, public;")
+    sql = f"""
+    SELECT * FROM ag_catalog.cypher('{GRAPH_NAME}', $$
+        {cypher_query}
+    $$) as ({columns_spec});
+    """
+    try:
+        if params:
+            res = await conn.exec_driver_sql(sql, params)
+        else:
+            res = await conn.exec_driver_sql(sql)
+        return res.fetchall()
+    except Exception as e:
+        logger.error(f"Erro ao executar Cypher async: {e}")
         raise
 
 
@@ -247,17 +276,46 @@ def sync_relational_to_graph(
         except Exception:
             pass
 
-        # Conecta a proposição se houver
+        # Conecta a proposição e seus temas se houver
         if v.idProposicao:
-            cypher_reg = f"""
-            MATCH (vt:{LABEL_VOTACAO} {{id: {v.id}}}), (pr:{LABEL_PROPOSICAO} {{id: {v.idProposicao}}})
-            MERGE (vt)-[:{EDGE_REGARDING}]->(pr)
-            """
-            try:
-                execute_cypher(session, cypher_reg)
-                counts["arestas"] += 1
-            except Exception:
-                pass
+            pr_obj = v.proposicao
+            if pr_obj:
+                cypher_reg = f"""
+                MERGE (vt:{LABEL_VOTACAO} {{id: {v.id}}})
+                MERGE (pr:{LABEL_PROPOSICAO} {{id: {v.idProposicao}}})
+                SET pr.idCamara = {pr_obj.idCamara or 0},
+                    pr.siglaTipo = '{_escape(pr_obj.siglaTipo or "")}',
+                    pr.numero = {pr_obj.numero or 0},
+                    pr.ano = {pr_obj.ano or 0},
+                    pr.ementa = '{_escape((pr_obj.ementa or "")[:200])}'
+                MERGE (vt)-[:{EDGE_REGARDING}]->(pr)
+                """
+                try:
+                    execute_cypher(session, cypher_reg)
+                    counts["arestas"] += 1
+                except Exception:
+                    pass
+
+                for tm in pr_obj.temas:
+                    cypher_tm = f"""
+                    MATCH (pr:{LABEL_PROPOSICAO} {{id: {v.idProposicao}}}), (t:{LABEL_TEMA} {{id: {tm.id}}})
+                    MERGE (pr)-[:{EDGE_BELONGS_TO_THEME}]->(t)
+                    """
+                    try:
+                        execute_cypher(session, cypher_tm)
+                        counts["arestas"] += 1
+                    except Exception:
+                        pass
+            else:
+                cypher_reg = f"""
+                MATCH (vt:{LABEL_VOTACAO} {{id: {v.id}}}), (pr:{LABEL_PROPOSICAO} {{id: {v.idProposicao}}})
+                MERGE (vt)-[:{EDGE_REGARDING}]->(pr)
+                """
+                try:
+                    execute_cypher(session, cypher_reg)
+                    counts["arestas"] += 1
+                except Exception:
+                    pass
 
         # Votos dos deputados
         for voto in v.votos:
@@ -353,42 +411,123 @@ def cypher_sample_politicos_por_tema(
 
 
 def cypher_sample_alinhamento_votos(
-    session: Session, id_dep1: int, id_dep2: int
+    session: Session,
+    id_dep1: int,
+    id_dep2: int,
+    tema: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Exemplo Cypher 2: Encontra votações comuns onde dois deputados votaram e compara os seus votos.
-    Query Cypher:
-        MATCH (p1:Politico {id: 101})-[v1:VOTED_IN]->(vt:Votacao)<-[v2:VOTED_IN]-(p2:Politico {id: 102})
-        OPTIONAL MATCH (vt)-[:REGARDING]->(pr:Proposicao)
-        RETURN vt.id, vt.descricao, v1.voto, v2.voto, pr.siglaTipo + ' ' + toString(pr.numero)
+    Exemplo Cypher 2: Encontra votações comuns onde dois deputados votaram e compara os seus votos,
+    com suporte a filtro opcional por tema legislativo.
     """
-    cypher = f"""
-    MATCH (p1:{LABEL_POLITICO} {{id: {id_dep1}}})-[v1:{EDGE_VOTED_IN}]->(vt:{LABEL_VOTACAO})<-[v2:{EDGE_VOTED_IN}]-(p2:{LABEL_POLITICO} {{id: {id_dep2}}})
-    OPTIONAL MATCH (vt)-[:{EDGE_REGARDING}]->(pr:{LABEL_PROPOSICAO})
-    RETURN vt.id, vt.descricao, v1.voto, v2.voto, pr.siglaTipo, pr.numero, pr.ano
-    """
+    if tema:
+        cypher = f"""
+        MATCH (p1:{LABEL_POLITICO} {{id: {id_dep1}}})-[v1:{EDGE_VOTED_IN}]->(vt:{LABEL_VOTACAO})<-[v2:{EDGE_VOTED_IN}]-(p2:{LABEL_POLITICO} {{id: {id_dep2}}})
+        MATCH (vt)-[:{EDGE_REGARDING}]->(pr:{LABEL_PROPOSICAO})-[:{EDGE_BELONGS_TO_THEME}]->(t:{LABEL_TEMA})
+        WHERE toLower(t.tema) CONTAINS toLower('{_escape(tema)}')
+        RETURN vt.id, vt.descricao, v1.voto, v2.voto, pr.siglaTipo, pr.numero, pr.ano, pr.ementa, t.tema
+        """
+    else:
+        cypher = f"""
+        MATCH (p1:{LABEL_POLITICO} {{id: {id_dep1}}})-[v1:{EDGE_VOTED_IN}]->(vt:{LABEL_VOTACAO})<-[v2:{EDGE_VOTED_IN}]-(p2:{LABEL_POLITICO} {{id: {id_dep2}}})
+        OPTIONAL MATCH (vt)-[:{EDGE_REGARDING}]->(pr:{LABEL_PROPOSICAO})
+        OPTIONAL MATCH (pr)-[:{EDGE_BELONGS_TO_THEME}]->(t:{LABEL_TEMA})
+        RETURN vt.id, vt.descricao, v1.voto, v2.voto, pr.siglaTipo, pr.numero, pr.ano, pr.ementa, t.tema
+        """
     rows = execute_cypher(
         session,
         cypher,
-        "vt_id agtype, desc agtype, voto1 agtype, voto2 agtype, tipo agtype, num agtype, ano agtype",
+        "vt_id agtype, descricao agtype, voto1 agtype, voto2 agtype, tipo agtype, num agtype, ano agtype, ementa agtype, tema agtype",
     )
-    results = []
+    votes_map: Dict[int, Dict[str, Any]] = {}
     for r in rows:
-        voto1 = _clean_agtype(r[2])
-        voto2 = _clean_agtype(r[3])
-        results.append(
-            {
-                "idVotacao": _clean_agtype(r[0]),
+        id_vot = int(_clean_agtype(r[0])) if _clean_agtype(r[0]).isdigit() else 0
+        tema_val = _clean_agtype(r[8])
+        if id_vot not in votes_map:
+            voto1 = _clean_agtype(r[2])
+            voto2 = _clean_agtype(r[3])
+            tipo = _clean_agtype(r[4])
+            num = _clean_agtype(r[5])
+            ano = _clean_agtype(r[6])
+            prop = f"{tipo} {num}/{ano}" if tipo else None
+            votes_map[id_vot] = {
+                "id_votacao": id_vot,
                 "descricao": _clean_agtype(r[1]),
-                "votoDeputado1": voto1,
-                "votoDeputado2": voto2,
-                "alinhados": (voto1 == voto2 and voto1 != ""),
-                "proposicao": f"{_clean_agtype(r[4])} {_clean_agtype(r[5])}/{_clean_agtype(r[6])}"
-                if r[4]
-                else None,
+                "voto_politico1": voto1,
+                "voto_politico2": voto2,
+                "alinhados": (
+                    voto1.strip().lower() == voto2.strip().lower() and voto1 != ""
+                ),
+                "proposicao": prop,
+                "ementa": _clean_agtype(r[7]),
+                "tema": tema_val if tema_val else None,
+                "temas": [tema_val] if tema_val else [],
             }
-        )
-    return results
+        else:
+            if tema_val and tema_val not in votes_map[id_vot]["temas"]:
+                votes_map[id_vot]["temas"].append(tema_val)
+
+    return list(votes_map.values())
+
+
+async def cypher_sample_alinhamento_votos_async(
+    session: AsyncSession,
+    id_dep1: int,
+    id_dep2: int,
+    tema: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Versão assíncrona para consultar alinhamento de votos no Apache AGE via AsyncSession,
+    com suporte a filtro opcional por tema legislativo.
+    """
+    if tema:
+        cypher = f"""
+        MATCH (p1:{LABEL_POLITICO} {{id: {id_dep1}}})-[v1:{EDGE_VOTED_IN}]->(vt:{LABEL_VOTACAO})<-[v2:{EDGE_VOTED_IN}]-(p2:{LABEL_POLITICO} {{id: {id_dep2}}})
+        MATCH (vt)-[:{EDGE_REGARDING}]->(pr:{LABEL_PROPOSICAO})-[:{EDGE_BELONGS_TO_THEME}]->(t:{LABEL_TEMA})
+        WHERE toLower(t.tema) CONTAINS toLower('{_escape(tema)}')
+        RETURN vt.id, vt.descricao, v1.voto, v2.voto, pr.siglaTipo, pr.numero, pr.ano, pr.ementa, t.tema
+        """
+    else:
+        cypher = f"""
+        MATCH (p1:{LABEL_POLITICO} {{id: {id_dep1}}})-[v1:{EDGE_VOTED_IN}]->(vt:{LABEL_VOTACAO})<-[v2:{EDGE_VOTED_IN}]-(p2:{LABEL_POLITICO} {{id: {id_dep2}}})
+        OPTIONAL MATCH (vt)-[:{EDGE_REGARDING}]->(pr:{LABEL_PROPOSICAO})
+        OPTIONAL MATCH (pr)-[:{EDGE_BELONGS_TO_THEME}]->(t:{LABEL_TEMA})
+        RETURN vt.id, vt.descricao, v1.voto, v2.voto, pr.siglaTipo, pr.numero, pr.ano, pr.ementa, t.tema
+        """
+    rows = await execute_cypher_async(
+        session,
+        cypher,
+        "vt_id agtype, descricao agtype, voto1 agtype, voto2 agtype, tipo agtype, num agtype, ano agtype, ementa agtype, tema agtype",
+    )
+    votes_map: Dict[int, Dict[str, Any]] = {}
+    for r in rows:
+        id_vot = int(_clean_agtype(r[0])) if _clean_agtype(r[0]).isdigit() else 0
+        tema_val = _clean_agtype(r[8])
+        if id_vot not in votes_map:
+            voto1 = _clean_agtype(r[2])
+            voto2 = _clean_agtype(r[3])
+            tipo = _clean_agtype(r[4])
+            num = _clean_agtype(r[5])
+            ano = _clean_agtype(r[6])
+            prop = f"{tipo} {num}/{ano}" if tipo else None
+            votes_map[id_vot] = {
+                "id_votacao": id_vot,
+                "descricao": _clean_agtype(r[1]),
+                "voto_politico1": voto1,
+                "voto_politico2": voto2,
+                "alinhados": (
+                    voto1.strip().lower() == voto2.strip().lower() and voto1 != ""
+                ),
+                "proposicao": prop,
+                "ementa": _clean_agtype(r[7]),
+                "tema": tema_val if tema_val else None,
+                "temas": [tema_val] if tema_val else [],
+            }
+        else:
+            if tema_val and tema_val not in votes_map[id_vot]["temas"]:
+                votes_map[id_vot]["temas"].append(tema_val)
+
+    return list(votes_map.values())
 
 
 def graph_rag_retrieval(

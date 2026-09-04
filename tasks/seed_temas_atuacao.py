@@ -16,9 +16,7 @@ from sqlalchemy.dialects.postgresql import insert
 from shared.database import SessionLocal
 from shared.models_vetorial import TemaAtuacao
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 TEMAS_CANONICOS: List[Dict[str, str]] = [
@@ -136,9 +134,7 @@ def seed_temas_atuacao(model_name: str = "BAAI/bge-m3") -> int:
     try:
         for idx, item in enumerate(TEMAS_CANONICOS, start=1):
             texto_para_embedding = f"{item['nome']}: {item['descricao']}"
-            vector = model.encode(
-                texto_para_embedding, normalize_embeddings=True
-            ).tolist()
+            vector = model.encode(texto_para_embedding, normalize_embeddings=True).tolist()
 
             stmt = insert(TemaAtuacao).values(
                 slug=item["slug"],
@@ -165,10 +161,7 @@ def seed_temas_atuacao(model_name: str = "BAAI/bge-m3") -> int:
             logger.info("Tema processado: [%d/20] %s", idx, item["nome"])
 
         session.commit()
-        logger.info(
-            "Sucesso! %d temas canônicos sincronizados em temasAtuacao.",
-            total_inseridos,
-        )
+        logger.info("Sucesso! %d temas canônicos sincronizados em temasAtuacao.", total_inseridos)
         return total_inseridos
     except Exception as e:
         session.rollback()
@@ -180,3 +173,4 @@ def seed_temas_atuacao(model_name: str = "BAAI/bge-m3") -> int:
 
 if __name__ == "__main__":
     seed_temas_atuacao()
+

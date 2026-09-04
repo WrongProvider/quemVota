@@ -18,7 +18,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.repositories.politico_repository import PoliticoRepository
 from backend.repositories.ranking_repository import RankingRepository
-from backend.schemas import AtividadeLegislativaResponse, PoliticoResponse
+from backend.schemas import (
+    AtividadeLegislativaResponse,
+    ComparacaoPoliticosGrafoResponse,
+    PoliticoResumoComparacao,
+    PoliticoResponse,
+    TemaComparadoResumo,
+    VotoComparado,
+)
 from backend.services.performance_calc import calcular_score
 
 from .ranking_service import RankingService
@@ -386,4 +393,128 @@ class PoliticoService:
             offset_votacoes=safe_ov,
             offset_proposicoes=safe_op,
             ano=ano,
+        )
+
+    # ------------------------------------------------------------------
+    # Comparador de 2 Políticos (Apache AGE openCypher + Fallback Relacional)
+    # ------------------------------------------------------------------
+
+    async def comparar_politicos_service(
+        self,
+        id_or_slug1: str,
+        id_or_slug2: str,
+        tema: str | None = None,
+        limit_divergencias: int = 50,
+        limit_alinhamentos: int = 20,
+    ) -> ComparacaoPoliticosGrafoResponse:
+        """
+        Compara o posicionamento e alinhamento de votações entre dois parlamentares.
+
+        Prioriza a travessia de grafo no Apache AGE:
+            (p1:Politico)-[:VOTED_IN]->(vt:Votacao)<-[:VOTED_IN]-(p2:Politico)
+        Caso os nós ainda não estejam sincronizados no grafo, realiza fallback transparente
+        para o PostgreSQL relacional.
+        """
+        if str(id_or_slug1).strip().lower() == str(id_or_slug2).strip().lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Não é possível comparar um parlamentar consigo mesmo.",
+            )
+
+        # 1. Resolve os dois políticos
+        pol1 = await self.get_politico_by_id_or_slug_service(str(id_or_slug1))
+        pol2 = await self.get_politico_by_id_or_slug_service(str(id_or_slug2))
+
+        # 2. Resumo de temas disponíveis para filtro (sempre de todo o histórico comum)
+        temas_resumo_raw = await self._repo.get_resumo_temas_comparacao_repo(
+            pol1.id, pol2.id
+        )
+        temas_disponiveis = [TemaComparadoResumo(**t) for t in temas_resumo_raw]
+
+        # 3. Executa a comparação via Apache AGE
+        votos_comparados = []
+        fonte = "apache_age_graph"
+        try:
+            from shared.graph import cypher_sample_alinhamento_votos_async
+
+            votos_comparados = await cypher_sample_alinhamento_votos_async(
+                self._db, pol1.id, pol2.id, tema=tema
+            )
+        except Exception as e:
+            logger.warning(
+                "Falha ao consultar alinhamento no Apache AGE (%s vs %s, tema=%s): %s",
+                pol1.id,
+                pol2.id,
+                tema,
+                e,
+            )
+            votos_comparados = []
+
+        # 4. Fallback relacional se o grafo não retornou dados para este par
+        if not votos_comparados:
+            fonte = "relacional"
+            votos_comparados = await self._repo.get_comparacao_votos_relacional_repo(
+                pol1.id, pol2.id, tema=tema
+            )
+
+        # 5. Agrega estatísticas e divide em alinhamentos e divergências
+        divergencias_list: list[VotoComparado] = []
+        alinhamentos_list: list[VotoComparado] = []
+
+        for v in votos_comparados:
+            item = VotoComparado(
+                id_votacao=v["id_votacao"],
+                data=v.get("data"),
+                descricao=v.get("descricao"),
+                proposicao=v.get("proposicao"),
+                ementa=v.get("ementa"),
+                voto_politico1=v["voto_politico1"],
+                voto_politico2=v["voto_politico2"],
+                alinhados=v["alinhados"],
+                tema=v.get("tema"),
+                temas=v.get("temas", []),
+            )
+            if item.alinhados:
+                alinhamentos_list.append(item)
+            else:
+                divergencias_list.append(item)
+
+        total_comuns = len(votos_comparados)
+        total_alinhados = len(alinhamentos_list)
+        total_divergentes = len(divergencias_list)
+        taxa = (
+            round((total_alinhados / total_comuns) * 100.0, 1)
+            if total_comuns > 0
+            else 0.0
+        )
+
+        safe_lim_div = min(abs(limit_divergencias), 100)
+        safe_lim_aln = min(abs(limit_alinhamentos), 100)
+
+        return ComparacaoPoliticosGrafoResponse(
+            politico1=PoliticoResumoComparacao(
+                id=pol1.id,
+                nome=pol1.nome,
+                slug=pol1.slug,
+                sigla_partido=pol1.sigla_partido,
+                sigla_uf=pol1.sigla_uf,
+                url_foto=pol1.url_foto,
+            ),
+            politico2=PoliticoResumoComparacao(
+                id=pol2.id,
+                nome=pol2.nome,
+                slug=pol2.slug,
+                sigla_partido=pol2.sigla_partido,
+                sigla_uf=pol2.sigla_uf,
+                url_foto=pol2.url_foto,
+            ),
+            total_votacoes_comuns=total_comuns,
+            votos_alinhados=total_alinhados,
+            votos_divergentes=total_divergentes,
+            taxa_alinhamento=taxa,
+            divergencias=divergencias_list[:safe_lim_div],
+            alinhamentos=alinhamentos_list[:safe_lim_aln],
+            fonte_dados=fonte,
+            tema_filtrado=tema,
+            temas_disponiveis=temas_disponiveis,
         )

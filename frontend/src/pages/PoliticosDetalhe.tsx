@@ -42,7 +42,7 @@ import {
 } from "lucide-react"
 import { useRegistrarBusca } from "../hooks/useBuscaPopular"
 import { useVotacao } from "../hooks/useProposicoes"
-import type { VotacaoResumida } from "../api/politicos.api"
+import { type VotacaoResumida, nomeParaSlug } from "../api/politicos.api"
 import ModalSelecionarPolitico from "../components/ModalSelecionarPolitico"
 
 const PATH_FOTOS = "/fotos_politicos/"
@@ -805,7 +805,7 @@ export default function PoliticoDetalhe() {
       {modalCompararAberto && (
         <ModalSelecionarPolitico
           politicoAtualId={data.id}
-          politicoAtualSlug={data.slug}
+          politicoAtualSlug={data.slug || nomeParaSlug(data.nome)}
           onClose={() => setModalCompararAberto(false)}
         />
       )}

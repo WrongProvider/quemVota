@@ -47,6 +47,7 @@ export interface Politico {
   readonly sigla_uf: string
   readonly sigla_partido: string
   readonly url_foto?: string
+  readonly slug?: string | null
 }
 
 export interface PoliticoDetalhe extends Politico {
@@ -441,6 +442,85 @@ export async function fetchPoliticoAtividade(
       params: {
         limit_votacoes:     20,
         limit_proposicoes:  20,
+        ...params,
+      },
+      signal,
+    },
+  )
+  return data
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Comparador de 2 Políticos (Apache AGE Graph + Fallback Relacional)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface TemaComparadoResumo {
+  readonly tema: string
+  readonly total_votacoes: number
+  readonly votos_alinhados: number
+  readonly votos_divergentes: number
+  readonly taxa_alinhamento: number
+}
+
+export interface VotoComparado {
+  readonly id_votacao: number
+  readonly data: string | null
+  readonly descricao: string | null
+  readonly proposicao: string | null
+  readonly ementa: string | null
+  readonly voto_politico1: string
+  readonly voto_politico2: string
+  readonly alinhados: boolean
+  readonly tema?: string | null
+  readonly temas?: string[]
+}
+
+export interface PoliticoResumoComparacao {
+  readonly id: number
+  readonly nome: string
+  readonly slug: string | null
+  readonly sigla_partido: string | null
+  readonly sigla_uf: string | null
+  readonly url_foto: string | null
+}
+
+export interface ComparacaoPoliticosGrafoResponse {
+  readonly politico1: PoliticoResumoComparacao
+  readonly politico2: PoliticoResumoComparacao
+  readonly total_votacoes_comuns: number
+  readonly votos_alinhados: number
+  readonly votos_divergentes: number
+  readonly taxa_alinhamento: number
+  readonly divergencias: VotoComparado[]
+  readonly alinhamentos: VotoComparado[]
+  readonly fonte_dados: string
+  readonly tema_filtrado?: string | null
+  readonly temas_disponiveis?: TemaComparadoResumo[]
+}
+
+export interface CompararPoliticosParams {
+  readonly tema?: string | null
+  readonly limit_divergencias?: number
+  readonly limit_alinhamentos?: number
+}
+
+/**
+ * GET /politicos/comparar/{idOrSlug1}/{idOrSlug2}
+ *
+ * Busca a comparação direta de votações e alinhamento parlamentar entre dois políticos.
+ */
+export async function fetchComparacaoPoliticos(
+  idOrSlug1: string | number,
+  idOrSlug2: string | number,
+  params?: CompararPoliticosParams,
+  signal?: AbortSignal,
+): Promise<ComparacaoPoliticosGrafoResponse> {
+  const { data } = await api.get<ComparacaoPoliticosGrafoResponse>(
+    `/politicos/comparar/${idOrSlug1}/${idOrSlug2}`,
+    {
+      params: {
+        limit_divergencias: 50,
+        limit_alinhamentos: 20,
         ...params,
       },
       signal,

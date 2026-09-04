@@ -4,6 +4,7 @@ import {
   usePoliticoDetalheBySlug,
   usePoliticoEstatisticas,
   usePoliticoPerformance,
+  useComparacaoPoliticos,
 } from "../hooks/usePoliticos"
 import Header from "../components/Header"
 import { useSeo } from "../hooks/useSeo"
@@ -25,11 +26,16 @@ import {
   Share2,
   Copy,
   Check,
+  Scale,
+  CheckCircle2,
+  XCircle,
+  Tag,
 } from "lucide-react"
 import type {
   PoliticoDetalhe,
   PoliticoEstatisticas,
   PoliticoPerformance,
+  ComparacaoPoliticosGrafoResponse,
 } from "../api/politicos.api"
 
 const PATH_FOTOS = "/fotos_politicos/"
@@ -729,21 +735,375 @@ function BlocoPerformance({
   )
 }
 
+// ── BLOCO ALINHAMENTO EM VOTAÇÕES (APACHE AGE GRAPH) ───────────────────────
+
+function getVoteBadge(voto: string) {
+  const v = (voto || "").toLowerCase().trim()
+  if (v === "sim") {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+        Sim
+      </span>
+    )
+  }
+  if (v === "não" || v === "nao") {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+        Não
+      </span>
+    )
+  }
+  if (v.includes("obstrução") || v.includes("obstrucao")) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+        Obstrução
+      </span>
+    )
+  }
+  if (v.includes("abstenção") || v.includes("abstencao")) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+        Abstenção
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+      {voto || "—"}
+    </span>
+  )
+}
+
+function BlocoAlinhamentoVotos({
+  comparacao,
+  loading,
+  nomeA,
+  nomeB,
+  temaFiltro,
+  onSelectTema,
+}: {
+  comparacao?: ComparacaoPoliticosGrafoResponse
+  loading: boolean
+  nomeA: string
+  nomeB: string
+  temaFiltro: string | null
+  onSelectTema: (tema: string | null) => void
+}) {
+  const [abaAtiva, setAbaAtiva] = useState<"divergencias" | "alinhamentos">("divergencias")
+
+  if (loading && !comparacao) {
+    return (
+      <section className="section-fade bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
+        <div className="w-8 h-8 border-[3px] border-slate-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-xs text-slate-500 font-medium">Cruzando histórico de votações no grafo...</p>
+      </section>
+    )
+  }
+
+  if (!comparacao || (comparacao.total_votacoes_comuns === 0 && !temaFiltro)) {
+    return (
+      <section className="section-fade bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
+        <Scale size={28} className="text-slate-300 mx-auto mb-2" />
+        <h3 className="text-sm font-semibold text-slate-700">Sem votações nominais comuns registradas</h3>
+        <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+          Não foram identificadas matérias votadas nominalmente por ambos os parlamentares no período analisado.
+        </p>
+      </section>
+    )
+  }
+
+  const lista = abaAtiva === "divergencias" ? comparacao.divergencias : comparacao.alinhamentos
+  const temasDisponiveis = comparacao.temas_disponiveis || []
+
+  return (
+    <section className="section-fade space-y-4">
+      {/* Cabeçalho da seção */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+            <Scale size={18} />
+          </div>
+          <div>
+            <h2 className="display-font text-xl font-bold text-slate-800">
+              Alinhamento em Votações
+            </h2>
+            <p className="text-xs text-slate-400">
+              Cruzamento factual de posicionamentos em matérias comuns no plenário
+            </p>
+          </div>
+        </div>
+
+        {/* Badge da fonte dos dados */}
+        <div className="flex items-center gap-2">
+          {comparacao.fonte_dados === "apache_age_graph" ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+              Grafo Apache AGE
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+              Reconciliação Relacional
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Filtros de Tema Legislativo */}
+      {temasDisponiveis.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Tag size={15} className="text-blue-600" />
+              <span className="text-xs font-semibold text-slate-700">Filtro por Tema Legislativo</span>
+            </div>
+            {temaFiltro && (
+              <button
+                onClick={() => onSelectTema(null)}
+                className="text-[11px] font-medium text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                Limpar filtro
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => onSelectTema(null)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                !temaFiltro
+                  ? "bg-slate-800 text-white shadow-sm"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              Todos os Temas
+            </button>
+            {temasDisponiveis.map((t) => {
+              const isSelected = temaFiltro?.toLowerCase() === t.tema.toLowerCase()
+              return (
+                <button
+                  key={t.tema}
+                  onClick={() => onSelectTema(isSelected ? null : t.tema)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
+                    isSelected
+                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                      : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                  }`}
+                >
+                  <span>{t.tema}</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-md text-[10px] font-semibold ${
+                      isSelected
+                        ? "bg-blue-500/50 text-white"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {t.total_votacoes}
+                  </span>
+                  <span
+                    className={`text-[10px] font-mono font-semibold ${
+                      isSelected
+                        ? "text-blue-100"
+                        : t.taxa_alinhamento >= 70
+                        ? "text-emerald-600"
+                        : t.taxa_alinhamento >= 40
+                        ? "text-amber-600"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {t.taxa_alinhamento.toFixed(0)}%
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Cards de Métricas de Alinhamento */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Taxa de Alinhamento */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">
+            Taxa de Alinhamento {temaFiltro ? `(${temaFiltro})` : ""}
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className={`mono-font text-3xl font-bold ${getScoreColor(comparacao.taxa_alinhamento)}`}>
+              {comparacao.taxa_alinhamento.toFixed(1)}%
+            </span>
+            <span className="text-xs text-slate-400">de concordância</span>
+          </div>
+          <div className="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+            <div
+              className={`h-full transition-all duration-500 ${
+                comparacao.taxa_alinhamento >= 70
+                  ? "bg-emerald-500"
+                  : comparacao.taxa_alinhamento >= 40
+                  ? "bg-amber-500"
+                  : "bg-red-500"
+              }`}
+              style={{ width: `${comparacao.taxa_alinhamento}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Votações Comuns */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">
+            Votações em Comum
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="mono-font text-3xl font-bold text-slate-800">
+              {comparacao.total_votacoes_comuns}
+            </span>
+            <span className="text-xs text-slate-400">matérias avaliadas</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-3 flex items-center gap-1.5">
+            <CheckCircle2 size={13} className="text-emerald-500" />
+            {comparacao.votos_alinhados} votos em conjunto
+          </p>
+        </div>
+
+        {/* Votos Divergentes */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">
+            Divergências Nominais
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="mono-font text-3xl font-bold text-slate-800">
+              {comparacao.votos_divergentes}
+            </span>
+            <span className="text-xs text-slate-400">votos opostos</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-3 flex items-center gap-1.5">
+            <XCircle size={13} className="text-red-500" />
+            {comparacao.total_votacoes_comuns > 0
+              ? `${((comparacao.votos_divergentes / comparacao.total_votacoes_comuns) * 100).toFixed(1)}% de discordância`
+              : "0% de discordância"}
+          </p>
+        </div>
+      </div>
+
+      {/* Tabs / Alternador Divergências vs Alinhamentos */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="flex border-b border-slate-100 bg-slate-50/70 p-1.5 gap-1.5">
+          <button
+            onClick={() => setAbaAtiva("divergencias")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold transition-all ${
+              abaAtiva === "divergencias"
+                ? "bg-white text-slate-800 shadow-sm border border-slate-200/80"
+                : "text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"
+            }`}
+          >
+            <XCircle size={14} className={abaAtiva === "divergencias" ? "text-red-500" : "text-slate-400"} />
+            Principais Divergências ({comparacao.votos_divergentes})
+          </button>
+          <button
+            onClick={() => setAbaAtiva("alinhamentos")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold transition-all ${
+              abaAtiva === "alinhamentos"
+                ? "bg-white text-slate-800 shadow-sm border border-slate-200/80"
+                : "text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"
+            }`}
+          >
+            <CheckCircle2 size={14} className={abaAtiva === "alinhamentos" ? "text-emerald-500" : "text-slate-400"} />
+            Votos Alinhados ({comparacao.votos_alinhados})
+          </button>
+        </div>
+
+        {/* Lista de Votações */}
+        <div className="divide-y divide-slate-100 max-h-[520px] overflow-y-auto">
+          {lista.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-400">
+              {temaFiltro
+                ? `Nenhuma votação encontrada para o tema "${temaFiltro}" nesta categoria.`
+                : "Nenhuma votação nesta categoria."}
+            </div>
+          ) : (
+            lista.map((item) => (
+              <div key={item.id_votacao} className="p-4 hover:bg-slate-50/50 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                      {item.proposicao ? (
+                        <span className="mono-font text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100">
+                          {item.proposicao}
+                        </span>
+                      ) : (
+                        <span className="mono-font text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                          Votação #{item.id_votacao}
+                        </span>
+                      )}
+                      {item.temas && item.temas.length > 0 && item.temas.slice(0, 3).map((tm) => (
+                        <span
+                          key={tm}
+                          className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200/60"
+                        >
+                          {tm}
+                        </span>
+                      ))}
+                      {item.data && (
+                        <span className="text-[11px] text-slate-400 ml-auto sm:ml-0">{item.data}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-700 font-medium line-clamp-2 leading-relaxed">
+                      {item.ementa || item.descricao || "Sem descrição disponível"}
+                    </p>
+                  </div>
+
+                  {/* Comparativo lado a lado dos votos */}
+                  <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0 pt-2 sm:pt-0">
+                    <div className="text-right">
+                      <p className="text-[10px] text-slate-400 font-medium truncate max-w-[90px]">{nomeA}</p>
+                      {getVoteBadge(item.voto_politico1)}
+                    </div>
+                    <div className="text-slate-300 text-xs">vs</div>
+                    <div className="text-left">
+                      <p className="text-[10px] text-slate-400 font-medium truncate max-w-[90px]">{nomeB}</p>
+                      {getVoteBadge(item.voto_politico2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // ── PAGE ────────────────────────────────────────────────────────────────────
 
 export default function ComparacaoPoliticos() {
   const { slug1: slugA, slug2: slugB } = useParams<{ slug1: string; slug2: string }>()
+  const [temaFiltro, setTemaFiltro] = useState<string | null>(null)
 
-  const { data: dataA, isLoading: loadA, error: errA } = usePoliticoDetalheBySlug(slugA)
-  const { data: dataB, isLoading: loadB, error: errB } = usePoliticoDetalheBySlug(slugB)
+  const isSlugAInvalido = !slugA || slugA === "null" || slugA === "undefined"
+  const isSlugBInvalido = !slugB || slugB === "null" || slugB === "undefined"
+
+  const { data: dataA, isLoading: loadA, error: errA } = usePoliticoDetalheBySlug(
+    isSlugAInvalido ? undefined : slugA
+  )
+  const { data: dataB, isLoading: loadB, error: errB } = usePoliticoDetalheBySlug(
+    isSlugBInvalido ? undefined : slugB
+  )
 
   const { data: statsA } = usePoliticoEstatisticas(dataA?.id ?? 0, null)
   const { data: statsB } = usePoliticoEstatisticas(dataB?.id ?? 0, null)
   const { data: perfA  } = usePoliticoPerformance(dataA?.id ?? 0, null)
   const { data: perfB  } = usePoliticoPerformance(dataB?.id ?? 0, null)
 
+  const idOrSlug1 = dataA?.slug || (dataA?.id ? String(dataA.id) : slugA)
+  const idOrSlug2 = dataB?.slug || (dataB?.id ? String(dataB.id) : slugB)
+
+  const { data: compData, isLoading: loadComp } = useComparacaoPoliticos(
+    dataA && dataB ? idOrSlug1 : undefined,
+    dataA && dataB ? idOrSlug2 : undefined,
+    temaFiltro ? { tema: temaFiltro } : undefined
+  )
+
   if (loadA || loadB) return <LoadingScreen />
-  if (errA || errB || !dataA || !dataB) return <ErrorScreen />
+  if (isSlugAInvalido || isSlugBInvalido || errA || errB || !dataA || !dataB) return <ErrorScreen />
 
   const primeiroNomeA = dataA.nome.split(" ")[0]
   const primeiroNomeB = dataB.nome.split(" ")[0]
@@ -862,6 +1222,12 @@ export default function ComparacaoPoliticos() {
                   </Link>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {compData && compData.total_votacoes_comuns > 0 && (
+                      <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold">
+                        <Scale size={13} />
+                        {compData.taxa_alinhamento.toFixed(0)}% de alinhamento
+                      </span>
+                    )}
                     <span className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 text-sm font-medium">
                       <ArrowLeftRight size={14} />
                       Comparando
@@ -911,6 +1277,16 @@ export default function ComparacaoPoliticos() {
               <p className="text-xs font-semibold text-slate-700 truncate">{dataB.nome}</p>
             </div>
           </div>
+
+          {/* ── ALINHAMENTO EM VOTAÇÕES (APACHE AGE GRAPH) ── */}
+          <BlocoAlinhamentoVotos
+            comparacao={compData}
+            loading={loadComp}
+            nomeA={primeiroNomeA}
+            nomeB={primeiroNomeB}
+            temaFiltro={temaFiltro}
+            onSelectTema={setTemaFiltro}
+          />
 
           {/* ── ESTATÍSTICAS ── */}
           {statsA && statsB && (

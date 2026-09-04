@@ -10,21 +10,22 @@ Segurança (OWASP):
 """
 
 import logging
-from this import d
 
 from shared.models import (
     Deputado,
     Despesa,
     Proposicao,
     ProposicaoAutor,
+    Tema,
     VerbaGabinete,
     Votacao,
     Voto,
+    proposicoesTemas,
 )
-from sqlalchemy import desc, func, select
+from sqlalchemy import case, desc, func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from backend.schemas import (
     ItemRanking,
@@ -38,7 +39,7 @@ from backend.schemas import (
     ProposicaoParaPolitico,
     TemaResumoSimples,
     VotacaoResumida,
-    ProposicaoResumida
+    ProposicaoResumida,
 )
 
 logger = logging.getLogger(__name__)
@@ -106,7 +107,21 @@ class PoliticoRepository:
         stmt = select(Deputado).where(Deputado.slug == slug)
         try:
             result = await self.db.execute(stmt)
-            return result.scalars().first()
+            dep = result.scalars().first()
+            if dep:
+                return dep
+
+            # Fallback resiliente: se não encontrar slug exato, tenta prefixo com sufixo (ex: homônimos com idCamara)
+            stmt_fallback = (
+                select(Deputado)
+                .where(Deputado.slug.like(f"{slug}-%"))
+                .order_by(
+                    Deputado.idLegislaturaFinal.desc().nulls_last(),
+                    Deputado.id.asc(),
+                )
+            )
+            result_fallback = await self.db.execute(stmt_fallback)
+            return result_fallback.scalars().first()
         except SQLAlchemyError:
             logger.exception("Erro ao buscar deputado slug=%s", slug)
             raise
@@ -772,3 +787,152 @@ class PoliticoRepository:
         ]
 
         return proposicoes, total
+
+    # ------------------------------------------------------------------
+    # Comparação de Votações (Relacional)
+    # ------------------------------------------------------------------
+
+    async def get_comparacao_votos_relacional_repo(
+        self, id_dep1: int, id_dep2: int, tema: str | None = None
+    ) -> list[dict]:
+        """
+        Busca comparativa de todas as votações comuns entre dois deputados via PostgreSQL relacional,
+        com suporte a agregação e filtro por tema legislativo.
+        """
+        v2 = aliased(Voto)
+        stmt = (
+            select(
+                Voto.idVotacao,
+                Votacao.descricao,
+                Votacao.data,
+                Voto.voto.label("voto1"),
+                v2.voto.label("voto2"),
+                Proposicao.siglaTipo,
+                Proposicao.numero,
+                Proposicao.ano,
+                Proposicao.ementa,
+                func.string_agg(Tema.tema, ", ").label("temas_str"),
+            )
+            .join(v2, (Voto.idVotacao == v2.idVotacao) & (v2.idDeputado == id_dep2))
+            .join(Votacao, Votacao.id == Voto.idVotacao)
+            .outerjoin(Proposicao, Proposicao.id == Votacao.idProposicao)
+            .outerjoin(
+                proposicoesTemas, proposicoesTemas.c.idProposicao == Proposicao.id
+            )
+            .outerjoin(Tema, Tema.id == proposicoesTemas.c.idTema)
+            .where(Voto.idDeputado == id_dep1)
+        )
+
+        if tema:
+            stmt = stmt.where(
+                Proposicao.temas.any(Tema.tema.ilike(f"%{tema.strip()}%"))
+            )
+
+        stmt = stmt.group_by(
+            Voto.idVotacao,
+            Votacao.descricao,
+            Votacao.data,
+            Voto.voto,
+            v2.voto,
+            Proposicao.siglaTipo,
+            Proposicao.numero,
+            Proposicao.ano,
+            Proposicao.ementa,
+        ).order_by(desc(Votacao.data).nullslast(), desc(Voto.idVotacao))
+
+        try:
+            result = await self.db.execute(stmt)
+            rows = result.all()
+        except SQLAlchemyError:
+            logger.exception(
+                "Erro ao comparar votações relacionais entre deputados %s e %s (tema=%s)",
+                id_dep1,
+                id_dep2,
+                tema,
+            )
+            raise
+
+        results = []
+        for r in rows:
+            voto1 = (r.voto1 or "").strip()
+            voto2 = (r.voto2 or "").strip()
+            prop_str = f"{r.siglaTipo} {r.numero}/{r.ano}" if r.siglaTipo else None
+            temas_lista = (
+                [t.strip() for t in r.temas_str.split(",")] if r.temas_str else []
+            )
+            tema_principal = temas_lista[0] if temas_lista else None
+            results.append(
+                {
+                    "id_votacao": r.idVotacao,
+                    "data": r.data,
+                    "descricao": r.descricao,
+                    "voto_politico1": voto1,
+                    "voto_politico2": voto2,
+                    "alinhados": (voto1.lower() == voto2.lower() and voto1 != ""),
+                    "proposicao": prop_str,
+                    "ementa": r.ementa,
+                    "tema": tema_principal,
+                    "temas": temas_lista,
+                }
+            )
+        return results
+
+    async def get_resumo_temas_comparacao_repo(
+        self, id_dep1: int, id_dep2: int
+    ) -> list[dict]:
+        """
+        Retorna o agrupamento temático de todas as votações em comum entre dois deputados,
+        incluindo contagem de votações, votos alinhados, divergentes e taxa percentual de alinhamento.
+        """
+        v2 = aliased(Voto)
+        stmt = (
+            select(
+                Tema.tema,
+                func.count(func.distinct(Voto.idVotacao)).label("total"),
+                func.count(
+                    func.distinct(
+                        case(
+                            (
+                                func.lower(Voto.voto) == func.lower(v2.voto),
+                                Voto.idVotacao,
+                            ),
+                            else_=None,
+                        )
+                    )
+                ).label("alinhados"),
+            )
+            .join(v2, (Voto.idVotacao == v2.idVotacao) & (v2.idDeputado == id_dep2))
+            .join(Votacao, Votacao.id == Voto.idVotacao)
+            .join(Proposicao, Proposicao.id == Votacao.idProposicao)
+            .join(proposicoesTemas, proposicoesTemas.c.idProposicao == Proposicao.id)
+            .join(Tema, Tema.id == proposicoesTemas.c.idTema)
+            .where(Voto.idDeputado == id_dep1)
+            .group_by(Tema.tema)
+            .order_by(desc("total"))
+        )
+        try:
+            res = await self.db.execute(stmt)
+            rows = res.all()
+            temas = []
+            for r in rows:
+                tot = r.total
+                aln = r.alinhados
+                div = tot - aln
+                taxa = round((aln / tot) * 100.0, 1) if tot > 0 else 0.0
+                temas.append(
+                    {
+                        "tema": r.tema,
+                        "total_votacoes": tot,
+                        "votos_alinhados": aln,
+                        "votos_divergentes": div,
+                        "taxa_alinhamento": taxa,
+                    }
+                )
+            return temas
+        except SQLAlchemyError:
+            logger.exception(
+                "Erro ao buscar resumo de temas entre deputados %s e %s",
+                id_dep1,
+                id_dep2,
+            )
+            return []

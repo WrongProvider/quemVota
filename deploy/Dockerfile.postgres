@@ -26,3 +26,4 @@ RUN apt-get purge -y --auto-remove \
     git \
     postgresql-server-dev-18 \
     && rm -rf /var/lib/apt/lists/*
+

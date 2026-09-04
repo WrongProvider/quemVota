@@ -33,6 +33,9 @@ import {
   type AtividadeLegislativaParams,
   type AtividadeLegislativaResponse,
   fetchPoliticoAtividade,
+  fetchComparacaoPoliticos,
+  type ComparacaoPoliticosGrafoResponse,
+  type CompararPoliticosParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -172,9 +175,19 @@ export async function obterPoliticoDetalheBySlugService(
   slug: string,
   signal?: AbortSignal,
 ): Promise<PoliticoDetalhe> {
+  const s = slug?.trim()
+  if (!s || s === "null" || s === "undefined") {
+    throw new PoliticoServiceError("Slug inválido.", "not_found", 404)
+  }
+
+  // Suporte a resolução direta se for um ID numérico
+  if (/^\d+$/.test(s)) {
+    return await fetchPoliticoDetalhe(Number(s), signal)
+  }
+
   // ── Tentativa 1: endpoint dedicado ──────────────────────────────────────
   try {
-    return await fetchPoliticoDetalheBySlug(slug, signal)
+    return await fetchPoliticoDetalheBySlug(s, signal)
   } catch (error) {
     const serviceError = normalizeError(error, "obterPoliticoDetalheBySlugService[dedicated]")
 
@@ -267,5 +280,18 @@ export async function obterPoliticoAtividadeService(
     return await fetchPoliticoAtividade(id, params, signal)
   } catch (error) {
     throw normalizeError(error, "obterPoliticoAtividadeService")
+  }
+}
+
+export async function obterComparacaoPoliticosService(
+  idOrSlug1: string | number,
+  idOrSlug2: string | number,
+  params?: CompararPoliticosParams,
+  signal?: AbortSignal,
+): Promise<ComparacaoPoliticosGrafoResponse> {
+  try {
+    return await fetchComparacaoPoliticos(idOrSlug1, idOrSlug2, params, signal)
+  } catch (error) {
+    throw normalizeError(error, "obterComparacaoPoliticosService")
   }
 }

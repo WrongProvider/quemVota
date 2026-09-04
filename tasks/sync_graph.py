@@ -21,43 +21,17 @@ from pprint import pprint
 from shared.database import SessionLocal
 from shared.graph import get_graph_stats, init_age_extension, sync_relational_to_graph
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Sincroniza PostgreSQL para Apache AGE"
-    )
-    parser.add_argument(
-        "--legislatura",
-        type=int,
-        default=57,
-        help="Filtrar por legislatura (padrão: 57)",
-    )
-    parser.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Limite de registros por entidade para teste",
-    )
-    parser.add_argument(
-        "--apenas-com-votacoes",
-        action="store_true",
-        help="Apenas proposições com votações",
-    )
-    parser.add_argument(
-        "--stats-only",
-        action="store_true",
-        help="Apenas exibe estatísticas atuais do grafo",
-    )
-    parser.add_argument(
-        "--init-only",
-        action="store_true",
-        help="Apenas inicializa a extensão e o grafo",
-    )
+    parser = argparse.ArgumentParser(description="Sincroniza PostgreSQL para Apache AGE")
+    parser.add_argument("--legislatura", type=int, default=57, help="Filtrar por legislatura (padrão: 57)")
+    parser.add_argument("--limit", type=int, default=None, help="Limite de registros por entidade para teste")
+    parser.add_argument("--apenas-com-votacoes", action="store_true", help="Apenas proposições com votações")
+    parser.add_argument("--stats-only", action="store_true", help="Apenas exibe estatísticas atuais do grafo")
+    parser.add_argument("--init-only", action="store_true", help="Apenas inicializa a extensão e o grafo")
 
     args = parser.parse_args()
 
@@ -109,3 +83,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

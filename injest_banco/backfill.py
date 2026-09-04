@@ -127,7 +127,8 @@ def run_backfill_deputados(
             conn.execute(
                 text(
                     'SELECT id, "idCamara", nome, "nomeCivil", "urlFoto", "escolaridade", '
-                    '"situacao", "emailGabinete", slug, cpf FROM deputados ORDER BY "idCamara"'
+                    '"situacao", "emailGabinete", slug, cpf, "idLegislaturaFinal" FROM deputados '
+                    'ORDER BY "idLegislaturaFinal" DESC NULLS LAST, "idCamara" DESC, id ASC'
                 )
             )
             .mappings()

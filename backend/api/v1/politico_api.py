@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.api.v1.keybuilder import politico_key_builder
 from backend.schemas import (
     AtividadeLegislativaResponse,
+    ComparacaoPoliticosGrafoResponse,
     PoliticoDespesaDetalhe,
     PoliticoDespesaResumo,
     PoliticoDespesaResumoCompleto,
@@ -121,6 +122,107 @@ async def get_politico_by_slug(
     """
     logger.info("Detalhe do deputado slug=%s", slug)
     return await service.get_politico_by_slug_service(slug)
+
+
+@router.get(
+    "/comparar/{id_or_slug1}/{id_or_slug2}",
+    response_model=ComparacaoPoliticosGrafoResponse,
+    summary="Compara posicionamento de votos entre 2 políticos (Apache AGE Graph)",
+    description=(
+        "Executa análise comparativa do histórico de votações entre dois deputados. "
+        "Prioriza travessia de grafo no Apache AGE com fallback de reconciliação relacional. "
+        "Calcula taxa de alinhamento percentual e lista principais divergências e votos alinhados "
+        "de maneira estritamente factual e neutra."
+    ),
+    responses={
+        400: {"description": "Parâmetros inválidos ou mesmo deputado informado"},
+        404: {"description": "Deputado não encontrado"},
+    },
+)
+@cache(expire=3600, key_builder=politico_key_builder)
+async def comparar_politicos(
+    id_or_slug1: Annotated[
+        str,
+        Path(min_length=1, max_length=120, description="Slug ou ID do 1º parlamentar"),
+    ],
+    id_or_slug2: Annotated[
+        str,
+        Path(min_length=1, max_length=120, description="Slug ou ID do 2º parlamentar"),
+    ],
+    tema: Annotated[
+        Optional[str], Query(max_length=100, description="Filtro por tema legislativo")
+    ] = None,
+    limit_divergencias: Annotated[
+        int, Query(ge=1, le=100, description="Limite de divergências a exibir")
+    ] = 50,
+    limit_alinhamentos: Annotated[
+        int, Query(ge=1, le=100, description="Limite de alinhamentos a exibir")
+    ] = 20,
+    service: PoliticoService = Depends(_politico_service),
+):
+    logger.info(
+        "Comparando politicos | %s vs %s | tema=%s | lim_div=%s lim_aln=%s",
+        id_or_slug1,
+        id_or_slug2,
+        tema,
+        limit_divergencias,
+        limit_alinhamentos,
+    )
+    return await service.comparar_politicos_service(
+        id_or_slug1=id_or_slug1,
+        id_or_slug2=id_or_slug2,
+        tema=tema,
+        limit_divergencias=limit_divergencias,
+        limit_alinhamentos=limit_alinhamentos,
+    )
+
+
+@router.get(
+    "/{politico_id}/comparar/{outro_politico_id}",
+    response_model=ComparacaoPoliticosGrafoResponse,
+    summary="Compara deputado com outro parlamentar (Apache AGE Graph)",
+    description="Alias para a rota de comparação entre dois parlamentares.",
+    responses={
+        400: {"description": "Parâmetros inválidos ou mesmo deputado informado"},
+        404: {"description": "Deputado não encontrado"},
+    },
+)
+@cache(expire=3600, key_builder=politico_key_builder)
+async def comparar_politicos_alias(
+    politico_id: Annotated[
+        str,
+        Path(min_length=1, max_length=120, description="Slug ou ID do deputado base"),
+    ],
+    outro_politico_id: Annotated[
+        str,
+        Path(min_length=1, max_length=120, description="Slug ou ID do outro deputado"),
+    ],
+    tema: Annotated[
+        Optional[str], Query(max_length=100, description="Filtro por tema legislativo")
+    ] = None,
+    limit_divergencias: Annotated[
+        int, Query(ge=1, le=100, description="Limite de divergências a exibir")
+    ] = 50,
+    limit_alinhamentos: Annotated[
+        int, Query(ge=1, le=100, description="Limite de alinhamentos a exibir")
+    ] = 20,
+    service: PoliticoService = Depends(_politico_service),
+):
+    logger.info(
+        "Comparando politicos (alias) | %s vs %s | tema=%s | lim_div=%s lim_aln=%s",
+        politico_id,
+        outro_politico_id,
+        tema,
+        limit_divergencias,
+        limit_alinhamentos,
+    )
+    return await service.comparar_politicos_service(
+        id_or_slug1=politico_id,
+        id_or_slug2=outro_politico_id,
+        tema=tema,
+        limit_divergencias=limit_divergencias,
+        limit_alinhamentos=limit_alinhamentos,
+    )
 
 
 @router.get(

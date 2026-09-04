@@ -137,3 +137,113 @@ def test_apache_age_cypher_queries():
         assert len(res) > 0
     finally:
         session.close()
+
+
+def test_cypher_sample_alinhamento_votos_sync():
+    """Valida a consulta openCypher de alinhamento de votos no Apache AGE."""
+    from shared.database import SessionLocal
+    from shared.graph import cypher_sample_alinhamento_votos
+
+    session = SessionLocal()
+    try:
+        results = cypher_sample_alinhamento_votos(session, 26, 73)
+        assert isinstance(results, list)
+        if results:
+            item = results[0]
+            assert "id_votacao" in item
+            assert "descricao" in item
+            assert "voto_politico1" in item
+            assert "voto_politico2" in item
+            assert "alinhados" in item
+            assert isinstance(item["alinhados"], bool)
+    finally:
+        session.close()
+
+
+async def test_cypher_sample_alinhamento_votos_async():
+    """Valida a versão assíncrona de alinhamento de votos via AsyncSession."""
+    from shared.database import AsyncSessionLocal
+    from shared.graph import cypher_sample_alinhamento_votos_async
+
+    async with AsyncSessionLocal() as session:
+        results = await cypher_sample_alinhamento_votos_async(session, 26, 73)
+        assert isinstance(results, list)
+        if results:
+            item = results[0]
+            assert "id_votacao" in item
+            assert "voto_politico1" in item
+            assert "voto_politico2" in item
+            assert "alinhados" in item
+
+
+async def test_api_comparador_politicos(client):
+    """Valida o endpoint GET /politicos/comparar/{id1}/{id2} via API."""
+    response = await client.get("/politicos/comparar/26/73")
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["politico1"]["id"] == 26
+    assert data["politico2"]["id"] == 73
+    assert data["total_votacoes_comuns"] > 0
+    assert (
+        data["votos_alinhados"] + data["votos_divergentes"]
+        == data["total_votacoes_comuns"]
+    )
+    assert 0.0 <= data["taxa_alinhamento"] <= 100.0
+    assert data["fonte_dados"] in ("apache_age_graph", "relacional")
+    assert isinstance(data["divergencias"], list)
+    assert isinstance(data["alinhamentos"], list)
+
+
+async def test_api_comparador_politicos_slugs(client):
+    """Valida o endpoint GET /politicos/comparar/{slug1}/{slug2} com slugs."""
+    response = await client.get("/politicos/comparar/alfredinho/bibo-nunes")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["politico1"]["slug"] == "alfredinho"
+    assert data["politico2"]["slug"] == "bibo-nunes"
+    assert data["total_votacoes_comuns"] > 0
+
+
+async def test_api_comparador_politicos_mesmo_politico(client):
+    """Garante que comparar o mesmo parlamentar resulta em status 400."""
+    response = await client.get("/politicos/comparar/26/26")
+    assert response.status_code == 400
+    assert "Não é possível comparar" in response.json()["detail"]
+
+
+async def test_api_comparador_politicos_temas_disponiveis(client):
+    """Valida se o endpoint retorna a lista estruturada de temas disponíveis para filtro."""
+    response = await client.get("/politicos/comparar/26/73")
+    assert response.status_code == 200
+    data = response.json()
+    assert "temas_disponiveis" in data
+    assert isinstance(data["temas_disponiveis"], list)
+    if data["temas_disponiveis"]:
+        t0 = data["temas_disponiveis"][0]
+        assert "tema" in t0
+        assert "total_votacoes" in t0
+        assert "votos_alinhados" in t0
+        assert "votos_divergentes" in t0
+        assert "taxa_alinhamento" in t0
+        assert t0["total_votacoes"] == t0["votos_alinhados"] + t0["votos_divergentes"]
+
+
+async def test_api_comparador_politicos_filtro_tema(client):
+    """Valida a filtragem de votações por tema legislativo no comparador."""
+    # 1. Pega os temas disponíveis
+    resp_base = await client.get("/politicos/comparar/26/73")
+    assert resp_base.status_code == 200
+    data_base = resp_base.json()
+
+    if data_base.get("temas_disponiveis"):
+        tema_alvo = data_base["temas_disponiveis"][0]["tema"]
+        response = await client.get(f"/politicos/comparar/26/73?tema={tema_alvo}")
+        assert response.status_code == 200
+        data_filtrada = response.json()
+        assert data_filtrada["tema_filtrado"] == tema_alvo
+        assert data_filtrada["total_votacoes_comuns"] > 0
+        assert (
+            data_filtrada["votos_alinhados"] + data_filtrada["votos_divergentes"]
+            == data_filtrada["total_votacoes_comuns"]
+        )

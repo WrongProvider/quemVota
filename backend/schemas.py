@@ -9,16 +9,15 @@ class PoliticoBase(BaseModel):
 
 
 class MaisPesquisadoSchema(BaseModel):
-    politico_id:   int
-    nome:          str
-    uf:            str | None = None
+    politico_id: int
+    nome: str
+    uf: str | None = None
     partido_sigla: str | None = None
-    url_foto:      str | None = None
-    count:         int
+    url_foto: str | None = None
+    count: int
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class PoliticoResponse(PoliticoBase):
     id: int
@@ -39,30 +38,30 @@ class PoliticoResponse(PoliticoBase):
     telefone_gabinete: str | None = None
 
     model_config = ConfigDict(
-        from_attributes = True,
-        populate_by_name = True,
-        alias_generator = None,
+        from_attributes=True,
+        populate_by_name=True,
+        alias_generator=None,
     )
 
     @classmethod
     def model_validate(cls, obj, *args, **kwargs):
         if hasattr(obj, "__dict__") and not isinstance(obj, dict):
             data = {
-                "id":                 obj.id,
-                "id_camara":          obj.idCamara,
-                "nome":               obj.nome,
-                "slug":               obj.slug,
-                "sigla_uf":           obj.siglaUF,
-                "sigla_partido":      obj.siglaPartido,
-                "nome_civil":         obj.nomeCivil,
-                "escolaridade":       obj.escolaridade,
-                "situacao":           obj.situacao,
+                "id": obj.id,
+                "id_camara": obj.idCamara,
+                "nome": obj.nome,
+                "slug": obj.slug,
+                "sigla_uf": obj.siglaUF,
+                "sigla_partido": obj.siglaPartido,
+                "nome_civil": obj.nomeCivil,
+                "escolaridade": obj.escolaridade,
+                "situacao": obj.situacao,
                 "condicao_eleitoral": obj.condicaoEleitoral,
-                "sigla_sexo":         obj.siglaSexo,
-                "data_nascimento":    obj.dataNascimento,
-                "url_foto":           obj.urlFoto,
-                "email_gabinete":     obj.emailGabinete,
-                "telefone_gabinete":  obj.telefoneGabinete,
+                "sigla_sexo": obj.siglaSexo,
+                "data_nascimento": obj.dataNascimento,
+                "url_foto": obj.urlFoto,
+                "email_gabinete": obj.emailGabinete,
+                "telefone_gabinete": obj.telefoneGabinete,
             }
             return cls(**data)
         return super().model_validate(obj, *args, **kwargs)
@@ -75,14 +74,13 @@ class PoliticoVoto(BaseModel):
     proposicao_numero: int | None = None
     proposicao_ano: int | None = None
     ementa: str | None = None
-    voto: str                              # Sim, Não, Obstrução, etc.
+    voto: str  # Sim, Não, Obstrução, etc.
     resultado_da_votacao: Optional[str] = None
     tipo_votacao: Optional[str] = None
     uri: str | None = None
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ItemRanking(BaseModel):
     nome: str
@@ -101,18 +99,16 @@ class PoliticoDespesaResumo(BaseModel):
     total_gasto: float
     qtd_despesas: int
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class PoliticoDespesaResumoCompleto(BaseModel):
     historico_mensal: List[PoliticoDespesaResumo]
     top_fornecedores: List[ItemRankingFornecedor]
     top_categorias: List[ItemRanking]
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class PoliticoDespesaDetalhe(BaseModel):
     id: int
@@ -123,8 +119,8 @@ class PoliticoDespesaDetalhe(BaseModel):
     url_documento: str | None = None
 
     model_config = ConfigDict(
-        from_attributes= True, 
-        populate_by_name= True,
+        from_attributes=True,
+        populate_by_name=True,
     )
 
     @classmethod
@@ -135,7 +131,9 @@ class PoliticoDespesaDetalhe(BaseModel):
                 data_documento=obj.get("dataDocumento"),
                 tipo_despesa=obj.get("tipoDespesa"),
                 nome_fornecedor=obj.get("nomeFornecedor"),
-                valor_liquido=float(obj["valorLiquido"]) if obj.get("valorLiquido") is not None else None,
+                valor_liquido=float(obj["valorLiquido"])
+                if obj.get("valorLiquido") is not None
+                else None,
                 url_documento=obj.get("urlDocumento"),
             )
         return super().model_validate(obj, *args, **kwargs)
@@ -146,9 +144,8 @@ class PoliticoFornecedor(BaseModel):
     total_recebido: float
     qtd_notas: int
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class PoliticoEstatisticasResponse(BaseModel):
     total_votacoes: int
@@ -205,11 +202,13 @@ class RankingDiscursoPolitico(BaseModel):
 # SCHEMAS — Ranking de Performance Parlamentar
 # =============================================================================
 
+
 class NotasPerformance(BaseModel):
     """Notas individuais que compõem o score final (todas 0–100)."""
+
     assiduidade: float
-    producao:    float
-    economia:    float
+    producao: float
+    economia: float
 
 
 class RankingPerformancePolitico(BaseModel):
@@ -223,16 +222,17 @@ class RankingPerformancePolitico(BaseModel):
     Quando o ranking é filtrado por `ano`, o campo `ano_referencia` indica
     o período exato de comparação.
     """
-    id:      int
-    nome:    str
-    uf:      str | None = None
+
+    id: int
+    nome: str
+    uf: str | None = None
     partido: str | None = None
-    foto:    str | None = None
-    score:   float
-    notas:   NotasPerformance
-    anos_com_dados:  int
-    confianca:       str  # "baixa" | "media" | "alta"
-    ano_referencia:  int | None = None
+    foto: str | None = None
+    score: float
+    notas: NotasPerformance
+    anos_com_dados: int
+    confianca: str  # "baixa" | "media" | "alta"
+    ano_referencia: int | None = None
 
 
 class PerformanceRankingResponse(BaseModel):
@@ -245,10 +245,11 @@ class PerformanceRankingResponse(BaseModel):
       - total          : quantidade de parlamentares no ranking
       - ranking        : lista ordenada por score decrescente
     """
-    aviso:          str
+
+    aviso: str
     ano_referencia: int | None = None
-    total:          int
-    ranking:        List[RankingPerformancePolitico]
+    total: int
+    ranking: List[RankingPerformancePolitico]
 
 
 class StatsGeral(BaseModel):
@@ -262,11 +263,12 @@ class StatsGeral(BaseModel):
       - total_parlamentares : quantidade total de parlamentares no cálculo
       - top_50              : os 50 melhores colocados no ranking
     """
-    aviso:               str
-    ano_referencia:      int | None = None
-    media_global:        float
+
+    aviso: str
+    ano_referencia: int | None = None
+    media_global: float
     total_parlamentares: int
-    top_50:              List[RankingPerformancePolitico]
+    top_50: List[RankingPerformancePolitico]
 
 
 # =============================================================================
@@ -276,6 +278,7 @@ class StatsGeral(BaseModel):
 # -----------------------------------------------------------------------------
 # Blocos reutilizáveis (sub-schemas)
 # -----------------------------------------------------------------------------
+
 
 class AutorResumo(BaseModel):
     """
@@ -289,26 +292,26 @@ class AutorResumo(BaseModel):
                      (campo tipoAutor no ORM)
       - proponente:  True se for o autor principal / proponente da matéria
     """
+
     politico_id: Optional[int] = None
     nome: str
     tipo: Optional[str] = None
     proponente: Optional[bool] = None
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class TemaResumo(BaseModel):
     """
     Tema legislativo associado a uma proposição.
     Vem da tabela `temas` via relação many-to-many `proposicoesTemas`.
     """
+
     id: int
     tema: str
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class TramitacaoItem(BaseModel):
     """
@@ -320,6 +323,7 @@ class TramitacaoItem(BaseModel):
       descricaoTramitacao   → descricao_tramitacao
       descricaoSituacao     → descricao_situacao
     """
+
     id: int
     data_hora: Optional[datetime] = None
     sequencia: Optional[int] = None
@@ -331,13 +335,13 @@ class TramitacaoItem(BaseModel):
     ambito: Optional[str] = None
     apreciacao: Optional[str] = None
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 # -----------------------------------------------------------------------------
 # Proposições
 # -----------------------------------------------------------------------------
+
 
 class ProposicaoResponse(BaseModel):
     """
@@ -351,6 +355,7 @@ class ProposicaoResponse(BaseModel):
       dataApresentacao  → data_apresentacao
       urlInteiroTeor    → url_inteiro_teor
     """
+
     id: int
     id_camara: int
 
@@ -368,9 +373,8 @@ class ProposicaoResponse(BaseModel):
     autores: List[AutorResumo] = []
     temas: List[TemaResumo] = []
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ProposicaoDetalhe(ProposicaoResponse):
     """
@@ -381,19 +385,20 @@ class ProposicaoDetalhe(ProposicaoResponse):
       ementaDetalhada → ementa_detalhada
       urnFinal        → urn_final
     """
+
     ementa_detalhada: Optional[str] = None
     justificativa: Optional[str] = None
     urn_final: Optional[str] = None
 
     tramitacoes: List[TramitacaoItem] = []
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 # -----------------------------------------------------------------------------
 # Votações
 # -----------------------------------------------------------------------------
+
 
 class OrientacaoPartido(BaseModel):
     """
@@ -404,12 +409,12 @@ class OrientacaoPartido(BaseModel):
       siglaBancada → sigla_partido_bloco
       orientacao   → orientacao_voto
     """
+
     sigla_partido_bloco: Optional[str] = None
     orientacao_voto: Optional[str] = None
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class VotoDeputado(BaseModel):
     """
@@ -424,6 +429,7 @@ class VotoDeputado(BaseModel):
       Voto.voto         → voto             ("Sim", "Não", "Abstenção", "Obstrução", etc.)
       Voto.dataHoraVoto → data_hora_voto
     """
+
     politico_id: int
     nome: str
     sigla_partido: Optional[str] = None
@@ -431,9 +437,8 @@ class VotoDeputado(BaseModel):
     voto: str
     data_hora_voto: Optional[datetime] = None
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class VotacaoResponse(BaseModel):
     """
@@ -450,15 +455,16 @@ class VotacaoResponse(BaseModel):
       siglaOrgao        → sigla_orgao
       idProposicao      → proposicao_id
     """
+
     id: int
-    id_camara: Optional[str] = None   # String no banco (ex: "2578879-38")
+    id_camara: Optional[str] = None  # String no banco (ex: "2578879-38")
 
     data: Optional[date] = None
     data_hora_registro: Optional[datetime] = None
 
     tipo_votacao: Optional[str] = None
     descricao: Optional[str] = None
-    aprovacao: Optional[int] = None   # 1 aprovada, 0 rejeitada, -1 indefinido
+    aprovacao: Optional[int] = None  # 1 aprovada, 0 rejeitada, -1 indefinido
 
     votos_sim: Optional[int] = None
     votos_nao: Optional[int] = None
@@ -472,9 +478,8 @@ class VotacaoResponse(BaseModel):
     proposicao_ano: Optional[int] = None
     proposicao_ementa: Optional[str] = None
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class VotacaoDetalhe(VotacaoResponse):
     """
@@ -485,16 +490,17 @@ class VotacaoDetalhe(VotacaoResponse):
       - orientacoes: como cada partido/bloco orientou seus membros
       - votos:       voto nominal de cada deputado presente
     """
+
     orientacoes: List[OrientacaoPartido] = []
     votos: List[VotoDeputado] = []
 
-    model_config = ConfigDict(
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
-    )
+
 # -----------------------------------------------------------------------------
 # Proposições vinculadas a um deputado
 # -----------------------------------------------------------------------------
+
 
 class ProposicaoAutorResumo(BaseModel):
     """
@@ -503,22 +509,21 @@ class ProposicaoAutorResumo(BaseModel):
       nomeAutor       → nome
       tipoAutor       → tipo
     """
+
     politico_id: Optional[int] = None
     nome: str
     tipo: Optional[str] = None
     proponente: bool = False
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class TemaResumoSimples(BaseModel):
     id: int
     tema: str
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ProposicaoParaPolitico(BaseModel):
     """
@@ -526,6 +531,7 @@ class ProposicaoParaPolitico(BaseModel):
     Inclui lista de autores e temas para o frontend poder distinguir
     autor principal (proponente=True) de coautores.
     """
+
     id: int
     id_camara: int
     sigla_tipo: Optional[str] = None
@@ -539,13 +545,13 @@ class ProposicaoParaPolitico(BaseModel):
     autores: List[ProposicaoAutorResumo] = []
     temas: List[TemaResumoSimples] = []
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 # =============================================================================
 # SCHEMAS — Atividade Legislativa (endpoint consolidado)
 # =============================================================================
+
 
 class VotacaoResumida(BaseModel):
     """
@@ -557,6 +563,7 @@ class VotacaoResumida(BaseModel):
       Votacao.siglaOrgao   → sigla_orgao
       Votacao.idProposicao → proposicao_id
     """
+
     id_votacao: int
     data: Optional[date] = None
 
@@ -571,9 +578,8 @@ class VotacaoResumida(BaseModel):
     tipo_votacao: Optional[str] = None
     sigla_orgao: Optional[str] = None
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ProposicaoResumida(BaseModel):
     """
@@ -584,6 +590,7 @@ class ProposicaoResumida(BaseModel):
       - tipo_autoria: Tipo de autoria registrada (campo tipoAutor no ORM)
       - temas:        Lista de strings para leveza
     """
+
     id: int
     id_camara: int
 
@@ -602,15 +609,15 @@ class ProposicaoResumida(BaseModel):
 
     temas: List[str] = []
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
 
 class AtividadeLegislativaResponse(BaseModel):
     """
     Resposta consolidada do endpoint GET /politicos/{id}/atividade-legislativa.
     Retorna votações + proposições do parlamentar em um único request.
     """
+
     votacoes: List[VotacaoResumida]
     proposicoes: List[ProposicaoResumida]
 
@@ -623,6 +630,68 @@ class AtividadeLegislativaResponse(BaseModel):
 
     ano: Optional[int] = None
 
-    model_config = ConfigDict(
-        from_attributes = True
-    )
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TemaComparadoResumo(BaseModel):
+    """Resumo estatístico do alinhamento entre dois parlamentares por tema legislativo."""
+
+    tema: str
+    total_votacoes: int
+    votos_alinhados: int
+    votos_divergentes: int
+    taxa_alinhamento: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class VotoComparado(BaseModel):
+    """Votação comparada entre dois parlamentares."""
+
+    id_votacao: int
+    data: Optional[date] = None
+    descricao: Optional[str] = None
+    proposicao: Optional[str] = None
+    ementa: Optional[str] = None
+    voto_politico1: str
+    voto_politico2: str
+    alinhados: bool
+    tema: Optional[str] = None
+    temas: List[str] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PoliticoResumoComparacao(BaseModel):
+    """Dados resumidos de identificação do parlamentar na comparação."""
+
+    id: int
+    nome: str
+    slug: Optional[str] = None
+    sigla_partido: Optional[str] = None
+    sigla_uf: Optional[str] = None
+    url_foto: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ComparacaoPoliticosGrafoResponse(BaseModel):
+    """
+    Resposta estruturada do comparador de políticos via Grafo de Conhecimento (Apache AGE)
+    ou reconciliação relacional (PostgreSQL).
+    Totalmente factual, neutro e rastreável conforme diretrizes AGENTS.md.
+    """
+
+    politico1: PoliticoResumoComparacao
+    politico2: PoliticoResumoComparacao
+    total_votacoes_comuns: int
+    votos_alinhados: int
+    votos_divergentes: int
+    taxa_alinhamento: float
+    divergencias: List[VotoComparado]
+    alinhamentos: List[VotoComparado]
+    fonte_dados: str
+    tema_filtrado: Optional[str] = None
+    temas_disponiveis: List[TemaComparadoResumo] = []
+
+    model_config = ConfigDict(from_attributes=True)

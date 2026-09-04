@@ -54,7 +54,14 @@ export default function ModalSelecionarPolitico({
 
   const selecionarPolitico = (p: Politico) => {
     onClose()
-    navigate(`/comparar/${politicoAtualSlug}/${nomeParaSlug(p.nome)}`)
+    const slugOrigem =
+      politicoAtualSlug &&
+      politicoAtualSlug !== "null" &&
+      politicoAtualSlug !== "undefined"
+        ? politicoAtualSlug
+        : String(politicoAtualId)
+    const slugDestino = p.slug || nomeParaSlug(p.nome)
+    navigate(`/comparar/${slugOrigem}/${slugDestino}`)
   }
 
   const buscando = isFetching && queryDebounced.trim().length >= 2
