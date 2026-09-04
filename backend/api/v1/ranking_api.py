@@ -228,9 +228,8 @@ async def get_stats_geral(
         ano=ano, q=q, uf=uf, partido=partido
     )
 
-    scores = [p["score"] for p in ranking_completo]
-    total = len(scores)
-    media = sum(scores) / total if total > 0 else 0.0
+    total = len(ranking_completo)
+    media = 0.0
 
     aviso = (
         "Estatísticas calculadas apenas sobre parlamentares eleitos a partir de 2010 "

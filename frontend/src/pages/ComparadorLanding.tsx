@@ -2,7 +2,7 @@
  * ComparadorLanding.tsx — Pouso e Seletor do Comparador de Parlamentares.
  *
  * Permite ao cidadão pesquisar e selecionar dois deputados federais simultaneamente
- * para confrontar seus históricos de votos nominais, despesas de gabinete e scores.
+ * para confrontar seus históricos de votos nominais, despesas de gabinete e indicadores de mandato.
  *
  * Princípio da Neutralidade Factual (AGENTS.md):
  *  - Apresentação estritamente quantitativa e neutra.
@@ -94,9 +94,9 @@ const SUGESTOES_COMPARACAO: SugestaoPar[] = [
 export default function ComparadorLanding() {
   const navigate = useNavigate()
   useSeo({
-    title: "Comparador de Parlamentares — Confronto de Votos e Desempenho | quemvota",
+    title: "Comparador de Parlamentares — Confronto de Votos e Atuação | quemvota",
     description:
-      "Compare lado a lado o histórico de votações nominais, fidelidade partidária, uso de verbas e scores de desempenho de dois deputados federais.",
+      "Compare lado a lado o histórico de votações nominais, fidelidade partidária, uso de verbas e indicadores de atividade de dois deputados federais.",
     url: typeof window !== "undefined" ? window.location.href : "",
     keywords: "comparador de politicos, confronto de votos, deputados federais, comparacao parlamentar, camara dos deputados",
     type: "website",

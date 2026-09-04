@@ -102,8 +102,8 @@ export interface InfoPerformance {
 export interface PoliticoPerformance {
   readonly politico_id: number
   readonly ano: number | null
-  readonly score_final: number
-  readonly media_global: number
+  readonly score_final: number | null
+  readonly media_global: number | null
   readonly detalhes: NotasPerformance
   readonly info: InfoPerformance
 }
@@ -143,7 +143,7 @@ export interface TimelineInfoAno {
 
 export interface TimelineEntrada {
   readonly ano: number
-  readonly score: number
+  readonly score: number | null
   readonly notas: TimelineNotasAno
   readonly estatisticas: TimelineEstatisticasAno
   readonly info: TimelineInfoAno

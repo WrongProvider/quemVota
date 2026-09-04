@@ -42,7 +42,7 @@ export interface RankingPerformancePolitico {
   uf: string | null
   partido: string | null
   foto: string | null
-  score: number
+  score: number | null
   notas: NotasPerformance
   /** Quantos anos calendário têm dados de despesas para este parlamentar */
   anos_com_dados: number

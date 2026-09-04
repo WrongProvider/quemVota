@@ -345,7 +345,7 @@ export default function Home() {
             >
               {[
                 { n: "01", title: "Coleta automática",       text: "Dados coletados diariamente das APIs oficiais do Congresso Nacional." },
-                { n: "02", title: "Processamento e cálculo", text: "Calculamos scores de performance com base em assiduidade, produção e economia." },
+                { n: "02", title: "Processamento e métricas", text: "Consolidamos métricas de assiduidade, despesas e proposições sem juízo de valor." },
                 { n: "03", title: "Visualização acessível",  text: "Apresentamos tudo de forma clara para que qualquer cidadão possa acompanhar." },
               ].map((step, i, arr) => (
                 <div key={i} className="flex gap-5 relative">

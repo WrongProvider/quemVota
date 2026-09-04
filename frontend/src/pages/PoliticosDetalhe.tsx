@@ -63,25 +63,22 @@ function SeoHead({
   nome,
   partido,
   uf,
-  score,
   fotoUrl,
   pageUrl,
 }: {
   nome: string
   partido?: string
   uf?: string
-  score?: number
   fotoUrl: string
   pageUrl: string
 }) {
-  const scoreTexto = score != null ? ` | Score: ${score.toFixed(0)}/100` : ""
   const localTexto = [partido, uf].filter(Boolean).join(" • ")
 
   useSeo({
     title: `${nome} — Perfil Parlamentar${localTexto ? ` | ${localTexto}` : ""}`,
     description:
       `Veja o perfil completo de ${nome}${localTexto ? ` (${localTexto})` : ""}` +
-      `${scoreTexto}. Gastos, votações e performance parlamentar.`,
+      `. Gastos, votações e atividade parlamentar.`,
     url: pageUrl,
     image: fotoUrl,
     type: "profile",
@@ -362,13 +359,6 @@ export default function PoliticoDetalhe() {
   if (error) return <ErrorScreen />
   if (!data) return null
 
-  const scoreColor =
-    performance?.score_final >= 70
-      ? "text-emerald-500"
-      : performance?.score_final >= 40
-      ? "text-amber-500"
-      : "text-red-500"
-
   const pageUrl = `${window.location.origin}/politicos/${data.slug}`
   const fotoAbsoluta = `${window.location.origin}${PATH_FOTOS}${data.id}.jpg`
 
@@ -379,7 +369,6 @@ export default function PoliticoDetalhe() {
         nome={data.nome}
         partido={data.sigla_partido}
         uf={data.sigla_uf}
-        score={performance?.score_final}
         fotoUrl={fotoAbsoluta}
         pageUrl={pageUrl}
       />
@@ -423,35 +412,6 @@ export default function PoliticoDetalhe() {
 
         .pill-badge {
           background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-        }
-
-        .score-ring {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .score-ring::before {
-          content: '';
-          position: absolute;
-          inset: -4px;
-          border-radius: 50%;
-          background: conic-gradient(
-            #2563eb calc(var(--score, 0) * 3.6deg),
-            #e2e8f0 0deg
-          );
-          z-index: 0;
-        }
-        .score-ring-inner {
-          position: relative;
-          z-index: 1;
-          background: white;
-          border-radius: 50%;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
         }
 
         .section-fade {
@@ -530,24 +490,15 @@ export default function PoliticoDetalhe() {
                     )}
                   </div>
 
-                  {/* Score ring visível só no mobile, ao lado da foto */}
+                  {/* Indicador de presença no mobile */}
                   {performance && (
                     <div className="flex md:hidden flex-shrink-0 text-center">
-                      <div>
-                        <div
-                          className="score-ring w-24 h-24"
-                          style={{ "--score": performance.score_final } as React.CSSProperties}
-                        >
-                          <div className="score-ring-inner flex-col">
-                            <span className={`mono-font text-xl font-bold ${scoreColor}`}>
-                              {performance.score_final.toFixed(0)}
-                            </span>
-                            <span className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                              {anoSelecionado ? anoSelecionado : "score"}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-slate-400 mt-2 font-medium">Performance</p>
+                      <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-center">
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Presença</p>
+                        <p className="mono-font text-lg font-bold text-slate-800">
+                          {performance.detalhes?.nota_assiduidade != null ? `${performance.detalhes.nota_assiduidade.toFixed(0)}%` : "—"}
+                        </p>
+                        <p className="text-[9px] text-slate-400">Assiduidade</p>
                       </div>
                     </div>
                   )}
@@ -614,24 +565,17 @@ export default function PoliticoDetalhe() {
                   </div>
                 </div>
 
-                {/* SCORE RING — oculto no mobile (aparece ao lado da foto) */}
+                {/* INDICADOR RÁPIDO DE MANDATO (DESKTOP) */}
                 {performance && (
                   <div className="hidden md:flex flex-shrink-0 text-center" data-testid="performance-container">
-                    <div>
-                      <div
-                        className="score-ring w-28 h-28"
-                        style={{ "--score": performance.score_final } as React.CSSProperties}
-                      >
-                        <div className="score-ring-inner flex-col">
-                          <span data-testid="performance-score" className={`mono-font text-2xl font-bold ${scoreColor}`}>
-                            {performance.score_final.toFixed(0)}
-                          </span>
-                          <span className="text-[10px] text-slate-400 leading-tight mt-0.5">
-                            {anoSelecionado ? anoSelecionado : "score"}
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-xs text-slate-400 mt-2 font-medium">Performance</p>
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center min-w-[120px]">
+                      <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Presença</p>
+                      <p data-testid="performance-score" className="mono-font text-2xl font-bold text-slate-800 mt-1">
+                        {performance.detalhes?.nota_assiduidade != null ? `${performance.detalhes.nota_assiduidade.toFixed(0)}%` : "—"}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {anoSelecionado ? `em ${anoSelecionado}` : "assiduidade"}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -697,7 +641,7 @@ export default function PoliticoDetalhe() {
                 <h2 className="display-font text-xl font-bold text-slate-800">Estatísticas</h2>
                 <ToolDica
                   side="bottom"
-                  content="O score é calculado com base em assiduidade, economia e produção parlamentar."
+                  content="Estatísticas consolidadas a partir de dados oficiais abertos da Câmara dos Deputados."
                 >
                   <InfoBotao />
                 </ToolDica>
@@ -728,12 +672,12 @@ export default function PoliticoDetalhe() {
             </section>
           )}
 
-          {/* ── PERFORMANCE PARLAMENTAR ── */}
+          {/* ── ATUAÇÃO E RECURSOS PARLAMENTARES ── */}
           {performance && (
             <section key={`perf-${anoSelecionado}`} className="section-fade">
               <div className="flex items-center gap-2 mb-5">
                 <TrendingUp size={18} className="text-blue-500" />
-                <h2 className="display-font text-xl font-bold text-slate-800">Performance Parlamentar</h2>
+                <h2 className="display-font text-xl font-bold text-slate-800">Atuação e Recursos Parlamentares</h2>
               </div>
               <PoliticoGraficos performance={performance} />
 

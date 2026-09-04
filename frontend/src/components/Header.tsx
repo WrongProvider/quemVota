@@ -119,7 +119,7 @@ const NAV_ITEMS: NavItem[] = [
       {
         name: "Metodologia",
         href: "/metodologia",
-        description: "Como calculamos scores e processamos os dados",
+        description: "Princípios de neutralidade e processamento de dados",
         icon: <Icons.BookOpen />,
       },
       {
@@ -155,7 +155,7 @@ const NAV_ITEMS: NavItem[] = [
       {
         name: "Rankings",
         href: "/rankings",
-        description: "Compare parlamentares por performance, gastos e discursos",
+        description: "Rankings factuais por gastos, economia e discursos",
         icon: <Icons.BarChart />,
       },
       {

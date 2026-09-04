@@ -32,8 +32,6 @@ from backend.schemas import (
 )
 from backend.services.performance_calc import calcular_score
 
-from .ranking_service import RankingService
-
 logger = logging.getLogger(__name__)
 
 # Limites de paginação (segunda linha de defesa)
@@ -233,18 +231,17 @@ class PoliticoService:
         result = calcular_score(raw_row)
         meta = result.pop("_meta")
 
-        media_global = await RankingService(self._db).get_media_global_cached()
-
         return {
             "politico_id": deputado_id,
             "ano": ano,
-            "score_final": result["score"],
-            "media_global": round(media_global, 2),
+            "score_final": None,
+            "media_global": None,
             "detalhes": {
                 "nota_assiduidade": result["notas"]["assiduidade"],
                 "nota_economia": result["notas"]["economia"],
                 "nota_producao": result["notas"]["producao"],
             },
+            "metricas": result["metricas"],
             "info": {
                 "valor_cota_mensal": meta["cota_mensal"],
                 "meses_considerados": meta["meses_mandato"],
@@ -295,8 +292,9 @@ class PoliticoService:
             resultado.append(
                 {
                     "ano": entry["ano"],
-                    "score": calc["score"],
+                    "score": None,
                     "notas": calc["notas"],
+                    "metricas": calc["metricas"],
                     "estatisticas": {
                         "total_votacoes": entry["total_votacoes"],
                         "total_despesas": entry["total_despesas"],

@@ -10,6 +10,7 @@ O QuemVota tem como compromisso basilar a **transparência pública e a neutrali
 - **Apenas fatos observáveis:** Descreva exclusivamente votações nominais, autoria de proposições, presenças e relatorias registradas oficialmente.
 - **Zero julgamento de valor:** É estritamente proibido emitir elogios, críticas, atribuições de motivação ("com intuito eleitoreiro", "em defesa do povo") ou juízos morais.
 - **Sem adjetivos avaliativos:** Proibido o uso de adjetivos como *notável*, *pífio*, *polêmico*, *exemplar*, *retrocesso*, *avanço*. Utilize formulações factuais: *"A proposição tramitou por 14 meses e recebeu parecer favorável na comissão X"*.
+- **Ausência de Scores e Rótulos Avaliativos:** É estritamente proibido criar índices unificados, notas de 0 a 100 ou rankings normativos que rotulem parlamentares como "melhores/piores" ou "excelentes/críticos". Apresente métricas factuais desagregadas (taxa de presença, total de gastos em R$, utilização orçamentária, quantidade e autoria de proposições) para que o próprio cidadão tire suas conclusões.
 - **Rastreabilidade:** Toda informação gerada deve poder ser referenciada por identificadores únicos (`id` da proposição, `id` da votação, `id` do deputado na API da Câmara dos Deputados).
 
 ---
@@ -27,7 +28,7 @@ quemVota/
 ├── frontend/                # Interface web (React + TypeScript + Vite)
 ├── injest_banco/            # Pipeline de ETL e sincronização com a API da Câmara dos Deputados
 ├── embeddings/              # Geração de vetores semânticos (modelo BAAI/bge-m3)
-├── tasks/                   # Scripts de processamento em lote para cálculo de temas, marcos e scores
+├── tasks/                   # Scripts de processamento em lote para cálculo de temas e marcos
 └── orchestrator.py          # Orquestrador de execução concorrente de agentes
 ```
 

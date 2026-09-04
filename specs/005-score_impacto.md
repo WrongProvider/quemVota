@@ -1,6 +1,11 @@
-# SPEC-005 — Índice Multidimensional de Impacto Parlamentar
+# SPEC-005 — Índice Multidimensional de Impacto Parlamentar [DEPRECADO / ARQUIVADO]
 
-## 1. Objetivo e Escopo
+> [!CAUTION]
+> **ESPECIFICAÇÃO ARQUIVADA / DEPRECADA:**
+> Esta especificação foi descontinuada em favor do **Princípio da Neutralidade Factual Absoluta** (Seção 1 de `AGENTS.md`).
+> O QuemVota não emite notas, índices avaliativos ou scores de 0 a 100 para parlamentares, evitando qualquer juízo de valor ou peso normativo subjetivo. Todas as informações disponibilizadas pela plataforma devem ser puramente factuais, descritivas e auditáveis a partir de dados abertos oficiais.
+
+## 1. Objetivo e Escopo (Histórico)
 
 ### Objetivo
 Calcular o **Índice de Impacto Parlamentar**, um indicador balanceado de 0 a 100 pontos que mensura a influência legislativa efetiva, a tramitação de projetos e a capacidade de articulação institucional de cada deputado, superando análises puramente quantitativas que equiparam requerimentos simples a reformas estruturais.

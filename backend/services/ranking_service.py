@@ -137,7 +137,6 @@ class RankingService:
             dep = dep_map[dep_id]
             anos = len(entradas)
 
-            scores_anuais = []
             notas_por_dim: dict[str, list[float]] = {
                 "assiduidade": [],
                 "economia": [],
@@ -147,12 +146,9 @@ class RankingService:
             for entrada in entradas:
                 raw = {**entrada["raw"], **dep}
                 calc = calcular_score(raw)
-                scores_anuais.append(calc["score"])
                 notas_por_dim["assiduidade"].append(calc["notas"]["assiduidade"])
                 notas_por_dim["economia"].append(calc["notas"]["economia"])
                 notas_por_dim["producao"].append(calc["notas"]["producao"])
-
-            score_medio = round(sum(scores_anuais) / anos, 2)
 
             if anos >= 4:
                 confianca = "alta"
@@ -167,7 +163,8 @@ class RankingService:
                 "uf": dep["siglaUF"],
                 "partido": dep["siglaPartido"],
                 "foto": dep["urlFoto"],
-                "score": score_medio,
+                # Neutralidade Factual: score descontinuado
+                "score": None,
                 "notas": {
                     "assiduidade": round(sum(notas_por_dim["assiduidade"]) / anos, 2),
                     "economia": round(sum(notas_por_dim["economia"]) / anos, 2),
@@ -184,32 +181,14 @@ class RankingService:
 
             ranking.append(entry)
 
-        ranking.sort(key=lambda x: x["score"], reverse=True)
+        # Ordenação factual descritiva por assiduidade
+        ranking.sort(key=lambda x: x["notas"]["assiduidade"], reverse=True)
         return ranking
 
     # ------------------------------------------------------------------
-    # Media global (com cache manual)
+    # Media global (descontinuada em prol da neutralidade)
     # ------------------------------------------------------------------
 
     async def get_media_global_cached(self, *, ano: int | None = None) -> float:
-        """
-        Retorna a media global dos scores com cache de 24h.
-        Evita recalcular o ranking completo a cada requisicao de performance individual.
-        A chave de cache é diferenciada por ano para evitar colisão entre períodos.
-        """
-        cache_key = (
-            f"{_CACHE_MEDIA_GLOBAL_KEY}:{ano}"
-            if ano is not None
-            else _CACHE_MEDIA_GLOBAL_KEY
-        )
-        media = await self._cache.get(cache_key)
-
-        if media is None:
-            ranking = await self.get_ranking_performance_politicos(ano=ano)
-            if not ranking:
-                return 0.0
-            media = sum(p["score"] for p in ranking) / len(ranking)
-            await self._cache.set(cache_key, media, expire=_CACHE_MEDIA_GLOBAL_TTL)
-            logger.info("Media global recalculada (ano=%s): %.2f", ano, media)
-
-        return float(media)
+        """Descontinuado em adesão ao Princípio da Neutralidade Factual."""
+        return 0.0

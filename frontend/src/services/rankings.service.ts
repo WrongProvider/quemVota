@@ -123,7 +123,7 @@ export class PerformanceRankingService {
     minScore: number,
     maxScore: number = 100
   ): RankingPerformancePolitico[] {
-    return politicos.filter(p => p.score >= minScore && p.score <= maxScore)
+    return politicos.filter(p => p.score != null && p.score >= minScore && p.score <= maxScore)
   }
 
   /**

@@ -23,7 +23,6 @@ import {
   ChevronRight,
   ExternalLink,
   ArrowLeftRight,
-  Trophy,
   Share2,
   Copy,
   Check,
@@ -46,31 +45,9 @@ const PATH_FOTOS = "/fotos_politicos/"
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function getScoreColor(score: number) {
-  if (score >= 70) return "text-emerald-500"
-  if (score >= 40) return "text-amber-500"
-  return "text-red-500"
-}
 
-function getOrcamentoColor(pct: number) {
-  if (pct > 85) return "text-red-500"
-  if (pct > 60) return "text-amber-500"
-  return "text-emerald-600"
-}
-
-/**
- * Compara dois valores numéricos e retorna qual é "melhor".
- * lowerIsBetter=true para métricas de gasto.
- */
-function comparar(
-  a: number | null | undefined,
-  b: number | null | undefined,
-  lowerIsBetter = false,
-): "a" | "b" | "tie" | null {
-  if (a == null || b == null) return null
-  if (a === b) return "tie"
-  if (lowerIsBetter) return a < b ? "a" : "b"
-  return a > b ? "a" : "b"
+function getOrcamentoColor(_pct: number) {
+  return "text-slate-800"
 }
 
 // ── COMPARTILHAMENTO ── idêntico ao PoliticosDetalhe ───────────────────────
@@ -178,9 +155,9 @@ function BotoesCompartilhamento({ texto, url }: { texto: string; url: string }) 
 function SeoHead({ nomeA, nomeB }: { nomeA: string; nomeB: string }) {
   useSeo({
     title: `${nomeA} vs ${nomeB} — Comparação Parlamentar | quemvota`,
-    description: `Compare o desempenho de ${nomeA} e ${nomeB}. Gastos, votações, score e performance lado a lado.`,
+    description: `Compare a atuação de ${nomeA} e ${nomeB}. Gastos, votações e atividade parlamentar lado a lado.`,
     url: typeof window !== "undefined" ? window.location.href : "",
-    keywords: `${nomeA}, ${nomeB}, comparação parlamentar, deputados, performance`,
+    keywords: `${nomeA}, ${nomeB}, comparação parlamentar, deputados, votações, gastos`,
     type: "website",
   })
   return null
@@ -201,26 +178,18 @@ function StatCard({
   titulo,
   valor,
   accent = "slate",
-  destaque = false,
 }: {
   icon: React.ReactNode
   titulo: string
   valor: React.ReactNode
   accent?: string
-  destaque?: boolean
 }) {
   return (
     <div
-      className={`stat-card rounded-xl border p-4 transition-colors duration-200 cursor-default relative
+      className={`stat-card rounded-xl border p-4 transition-colors duration-200 cursor-default
         ${accentMap[accent] ?? accentMap.slate}
-        ${destaque ? "ring-2 ring-amber-400 ring-offset-1" : ""}
       `}
     >
-      {destaque && (
-        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center shadow-sm">
-          <Trophy size={10} className="text-white" />
-        </span>
-      )}
       <div className="flex items-center gap-2 mb-2">
         {icon}
         <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide leading-tight">{titulo}</p>
@@ -346,21 +315,15 @@ function ColunaPerfil({
         )}
       </div>
 
-      {/* Score ring — menor no mobile */}
+      {/* Indicador de presença */}
       {performance && (
         <div className="text-center">
-          <div
-            className="score-ring w-20 h-20 md:w-28 md:h-28"
-            style={{ "--score": performance.score_final } as React.CSSProperties}
-          >
-            <div className="score-ring-inner flex-col">
-              <span className={`mono-font text-xl md:text-2xl font-bold ${getScoreColor(performance.score_final)}`}>
-                {performance.score_final.toFixed(0)}
-              </span>
-              <span className="text-[9px] md:text-[10px] text-slate-400 leading-tight mt-0.5">score</span>
-            </div>
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-3.5 py-1.5 text-center inline-block">
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Presença</p>
+            <p className="mono-font text-base md:text-lg font-bold text-slate-800">
+              {performance.detalhes?.nota_assiduidade != null ? `${performance.detalhes.nota_assiduidade.toFixed(0)}%` : "—"}
+            </p>
           </div>
-          <p className="text-xs text-slate-400 mt-1.5 font-medium">Performance</p>
         </div>
       )}
 
@@ -407,9 +370,6 @@ function LinhaComparacao({
   titulo,
   valA,
   valB,
-  numA,
-  numB,
-  lowerIsBetter = false,
 }: {
   titulo: string
   valA: React.ReactNode
@@ -418,15 +378,10 @@ function LinhaComparacao({
   numB?: number | null
   lowerIsBetter?: boolean
 }) {
-  const melhor = comparar(numA, numB, lowerIsBetter)
-
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-3.5 border-b border-slate-100 last:border-0">
-      <div className={`text-right ${melhor === "a" ? "font-bold text-slate-900" : "text-slate-500"}`}>
+      <div className="text-right text-slate-700">
         <span className="mono-font text-sm">{valA}</span>
-        {melhor === "a" && (
-          <Trophy size={11} className="inline ml-1.5 text-amber-400 mb-0.5" />
-        )}
       </div>
 
       <div className="min-w-[100px] px-1 text-center">
@@ -435,10 +390,7 @@ function LinhaComparacao({
         </span>
       </div>
 
-      <div className={`text-left ${melhor === "b" ? "font-bold text-slate-900" : "text-slate-500"}`}>
-        {melhor === "b" && (
-          <Trophy size={11} className="inline mr-1.5 text-amber-400 mb-0.5" />
-        )}
+      <div className="text-left text-slate-700">
         <span className="mono-font text-sm">{valB}</span>
       </div>
     </div>
@@ -465,7 +417,6 @@ function BlocoEstatisticas({
     valA: number
     valB: number
     fmt: (v: number) => string
-    lowerIsBetter: boolean
   }[] = [
     {
       titulo: "Total de Votações",
@@ -474,7 +425,6 @@ function BlocoEstatisticas({
       valA: statsA.total_votacoes,
       valB: statsB.total_votacoes,
       fmt: (v) => v.toString(),
-      lowerIsBetter: false,
     },
     {
       titulo: "Total de Despesas",
@@ -483,7 +433,6 @@ function BlocoEstatisticas({
       valA: statsA.total_despesas,
       valB: statsB.total_despesas,
       fmt: (v) => v.toString(),
-      lowerIsBetter: true,
     },
     {
       titulo: "Cota Parlamentar",
@@ -492,7 +441,6 @@ function BlocoEstatisticas({
       valA: statsA.total_gasto,
       valB: statsB.total_gasto,
       fmt: (v) => `R$ ${v.toLocaleString("pt-BR")}`,
-      lowerIsBetter: true,
     },
     {
       titulo: "Verba de Gabinete",
@@ -501,7 +449,6 @@ function BlocoEstatisticas({
       valA: statsA.total_gasto_gabinete ?? 0,
       valB: statsB.total_gasto_gabinete ?? 0,
       fmt: (v) => `R$ ${v.toLocaleString("pt-BR")}`,
-      lowerIsBetter: true,
     },
     {
       titulo: "Gasto Total",
@@ -510,7 +457,6 @@ function BlocoEstatisticas({
       valA: statsA.total_gasto_combinado ?? statsA.total_gasto,
       valB: statsB.total_gasto_combinado ?? statsB.total_gasto,
       fmt: (v) => `R$ ${v.toLocaleString("pt-BR")}`,
-      lowerIsBetter: true,
     },
     {
       titulo: "Média Mensal",
@@ -519,7 +465,6 @@ function BlocoEstatisticas({
       valA: statsA.media_mensal,
       valB: statsB.media_mensal,
       fmt: (v) => `R$ ${v.toLocaleString("pt-BR")}`,
-      lowerIsBetter: true,
     },
   ]
 
@@ -544,27 +489,22 @@ function BlocoEstatisticas({
 
       {/* Cards espelhados lado a lado */}
       <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-        {metricas.map((m) => {
-          const melhor = comparar(m.valA, m.valB, m.lowerIsBetter)
-          return (
-            <div key={m.titulo} className="contents">
-              <StatCard
-                icon={m.icon}
-                titulo={m.titulo}
-                valor={m.fmt(m.valA)}
-                accent={m.accent}
-                destaque={melhor === "a"}
-              />
-              <StatCard
-                icon={m.icon}
-                titulo={m.titulo}
-                valor={m.fmt(m.valB)}
-                accent={m.accent}
-                destaque={melhor === "b"}
-              />
-            </div>
-          )
-        })}
+        {metricas.map((m) => (
+          <div key={m.titulo} className="contents">
+            <StatCard
+              icon={m.icon}
+              titulo={m.titulo}
+              valor={m.fmt(m.valA)}
+              accent={m.accent}
+            />
+            <StatCard
+              icon={m.icon}
+              titulo={m.titulo}
+              valor={m.fmt(m.valB)}
+              accent={m.accent}
+            />
+          </div>
+        ))}
 
         {statsA.primeiro_ano != null && statsB.primeiro_ano != null && (
           <>
@@ -580,15 +520,14 @@ function BlocoEstatisticas({
       {((statsA.total_gasto_gabinete ?? 0) > 0 || (statsB.total_gasto_gabinete ?? 0) > 0) && (
         <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
           ℹ️ <strong>Cota Parlamentar</strong> cobre deslocamentos, materiais e serviços de terceiros.{" "}
-          <strong>Verba de Gabinete</strong> cobre salários e encargos dos funcionários do escritório.{" "}
-          <Trophy size={10} className="inline text-amber-400 mb-0.5" /> indica o melhor desempenho na métrica.
+          <strong>Verba de Gabinete</strong> cobre salários e encargos dos funcionários do escritório.
         </p>
       )}
     </section>
   )
 }
 
-// ── BLOCO PERFORMANCE ───────────────────────────────────────────────────────
+// ── BLOCO PERFORMANCE (INDICADORES DE MANDATO) ───────────────────────────────
 
 function BlocoPerformance({
   perfA,
@@ -601,99 +540,45 @@ function BlocoPerformance({
   nomeA: string
   nomeB: string
 }) {
-  const melhorScore = comparar(perfA.score_final, perfB.score_final)
-
   return (
     <section className="section-fade">
       <div className="flex items-center gap-2 mb-5">
         <TrendingUp size={18} className="text-blue-500" />
-        <h2 className="display-font text-xl font-bold text-slate-800">Performance Parlamentar</h2>
+        <h2 className="display-font text-xl font-bold text-slate-800">Indicadores de Mandato</h2>
       </div>
 
-      {/* Score geral lado a lado */}
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden mb-4">
-        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/60">
-          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
-            Score Geral
-          </p>
-        </div>
-        <div className="grid grid-cols-2 divide-x divide-slate-100">
-          {([
-            { nome: nomeA, perf: perfA, melhor: melhorScore === "a" },
-            { nome: nomeB, perf: perfB, melhor: melhorScore === "b" },
-          ] as const).map(({ nome, perf, melhor }, i) => (
-            <div key={i} className={`px-5 py-6 text-center ${melhor ? "bg-amber-50/30" : ""}`}>
-              <p className="text-xs font-semibold text-slate-500 mb-4 truncate">{nome}</p>
-              <div
-                className="score-ring w-28 h-28 mx-auto"
-                style={{ "--score": perf.score_final } as React.CSSProperties}
-              >
-                <div className="score-ring-inner flex-col">
-                  <span className={`mono-font text-2xl font-bold ${getScoreColor(perf.score_final)}`}>
-                    {perf.score_final.toFixed(0)}
-                  </span>
-                  <span className="text-[10px] text-slate-400 leading-tight mt-0.5">score</span>
-                </div>
-              </div>
-              <p className="text-xs text-slate-400 mt-2 font-medium">Performance</p>
-              {melhor && (
-                <p className="text-[11px] font-semibold text-amber-600 mt-2 flex items-center justify-center gap-1">
-                  <Trophy size={11} className="text-amber-400" />
-                  Melhor score
-                </p>
-              )}
-              {melhorScore === "tie" && (
-                <p className="text-[11px] text-slate-400 mt-2">Empate</p>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Sub-scores linha a linha */}
+      {/* Indicadores linha a linha */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
         <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/60">
           <div className="grid grid-cols-[1fr_auto_1fr] gap-3">
             <p className="text-right text-xs font-semibold text-blue-600 truncate">{nomeA}</p>
-            <div className="min-w-[100px]" />
+            <div className="min-w-[100px] text-center text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+              Métricas
+            </div>
             <p className="text-left text-xs font-semibold text-violet-600 truncate">{nomeB}</p>
           </div>
         </div>
         <div className="px-5">
           <LinhaComparacao
-            titulo="Assiduidade"
-            valA={perfA.detalhes.nota_assiduidade.toFixed(1)}
-            valB={perfB.detalhes.nota_assiduidade.toFixed(1)}
-            numA={perfA.detalhes.nota_assiduidade}
-            numB={perfB.detalhes.nota_assiduidade}
+            titulo="Assiduidade Oficial"
+            valA={`${perfA.detalhes?.nota_assiduidade?.toFixed(1) ?? 0}%`}
+            valB={`${perfB.detalhes?.nota_assiduidade?.toFixed(1) ?? 0}%`}
+            numA={perfA.detalhes?.nota_assiduidade ?? 0}
+            numB={perfB.detalhes?.nota_assiduidade ?? 0}
           />
           <LinhaComparacao
-            titulo="Economia"
-            valA={perfA.detalhes.nota_economia.toFixed(1)}
-            valB={perfB.detalhes.nota_economia.toFixed(1)}
-            numA={perfA.detalhes.nota_economia}
-            numB={perfB.detalhes.nota_economia}
+            titulo="Uso da Cota (CEAP)"
+            valA={`${Number(perfA.info?.cota_utilizada_pct ?? 0).toFixed(1)}%`}
+            valB={`${Number(perfB.info?.cota_utilizada_pct ?? 0).toFixed(1)}%`}
+            numA={Number(perfA.info?.cota_utilizada_pct ?? 0)}
+            numB={Number(perfB.info?.cota_utilizada_pct ?? 0)}
           />
           <LinhaComparacao
-            titulo="Produção"
-            valA={perfA.detalhes.nota_producao.toFixed(1)}
-            valB={perfB.detalhes.nota_producao.toFixed(1)}
-            numA={perfA.detalhes.nota_producao}
-            numB={perfB.detalhes.nota_producao}
-          />
-          <LinhaComparacao
-            titulo="Score Final"
-            valA={perfA.score_final.toFixed(1)}
-            valB={perfB.score_final.toFixed(1)}
-            numA={perfA.score_final}
-            numB={perfB.score_final}
-          />
-          <LinhaComparacao
-            titulo="Média Global"
-            valA={perfA.media_global.toFixed(1)}
-            valB={perfB.media_global.toFixed(1)}
-            numA={perfA.media_global}
-            numB={perfB.media_global}
+            titulo="Proposições com Autoria"
+            valA={`${perfA.detalhes?.nota_producao?.toFixed(0) ?? 0}`}
+            valB={`${perfB.detalhes?.nota_producao?.toFixed(0) ?? 0}`}
+            numA={perfA.detalhes?.nota_producao ?? 0}
+            numB={perfB.detalhes?.nota_producao ?? 0}
           />
         </div>
       </div>
@@ -952,20 +837,14 @@ function BlocoAlinhamentoVotos({
             Taxa de Alinhamento {temaFiltro ? `(${temaFiltro})` : ""}
           </p>
           <div className="flex items-baseline gap-2">
-            <span className={`mono-font text-3xl font-bold ${getScoreColor(comparacao.taxa_alinhamento)}`}>
+            <span className="mono-font text-3xl font-bold text-slate-800">
               {comparacao.taxa_alinhamento.toFixed(1)}%
             </span>
             <span className="text-xs text-slate-400">de concordância</span>
           </div>
           <div className="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
             <div
-              className={`h-full transition-all duration-500 ${
-                comparacao.taxa_alinhamento >= 70
-                  ? "bg-emerald-500"
-                  : comparacao.taxa_alinhamento >= 40
-                  ? "bg-amber-500"
-                  : "bg-red-500"
-              }`}
+              className="h-full transition-all duration-500 bg-blue-600 rounded-full"
               style={{ width: `${comparacao.taxa_alinhamento}%` }}
             />
           </div>
@@ -1178,35 +1057,6 @@ export default function ComparacaoPoliticos() {
 
         .pill-badge {
           background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-        }
-
-        .score-ring {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .score-ring::before {
-          content: '';
-          position: absolute;
-          inset: -4px;
-          border-radius: 50%;
-          background: conic-gradient(
-            #2563eb calc(var(--score, 0) * 3.6deg),
-            #e2e8f0 0deg
-          );
-          z-index: 0;
-        }
-        .score-ring-inner {
-          position: relative;
-          z-index: 1;
-          background: white;
-          border-radius: 50%;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
         }
 
         .section-fade { animation: sectionFade 0.3s ease both; }

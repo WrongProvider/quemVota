@@ -1,21 +1,12 @@
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  Radar,
   PieChart,
   Pie,
   Cell,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts"
+import { CalendarCheck, DollarSign, FileText } from "lucide-react"
 
-import BadgePerformance from "./BadgePerformance"
 import InfoBotao from "./InfoDicaBotao"
 import ToolDica from "./InfoDica"
 
@@ -33,28 +24,6 @@ function CustomTooltip({ active, payload, label }) {
           {typeof entry.value === "number" ? entry.value.toFixed(1) : entry.value}
         </p>
       ))}
-    </div>
-  )
-}
-
-// ── Score bar visual ──
-function ScoreBar({ label, value, color }) {
-  const pct = Math.min(Math.max(value, 0), 100)
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs font-medium text-slate-500 w-20 flex-shrink-0">{label}</span>
-      <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${pct}%`, background: color }}
-        />
-      </div>
-      <span
-        className="text-xs font-bold text-slate-700 w-8 text-right"
-        style={{ fontFamily: "'DM Mono', monospace" }}
-      >
-        {pct.toFixed(0)}
-      </span>
     </div>
   )
 }
@@ -86,29 +55,13 @@ export default function PoliticoGraficos({ performance }) {
     nota_producao: 0,
   }
 
-  const dadosScore = [
-    { name: "Este parlamentar", valor: performance.score_final },
-    { name: "Média geral", valor: performance.media_global },
-  ]
-
-  const dadosRadar = [
-    { subject: "Assiduidade", A: detalhes.nota_assiduidade },
-    { subject: "Economia",    A: detalhes.nota_economia    },
-    { subject: "Produção",    A: detalhes.nota_producao    },
-  ]
-
-  const cotaUtilizada = performance.info.cota_utilizada_pct
+  const cotaUtilizada = Number(performance.info?.cota_utilizada_pct ?? 0)
   const dadosCota = [
     { name: "Utilizado", value: cotaUtilizada },
-    { name: "Restante",  value: Math.max(0, 100 - cotaUtilizada) },
+    { name: "Restante", value: Math.max(0, 100 - cotaUtilizada) },
   ]
 
   const COTA_COLORS = ["#2563eb", "#e2e8f0"]
-
-  const scoreColor =
-    performance.score_final >= 70 ? "#10b981"
-    : performance.score_final >= 40 ? "#f59e0b"
-    : "#ef4444"
 
   return (
     <>
@@ -117,116 +70,73 @@ export default function PoliticoGraficos({ performance }) {
       `}</style>
 
       <div className="space-y-4">
-
-        {/* ── OVERVIEW: Badge + Barras + Score ── */}
+        {/* ── PAINEL DE INDICADORES FACTUAIS ── */}
         <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-          <div className="flex items-start gap-6 flex-wrap">
+          <div className="flex items-center justify-between gap-2 mb-4 border-b border-slate-100 pb-3">
+            <div>
+              <h3
+                className="text-base font-bold text-slate-800"
+                style={{ fontFamily: "'Fraunces', serif" }}
+              >
+                Indicadores de Mandato
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Métricas auditáveis consolidadas diretamente a partir de registros oficiais da Câmara.
+              </p>
+            </div>
+            <ToolDica content="O QuemVota não emite notas, índices avaliativos ou scores ponderados. As métricas exibidas representam dados objetivos registrados na Câmara dos Deputados.">
+              <InfoBotao onClick={() => {}} />
+            </ToolDica>
+          </div>
 
-            {/* Left: breakdown */}
-            <div className="flex-1 min-w-[200px]">
-              <div className="flex items-center gap-2 mb-3">
-                <h3
-                  className="text-base font-bold text-slate-800"
-                  style={{ fontFamily: "'Fraunces', serif" }}
-                >
-                  Score de Performance
-                </h3>
-                <ToolDica content="O score é calculado com base em assiduidade (15%), economia (40%) e produção (45%) parlamentar.">
-                  <InfoBotao onClick={() => {}} />
-                </ToolDica>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="flex items-center gap-3.5 p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                <CalendarCheck size={20} />
               </div>
-
-              <BadgePerformance score={performance.score_final} />
-
-              <div className="mt-5 space-y-2.5">
-                <ScoreBar label="Assiduidade" value={detalhes.nota_assiduidade} color="#2563eb" />
-                <ScoreBar label="Produção"    value={detalhes.nota_producao}    color="#7c3aed" />
-                <ScoreBar label="Economia"    value={detalhes.nota_economia}    color="#10b981" />
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Assiduidade Oficial</p>
+                <p className="text-xl font-bold text-slate-800 mt-0.5" style={{ fontFamily: "'DM Mono', monospace" }}>
+                  {detalhes.nota_assiduidade.toFixed(1)}%
+                </p>
+                <p className="text-[11px] text-slate-400">em sessões deliberativas</p>
               </div>
             </div>
 
-            {/* Right: big number */}
-            <div className="flex-shrink-0 text-center bg-slate-50 rounded-xl px-8 py-5 border border-slate-100">
-              <span
-                className="block text-5xl font-bold leading-none"
-                style={{ color: scoreColor, fontFamily: "'DM Mono', monospace" }}
-              >
-                {performance.score_final.toFixed(1)}
-              </span>
-              <span className="text-xs text-slate-400 font-medium mt-1 block">de 100 pts</span>
-              <div className="mt-2 text-[11px] text-slate-400">
-                Média geral:{" "}
-                <span className="font-semibold text-slate-600">
-                  {performance.media_global.toFixed(1)}
-                </span>
+            <div className="flex items-center gap-3.5 p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="w-10 h-10 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center flex-shrink-0">
+                <DollarSign size={20} />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Uso do Orçamento</p>
+                <p className="text-xl font-bold text-slate-800 mt-0.5" style={{ fontFamily: "'DM Mono', monospace" }}>
+                  {cotaUtilizada.toFixed(1)}%
+                </p>
+                <p className="text-[11px] text-slate-400">da cota disponível</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3.5 p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                <FileText size={20} />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Proposições com Autoria</p>
+                <p className="text-xl font-bold text-slate-800 mt-0.5" style={{ fontFamily: "'DM Mono', monospace" }}>
+                  {detalhes.nota_producao.toFixed(0)}
+                </p>
+                <p className="text-[11px] text-slate-400">projetos e emendas</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── CHARTS GRID ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-
-          {/* Score comparativo */}
-          <ChartCard
-            title="Score Comparativo"
-            subtitle="Parlamentar vs. média nacional"
-          >
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={dadosScore} barCategoryGap="35%">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11, fill: "#94a3b8" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={[0, 100]}
-                  tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={28}
-                />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f8fafc" }} />
-                <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
-                  {dadosScore.map((_, index) => (
-                    <Cell key={index} fill={index === 0 ? scoreColor : "#cbd5e1"} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          {/* Radar - composição */}
-          <ChartCard
-            title="Composição do Score"
-            subtitle="Distribuição por critério avaliado"
-          >
-            <ResponsiveContainer width="100%" height={220}>
-              <RadarChart data={dadosRadar} outerRadius={75}>
-                <PolarGrid stroke="#e2e8f0" />
-                <PolarAngleAxis
-                  dataKey="subject"
-                  tick={{ fontSize: 11, fill: "#64748b" }}
-                />
-                <Radar
-                  name="Nota"
-                  dataKey="A"
-                  stroke="#2563eb"
-                  fill="#2563eb"
-                  fillOpacity={0.12}
-                  strokeWidth={2}
-                />
-                <Tooltip content={<CustomTooltip />} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
+        {/* ── GRÁFICOS FACTUAIS ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Cota parlamentar */}
           <ChartCard
-            title="Cota Parlamentar"
-            subtitle="Percentual da cota utilizado"
+            title="Execução da Cota Parlamentar (CEAP)"
+            subtitle="Percentual da cota parlamentar líquida utilizado"
           >
             <div className="flex flex-col items-center">
               <div className="relative w-[200px] h-[180px]">
@@ -261,7 +171,7 @@ export default function PoliticoGraficos({ performance }) {
                   <span className="text-2xl font-bold text-slate-800">
                     {cotaUtilizada.toFixed(0)}%
                   </span>
-                  <span className="text-[10px] text-slate-400">usado</span>
+                  <span className="text-[10px] text-slate-400">utilizado</span>
                 </div>
               </div>
 
@@ -279,7 +189,7 @@ export default function PoliticoGraficos({ performance }) {
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-sm inline-block bg-slate-200" />
                   <span className="text-xs text-slate-500">
-                    Restante{" "}
+                    Disponível{" "}
                     <span className="font-semibold text-slate-700">
                       {Math.max(0, 100 - cotaUtilizada).toFixed(1)}%
                     </span>
@@ -289,6 +199,32 @@ export default function PoliticoGraficos({ performance }) {
             </div>
           </ChartCard>
 
+          {/* Resumo de Recursos */}
+          <ChartCard
+            title="Detalhamento Financeiro"
+            subtitle="Valores nominais das despesas registradas"
+          >
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-xs text-slate-600">Cota Parlamentar (CEAP)</span>
+                <span className="text-sm font-bold text-slate-800" style={{ fontFamily: "'DM Mono', monospace" }}>
+                  R$ {Number(performance.info?.total_gasto ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-xs text-slate-600">Verba de Gabinete</span>
+                <span className="text-sm font-bold text-slate-800" style={{ fontFamily: "'DM Mono', monospace" }}>
+                  R$ {Number(performance.info?.gasto_gabinete ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-blue-50/60 border border-blue-100">
+                <span className="text-xs font-semibold text-blue-900">Total Combinado</span>
+                <span className="text-sm font-bold text-blue-700" style={{ fontFamily: "'DM Mono', monospace" }}>
+                  R$ {Number(performance.info?.gasto_total ?? performance.info?.total_gasto ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          </ChartCard>
         </div>
       </div>
     </>

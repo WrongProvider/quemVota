@@ -1,15 +1,15 @@
 import { describe, it, expect } from "vitest"
-import { DespesaRankingService, FormatService, FilterService } from "../ranking.service"
+import { DespesaRankingService, FormatService, FilterService } from "../rankings.service"
 
 describe("FormatService", () => {
   it("formata moeda em reais corretamente", () => {
     const resultado = FormatService.formatarMoeda(1500.5)
-    expect(resultado).toBe("R$ 1.500,50")
+    expect(resultado.replace(/\u00a0/g, " ")).toBe("R$ 1.500,50")
   })
 
   it("trunca texto longo", () => {
     const resultado = FormatService.truncarTexto("Texto muito longo aqui", 10)
-    expect(resultado).toBe("Texto much...")
+    expect(resultado).toBe("Texto muit...")
   })
 })
 

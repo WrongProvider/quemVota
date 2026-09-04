@@ -228,7 +228,7 @@ class RankingPerformancePolitico(BaseModel):
     uf: str | None = None
     partido: str | None = None
     foto: str | None = None
-    score: float
+    score: float | None = None
     notas: NotasPerformance
     anos_com_dados: int
     confianca: str  # "baixa" | "media" | "alta"

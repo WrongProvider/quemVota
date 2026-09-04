@@ -93,7 +93,7 @@ const FASES: RoadmapItem[] = [
       "Histórico de votações nominais e simbólicas",
       "Despesas da cota parlamentar (CEAP)",
       "Tramitação e autoria de proposições",
-      "Score de performance parlamentar (assiduidade, economia, produção)",
+      "Consolidação de indicadores de mandato (assiduidade, cota e proposições)",
     ],
   },
   {
@@ -107,7 +107,7 @@ const FASES: RoadmapItem[] = [
     detalhes: [
       "Página de perfil individual de cada deputado",
       "Histórico de gastos com gráficos interativos",
-      "Rankings por performance, economia e produção",
+      "Rankings factuais por gastos, economia e discursos",
       "Busca de proposições legislativas",
       "Detalhamento de votações com orientação dos partidos",
       "Design responsivo para mobile e desktop",

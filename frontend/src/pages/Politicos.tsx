@@ -45,7 +45,7 @@ export default function Politicos() {
   useSeo({
     title: "Parlamentares — Deputados Federais | quemvota",
     description:
-      "Pesquise e filtre todos os deputados federais em exercício. Veja presença, gastos, votações e score de performance de cada parlamentar.",
+      "Pesquise e filtre todos os deputados federais em exercício. Veja presença, gastos, votações e indicadores de mandato de cada parlamentar.",
     url: "https://www.quemvota.com.br/politicos",
     keywords: "lista de deputados, parlamentares brasileiros, câmara dos deputados, deputado federal",
   })

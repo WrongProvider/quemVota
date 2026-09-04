@@ -64,15 +64,16 @@ test.describe('Perfil do político — cabeçalho', () => {
     await expect(page.getByTestId('politician-name')).toContainText('Erika Hilton');
   });
 
-  test('deve exibir o score de performance (viewport desktop)', async ({ page }) => {
+  test('deve exibir o indicador de presença (viewport desktop)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
 
     await expect(page.getByTestId('performance-container')).toBeVisible();
     await expect(page.getByTestId('performance-score')).toBeVisible();
 
     const score = await page.getByTestId('performance-score').innerText();
-    expect(Number(score)).toBeGreaterThanOrEqual(0);
-    expect(Number(score)).toBeLessThanOrEqual(100);
+    const num = Number(score.replace('%', '').trim());
+    expect(num).toBeGreaterThanOrEqual(0);
+    expect(num).toBeLessThanOrEqual(100);
   });
 
   test('deve exibir a seção de estatísticas após o carregamento', async ({ page }) => {
@@ -99,7 +100,7 @@ test.describe('Seletor de ano (timeline)', () => {
     await expect(btnTodos).toHaveClass(/bg-slate-700/);
   });
 
-  test('deve filtrar dados ao selecionar um ano e atualizar o score', async ({ page }) => {
+  test('deve filtrar dados ao selecionar um ano e atualizar os dados do parlamentar', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
 
     const score = page.getByTestId('performance-score');
@@ -114,7 +115,7 @@ test.describe('Seletor de ano (timeline)', () => {
     await expect(page.getByTestId('section-stats')).toBeVisible({ timeout: 10_000 });
 
     const valorDepois = await score.innerText();
-    console.log(`Performance: mandato completo=${valorAntes} | 2024=${valorDepois}`);
+    console.log(`Presença: mandato completo=${valorAntes} | 2024=${valorDepois}`);
   });
 
   test('deve voltar para visão geral ao clicar em "Ver mandato completo"', async ({ page }) => {

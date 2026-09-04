@@ -22,7 +22,7 @@ export default function DisclaimerBanner() {
           </p>
           <p className="text-xs text-amber-700 leading-relaxed">
             Este projeto está em fase de desenvolvimento e o banco de dados ainda não foi totalmente
-            ajustado para replicar fielmente os dados da Câmara dos Deputados. Os dados e scores
+            ajustado para replicar fielmente os dados da Câmara dos Deputados. Os dados e indicadores
             apresentados <strong>podem não estar corretos</strong> e não devem ser interpretados como
             informação oficial ou definitiva. Use apenas para fins educacionais e de demonstração.
           </p>

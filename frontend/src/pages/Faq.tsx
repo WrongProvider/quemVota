@@ -142,19 +142,19 @@ const CATEGORIAS: FaqCategoria[] = [
     ],
   },
   {
-    id: "score",
-    label: "Score de performance",
-    emoji: "🏆",
+    id: "neutralidade",
+    label: "Neutralidade e Indicadores",
+    emoji: "⚖️",
     items: [
       {
-        q: "O que é o score de performance?",
+        q: "Por que o QuemVota não atribui notas ou scores aos parlamentares?",
         a: (
           <>
-            É uma pontuação de 0 a 100 que resume o desempenho parlamentar em três dimensões:{" "}
-            <strong>assiduidade</strong> (presença em votações),{" "}
-            <strong>economia</strong> (uso da cota parlamentar) e{" "}
-            <strong>produção legislativa</strong> (proposições apresentadas). Veja a metodologia
-            completa na{" "}
+            Qualquer fórmula matemática única que tente resumir um parlamentar em uma nota de 0 a 100 embute
+            julgamentos de valor subjetivos (como penalizar quem gasta verba para viajar a bases distantes ou
+            premiar volume bruto de projetos protocolares). O QuemVota segue o{" "}
+            <strong>Princípio da Neutralidade Factual Absoluta</strong>: entregamos os dados primários e
+            auditáveis para que o próprio cidadão tire suas conclusões. Saiba mais na{" "}
             <Link to="/metodologia" className="text-blue-600 hover:underline">
               página de Metodologia
             </Link>
@@ -163,33 +163,22 @@ const CATEGORIAS: FaqCategoria[] = [
         ),
       },
       {
-        q: "O score é uma medida justa?",
+        q: "Como avaliar a atuação de um parlamentar sem um score?",
         a: (
           <>
-            É uma medida objetiva e transparente, mas não é perfeita. Ela não captura qualidade das
-            proposições, articulação política, atuação em comissões, atendimento ao eleitorado ou
-            contexto de ausências justificadas. Use o score como ponto de partida, não como veredicto.
+            Recomendamos avaliar a atuação com base no conjunto de fatos observáveis: como o deputado votou
+            em matérias de seu interesse, sua taxa de presença nas sessões deliberativas de plenário, os temas
+            aos quais mais se dedica e a transparência na utilização de recursos públicos.
           </>
         ),
       },
       {
-        q: "Por que a ponderação é 15% / 40% / 45%?",
+        q: "O que significam os indicadores de assiduidade e recursos?",
         a: (
           <>
-            Os pesos refletem uma escolha metodológica nossa. Priorizamos <strong>produção legislativa</strong>{" "}
-            (45%) por ser a função-fim do mandato, <strong>economia da cota</strong> (40%) por representar
-            uso responsável de dinheiro público, e <strong>assiduidade</strong> (15%) como critério base
-            de presença. Os pesos são debatíveis — a metodologia é aberta para discussão.
-          </>
-        ),
-      },
-      {
-        q: "Por que um deputado tem score zero?",
-        a: (
-          <>
-            Score zero geralmente indica que o deputado gastou mais do que sua cota (nota de economia = 0)
-            e teve produção legislativa muito baixa. Também pode acontecer com parlamentares que assumiram
-            o mandato recentemente e ainda têm poucos registros.
+            A <strong>assiduidade oficial</strong> é a porcentagem de presenças registradas em sessões com
+            votação deliberativa. Os <strong>recursos</strong> discriminam o montante utilizado da Cota
+            Parlamentar (CEAP) e da Verba de Gabinete, com valores em reais e percentuais sobre o teto oficial.
           </>
         ),
       },
@@ -276,9 +265,9 @@ export default function FAQ() {
   useSeo({
     title: "Perguntas Frequentes — FAQ | quemvota",
     description:
-      "Tire suas dúvidas sobre o quemvota: de onde vêm os dados, como funciona o score de performance, como comparar parlamentares e muito mais.",
+      "Tire suas dúvidas sobre o quemvota: de onde vêm os dados, neutralidade factual, como comparar parlamentares e muito mais.",
     url: "https://www.quemvota.com.br/faq",
-    keywords: "dúvidas frequentes, como funciona, dados abertos, câmara deputados, score parlamentar",
+    keywords: "dúvidas frequentes, como funciona, dados abertos, câmara deputados, neutralidade factual, quemvota",
   })
 
   // Filtra as perguntas pela busca
@@ -414,7 +403,7 @@ export default function FAQ() {
             <div className="flex-1">
               <p className="text-sm font-semibold text-slate-800 mb-1">Ainda tem dúvidas?</p>
               <p className="text-sm text-slate-500 leading-relaxed">
-                Abra uma issue no GitHub ou explore a metodologia completa de cálculo do score.
+                Abra uma issue no GitHub ou explore a nossa metodologia e princípios de neutralidade.
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
