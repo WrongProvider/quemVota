@@ -177,8 +177,9 @@ def test_dry_run_pipeline_sem_gravar():
     assert "proposicoes_lidas" in metricas
     assert "itens_classificados" in metricas
     assert metricas["deputados_processados"] == 1
-    # dry_run: nada gravado
-    assert metricas["deputados_agregados"] == 0
+    # dry_run: embeddings computados mas nada gravado de novo
+    assert metricas["proposicoes_vetorizadas"] >= 0
+    assert metricas["proposicoes_sem_embedding"] == 0
 
 
 def test_pipeline_real_deputado_26():
