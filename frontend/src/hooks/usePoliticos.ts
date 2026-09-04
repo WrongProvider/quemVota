@@ -21,6 +21,7 @@ import {
   obterPoliticoDetalheBySlugService,
   obterPoliticoAtividadeService,
   obterComparacaoPoliticosService,
+  obterPoliticoTemasService,
   PoliticoServiceError,
 } from "../services/politicos.service"
 import type {
@@ -34,6 +35,8 @@ import type {
   AtividadeLegislativaResponse,
   ComparacaoPoliticosGrafoResponse,
   CompararPoliticosParams,
+  PoliticoTemasResponse,
+  PoliticoTemasParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -89,6 +92,8 @@ export const politicoKeys = {
     [...politicoKeys.detail(id), "atividade", params ?? {}] as const,
   comparacao:   (idOrSlug1: string | number, idOrSlug2: string | number, params?: CompararPoliticosParams) =>
     [...politicoKeys.all, "comparacao", String(idOrSlug1), String(idOrSlug2), params ?? {}] as const,
+  temas:        (idOrSlug: string | number, legislatura?: number) =>
+    [...politicoKeys.all, "temas", String(idOrSlug), legislatura ?? 57] as const,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -316,5 +321,27 @@ export function useComparacaoPoliticos(
     gcTime: GC_TIME_MS,
     retry: shouldRetry,
     retryDelay,
+  })
+}
+
+/**
+ * Retorna os temas de atuação parlamentar do político (SPEC-001).
+ *
+ * Cache de 10 min. Retorna null se não houver classificação disponível (404 gracioso).
+ */
+export function usePoliticoTemas(
+  idOrSlug?: string | number,
+  params?: PoliticoTemasParams,
+): UseQueryResult<PoliticoTemasResponse | null, PoliticoServiceError> {
+  const s = String(idOrSlug ?? "").trim()
+  const enabled = Boolean(s && s !== "null" && s !== "undefined")
+
+  return useQuery({
+    queryKey: politicoKeys.temas(idOrSlug ?? "", params?.id_legislatura),
+    queryFn: ({ signal }) => obterPoliticoTemasService(idOrSlug!, params, signal),
+    enabled,
+    staleTime: 10 * 60 * 1_000,
+    gcTime: 15 * 60 * 1_000,
+    retry: false, // 404 significa que o pipeline ainda não processou dados para o parlamentar
   })
 }

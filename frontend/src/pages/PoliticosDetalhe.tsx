@@ -10,6 +10,7 @@ import {
 } from "../hooks/usePoliticos"
 import PoliticoGraficos from "../components/PoliticoGraficos"
 import LinhaDoTempo from "../components/LinhaDoTempo"
+import PainelTemasAtuacao from "../components/PainelTemasAtuacao"
 import InfoBotao from "../components/InfoDicaBotao"
 import ToolDica from "../components/InfoDica"
 import Header from "../components/Header"
@@ -784,6 +785,9 @@ export default function PoliticoDetalhe() {
               )}
             </section>
           )}
+
+          {/* ── FOCO TEMÁTICO DA ATUAÇÃO (SPEC-001) ── */}
+          <PainelTemasAtuacao politicoId={data.slug || data.id} />
 
           {/* ── HISTÓRICO DE GASTOS ── */}
           <section className="mt-10" data-testid="section-historico-de-gastos">

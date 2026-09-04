@@ -528,3 +528,67 @@ export async function fetchComparacaoPoliticos(
   )
   return data
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPEC-001 — Temas de Atuação Parlamentar (IA / pgvector)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface TemaAtuacaoItem {
+  readonly id_tema: number
+  readonly slug: string
+  readonly nome: string
+  readonly score: number
+  readonly percentual: number
+  readonly peso_total: number
+  readonly rank: number
+}
+
+export interface PoliticoTemasResponse {
+  readonly id_deputado: number
+  readonly id_legislatura: number
+  readonly total_temas_identificados: number
+  readonly temas: TemaAtuacaoItem[]
+}
+
+export interface PoliticoTemasParams {
+  readonly id_legislatura?: number
+  readonly limit?: number
+}
+
+/**
+ * GET /politicos/{idOrSlug}/temas
+ *
+ * Retorna o ranking temático de atuação do parlamentar (SPEC-001).
+ * Calculado por similaridade semântica (pgvector BAAI/bge-m3) sobre proposições apresentadas.
+ * Retorna null em caso de 404 (pipeline ainda não processado para este deputado).
+ */
+export async function fetchPoliticoTemas(
+  idOrSlug: string | number,
+  params?: PoliticoTemasParams,
+  signal?: AbortSignal,
+): Promise<PoliticoTemasResponse | null> {
+  try {
+    const { data } = await api.get<PoliticoTemasResponse>(
+      `/politicos/${idOrSlug}/temas`,
+      {
+        params: {
+          id_legislatura: 57,
+          limit: 10,
+          ...params,
+        },
+        signal,
+      },
+    )
+    return data
+  } catch (err: unknown) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "response" in err &&
+      (err as { response?: { status?: number } }).response?.status === 404
+    ) {
+      return null
+    }
+    throw err
+  }
+}

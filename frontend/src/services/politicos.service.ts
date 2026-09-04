@@ -36,6 +36,9 @@ import {
   fetchComparacaoPoliticos,
   type ComparacaoPoliticosGrafoResponse,
   type CompararPoliticosParams,
+  fetchPoliticoTemas,
+  type PoliticoTemasResponse,
+  type PoliticoTemasParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -293,5 +296,17 @@ export async function obterComparacaoPoliticosService(
     return await fetchComparacaoPoliticos(idOrSlug1, idOrSlug2, params, signal)
   } catch (error) {
     throw normalizeError(error, "obterComparacaoPoliticosService")
+  }
+}
+
+export async function obterPoliticoTemasService(
+  idOrSlug: string | number,
+  params?: PoliticoTemasParams,
+  signal?: AbortSignal,
+): Promise<PoliticoTemasResponse | null> {
+  try {
+    return await fetchPoliticoTemas(idOrSlug, params, signal)
+  } catch (error) {
+    throw normalizeError(error, "obterPoliticoTemasService")
   }
 }
