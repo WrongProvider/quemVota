@@ -850,6 +850,7 @@ class ProposicaoGrafoResponse(BaseModel):
 # SPEC-001 — Temas de Atuação Parlamentar
 # ===========================================================================
 
+
 class TemaAtuacaoItemResponse(BaseModel):
     """Item individual no ranking temático de um parlamentar."""
 

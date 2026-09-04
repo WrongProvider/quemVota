@@ -545,6 +545,7 @@ async def atividade_legislativa(
         offset_proposicoes=offset_proposicoes,
     )
 
+
 # ---------------------------------------------------------------------------
 # SPEC-001 — Temas de Atuação Parlamentar
 # ---------------------------------------------------------------------------
