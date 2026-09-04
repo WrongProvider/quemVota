@@ -4,4 +4,5 @@ quemvota_env/
 **/__pycache__/
 *.pyc
 .venv
-**/airflow/logs/
+/airflow/logs
+.worktrees/

@@ -3,41 +3,47 @@ FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
+# Instala dependências de compilação/C
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libpq-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Copia os binários do uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Como o contexto no compose é ".", precisamos pegar de backend/
+# Variáveis para acelerar e otimizar o uv no container
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
+
+# Copia manifests de dependência primeiro para maximizar o cache do Docker
 COPY pyproject.toml uv.lock ./
-ENV UV_LINK_MODE=copy
-RUN uv sync --frozen --no-dev --no-install-project
+
+# Instala as dependências reutilizando o cache de pacotes do uv entre builds
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-install-project
 
 # ── Runtime ───────────────────────────────────────────────────────────────────
 FROM python:3.12-slim
 
-# Instala libpq apenas (necessário para rodar o psycopg2-binary/psycopg2)
+WORKDIR /app
+
+# Instala apenas bibliotecas de runtime necessárias
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 curl \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
-# Copia o venv do builder
+# Copia o venv compilado no builder
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Copia todo o conteúdo da pasta backend para a raiz do WORKDIR (/app)
-# Assim o main.py fica acessível diretamente para o uvicorn
+# Copia os diretórios do projeto
 COPY backend/ /app/backend/
-
 COPY shared/ /app/shared/
 
+# Usuário não-root por segurança
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000
 
-# Agora o main:app funciona porque o arquivo está em /app/main.py
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

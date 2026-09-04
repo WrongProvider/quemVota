@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost/quemvota"
     EMBEDDING_DIMENSION: int = 1024
     EMBEDDING_MODEL: str = "BAAI/bge-m3"
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_file_encoding="utf-8")
 
 
 settings = Settings()

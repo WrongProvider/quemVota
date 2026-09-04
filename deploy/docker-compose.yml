@@ -169,7 +169,7 @@ services:
   # ── Cloudflare Tunnel ───────────────────────────────────────────────────────
   tunnel:
     image: cloudflare/cloudflared:latest
-    command: tunnel run --token SEU_TOKEN_AQUI
+    command: tunnel run --token ${CLOUD_TUNNEL}
     networks:
       - frontend
 

@@ -1,5 +1,13 @@
 .venv/
+venv/
 __pycache__/
 .git/
-.env
 tests/
+__pycache__
+*.pyc
+embeddings/
+injest_banco/
+airflow/logs/
+airflow/dags/
+airflow/.cache/
+.env

@@ -1,52 +1,33 @@
-import os
 from logging.config import fileConfig
 
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
-# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import asyncio
-
-from sqlalchemy import pool
-from sqlalchemy.ext.asyncio import async_engine_from_config
-
+# Import dos modelos para registro no autogenerate
 import shared.models  # noqa: F401 — registra modelos da API Câmara
 import shared.models_vetorial  # noqa: F401 — registra camada vetorial / IA
-from shared.database import Base  # ajuste para o seu Base
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# Importa a Base e a SYNC_URL tratada diretamente da sua central de banco
+from shared.database import SYNC_URL, Base
+
+# Objeto de configuração do Alembic
 config = context.config
 
-if os.environ.get("DATABASE_URL"):
-    config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# Define a URL de conexão síncrona (psycopg2 / psycopg)
+config.set_main_option("sqlalchemy.url", str(SYNC_URL))
+
+# Configura o sistema de logs do Alembic
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
+# Define os metadados dos modelos para detecção automática (autogenerate)
 target_metadata = Base.metadata
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode.
+    """Executa migrações no modo 'offline'.
 
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
+    Gera os scripts SQL diretamente sem abrir uma conexão ativa com o banco.
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -60,35 +41,25 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def do_run_migrations(connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+def run_migrations_online() -> None:
+    """Executa migrações no modo 'online'.
 
-    with context.begin_transaction():
-        context.run_migrations()
-
-
-async def run_async_migrations() -> None:
-    """Cria uma engine assíncrona (asyncpg) e roda as migrations dentro dela.
-
-    O driver do projeto é asyncpg, então precisamos passar pela API
-    assíncrona do SQLAlchemy (connection.run_sync) — chamar .connect()
-    direto, como no template síncrono padrão, dispara MissingGreenlet.
+    Cria uma engine síncrona e aplica as migrações diretamente na base de dados.
     """
-    connectable = async_engine_from_config(
+    connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
 
-    await connectable.dispose()
-
-
-def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
-    asyncio.run(run_async_migrations())
+        with context.begin_transaction():
+            context.run_migrations()
 
 
 if context.is_offline_mode():

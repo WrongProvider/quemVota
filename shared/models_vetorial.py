@@ -77,6 +77,16 @@ class TemaAtuacao(Base):
     itens = relationship("ItemTemaAtuacao", back_populates="temaAtuacao")
     deputados = relationship("DeputadoTemaAtuacao", back_populates="temaAtuacao")
 
+    __table_args__ = (
+        Index(
+            "ix_temas_atuacao_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
+    )
+
 
 # ===========================================================================
 # DOCUMENT EMBEDDINGS — armazenamento central (specs 001, 003)
@@ -120,6 +130,13 @@ class DocumentEmbedding(Base):
             "tipoEntidade", "idEntidade", "modelo", name="uq_doc_emb_entidade_modelo"
         ),
         Index("ix_doc_emb_tipo_entidade", "tipoEntidade", "idEntidade"),
+        Index(
+            "ix_document_embeddings_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 24, "ef_construction": 128},
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
     )
 
 
@@ -250,6 +267,34 @@ class DeputadoPerfilVetorial(Base):
             "modelo",
             name="uq_dep_perfil_legislatura_modelo",
         ),
+        Index(
+            "ix_deputado_perfil_vetor_composto_hnsw",
+            "vetorComposto",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 24, "ef_construction": 128},
+            postgresql_ops={"vetorComposto": "vector_cosine_ops"},
+        ),
+        Index(
+            "ix_deputado_perfil_vetor_tematico_hnsw",
+            "vetorTematico",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"vetorTematico": "vector_cosine_ops"},
+        ),
+        Index(
+            "ix_deputado_perfil_vetor_proposicoes_hnsw",
+            "vetorProposicoes",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"vetorProposicoes": "vector_cosine_ops"},
+        ),
+        Index(
+            "ix_deputado_perfil_vetor_discursos_hnsw",
+            "vetorDiscursos",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"vetorDiscursos": "vector_cosine_ops"},
+        ),
     )
 
 
@@ -335,6 +380,16 @@ class MarcoMandato(Base):
 
     deputado = relationship("Deputado", foreign_keys=[idDeputado])
 
+    __table_args__ = (
+        Index(
+            "ix_marcos_mandato_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
+    )
+
 
 # ===========================================================================
 # ÍNDICE DE IMPACTO PARLAMENTAR — scores multidimensionais (spec 005)
@@ -376,6 +431,10 @@ class DeputadoImpacto(Base):
 
 
 # ===========================================================================
-# ÍNDICES HNSW — definidos via migration (Alembic op.execute)
-# SQLAlchemy não suporta nativamente CREATE INDEX ... USING hnsw
+# ÍNDICES HNSW — definidos via SQLAlchemy models e migrations Alembic
+# Configuração otimizada para alta revocabilidade (Recall):
+#   - m = 24 (número de conexões por elemento por camada)
+#   - ef_construction = 128 (tamanho da lista de candidatos durante construção)
+#   - metric = vector_cosine_ops (distância por cosseno para embeddings normalizados)
 # ===========================================================================
+

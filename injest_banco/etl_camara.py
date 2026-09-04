@@ -43,6 +43,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from tqdm import tqdm
+from shared.database import SYNC_URL
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -60,10 +61,7 @@ log = logging.getLogger("etl_camara")
 # ---------------------------------------------------------------------------
 # Configuração
 # ---------------------------------------------------------------------------
-load_dotenv()
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/quemvota"
-)
+DATABASE_URL = SYNC_URL
 BASE_URL = "http://dadosabertos.camara.leg.br/arquivos"
 FORMATO = "csv"
 ANO_ATUAL = datetime.now().year
@@ -1473,14 +1471,6 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
             ["ponto"],
             dep_group=0,
         ),
-        Dataset(
-            "licitacoes",
-            lambda: url_simples("licitacoes") if False else url_simples("licitacoes"),
-            t_licitacoes,
-            "licitacoes",
-            ["idLicitacao"],
-            dep_group=0,
-        ),
         # ── Grupo 1: dependem de deputados / orgaos / legislaturas ────────────
         Dataset(
             "deputadosOcupacoes",
@@ -1559,6 +1549,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_eventos,
                 "eventos",
                 ["idCamara"],
+                ano_ref=a,
                 dep_group=0,
             ),
             Dataset(
@@ -1567,6 +1558,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_proposicoes,
                 "proposicoes",
                 ["idCamara"],
+                ano_ref=a,
                 dep_group=0,
             ),
             Dataset(
@@ -1575,6 +1567,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_licitacoes,
                 "licitacoes",
                 ["idLicitacao"],
+                ano_ref=a,
                 dep_group=0,
             ),
             # Grupo 1: dependem de eventos / proposicoes / licitacoes / deputados
@@ -1584,6 +1577,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_eventos_orgaos,
                 "_raw_eventosOrgaos",
                 [],
+                ano_ref=a,
                 dep_group=1,
             ),
             Dataset(
@@ -1592,6 +1586,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_eventos_reqs,
                 "_raw_eventosRequerimentos",
                 [],
+                ano_ref=a,
                 dep_group=1,
             ),
             Dataset(
@@ -1600,6 +1595,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_presenca,
                 "_raw_eventosPresenca",
                 [],
+                ano_ref=a,
                 dep_group=1,
             ),
             Dataset(
@@ -1608,6 +1604,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_proposicoes_autores,
                 "_raw_proposicoesAutores",
                 [],
+                ano_ref=a,
                 dep_group=1,
             ),
             Dataset(
@@ -1616,6 +1613,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_proposicoes_temas,
                 "_raw_proposicoesTemas",
                 [],
+                ano_ref=a,
                 dep_group=1,
             ),
             Dataset(
@@ -1624,6 +1622,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_votacoes,
                 "_raw_votacoes",
                 [],
+                ano_ref=a,
                 dep_group=1,
             ),
             Dataset(
@@ -1632,6 +1631,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_licitacoes_pedidos,
                 "_raw_licitacoesPedidos",
                 [],
+                ano_ref=a,
                 dep_group=1,
             ),
             Dataset(
@@ -1640,6 +1640,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_licitacoes_propostas,
                 "_raw_licitacoesPropostas",
                 [],
+                ano_ref=a,
                 dep_group=1,
             ),
             Dataset(
@@ -1648,6 +1649,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_licitacoes_itens,
                 "_raw_licitacoesItens",
                 [],
+                ano_ref=a,
                 dep_group=1,
             ),
             Dataset(
@@ -1656,6 +1658,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_licitacoes_contratos,
                 "_raw_licitacoesContratos",
                 [],
+                ano_ref=a,
                 dep_group=1,
             ),
             # Grupo 2: votos e orientações dependem de votacoes (grupo 1)
@@ -1665,6 +1668,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_votacoes_votos,
                 "_raw_votacoesVotos",
                 [],
+                ano_ref=a,
                 dep_group=2,
             ),
             Dataset(
@@ -1673,6 +1677,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_votacoes_orientacoes,
                 "_raw_votacoesOrientacoes",
                 [],
+                ano_ref=a,
                 dep_group=2,
             ),
             Dataset(
@@ -1681,6 +1686,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 t_votacoes_objetos,
                 "_raw_votacoesObjetos",
                 [],
+                ano_ref=a,
                 dep_group=2,
             ),
         ]
@@ -2760,6 +2766,8 @@ def run_etl(
     if erros:
         log.warning("Datasets com falha (%d): %s", len(erros), erros)
 
+    return erros
+
 
 # ===========================================================================
 # CLI
@@ -2895,7 +2903,7 @@ def main():
         anos,
         legislaturas,
     )
-    run_etl(
+    erros = run_etl(
         catalog,
         engine,
         force=args.force,
@@ -2905,6 +2913,13 @@ def main():
         backfill_slug_only=args.backfill_slug_only,
         workers=args.workers,
     )
+
+    # Sem isso, o script sempre saía com código 0 mesmo com datasets falhos
+    # (por ex. downloads que deram erro de verdade, não 404 esperado) — o
+    # Airflow então marcava a task como SUCCESS e nada disparava alerta/retry.
+    if erros:
+        log.error("ETL finalizado com %d dataset(s) em erro — saindo com código 1", len(erros))
+        sys.exit(1)
 
 
 if __name__ == "__main__":

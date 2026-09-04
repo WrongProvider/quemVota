@@ -11,7 +11,6 @@ Segurança (OWASP):
     negócio isolada do transporte HTTP.
 """
 
-import asyncio
 import logging
 
 from fastapi import HTTPException, status
@@ -340,8 +339,11 @@ class PoliticoService:
         Retorna em uma única chamada as votações nominais e as proposições
         em que o parlamentar é autor ou coautor.
 
-        As duas queries ao banco são disparadas em paralelo via asyncio.gather,
-        reduzindo a latência total ao tempo da query mais lenta (não à soma).
+        As duas queries ao banco são disparadas em sequência na mesma sessão:
+        o asyncpg não suporta operações concorrentes numa única conexão, e
+        essa abordagem mantém o consumo em 1 conexão por requisição (relevante
+        sob carga com múltiplos usuários simultâneos). O resultado combinado
+        é cacheado via fastapi-cache2/Valkey para absorver o custo repetido.
 
         Lança HTTP 404 se o deputado não existir.
         """
@@ -357,22 +359,21 @@ class PoliticoService:
         safe_ov = max(offset_votacoes, 0)
         safe_op = max(offset_proposicoes, 0)
 
-        # Queries paralelas — reduz latência
-        (votacoes, total_v), (proposicoes, total_p) = await asyncio.gather(
-            self._repo.get_atividade_votacoes_repo(
-                deputado_id,
-                q=q,
-                ano=ano,
-                limit=safe_lv,
-                offset=safe_ov,
-            ),
-            self._repo.get_atividade_proposicoes_repo(
-                deputado_id,
-                ano=ano,
-                q=q,
-                limit=safe_lp,
-                offset=safe_op,
-            ),
+        # Queries sequenciais na mesma sessão — evita concorrência na mesma
+        # conexão asyncpg (InterfaceError: "another operation is in progress")
+        votacoes, total_v = await self._repo.get_atividade_votacoes_repo(
+            deputado_id,
+            q=q,
+            ano=ano,
+            limit=safe_lv,
+            offset=safe_ov,
+        )
+        proposicoes, total_p = await self._repo.get_atividade_proposicoes_repo(
+            deputado_id,
+            ano=ano,
+            q=q,
+            limit=safe_lp,
+            offset=safe_op,
         )
 
         return AtividadeLegislativaResponse(

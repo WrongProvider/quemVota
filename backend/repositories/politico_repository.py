@@ -10,6 +10,7 @@ Segurança (OWASP):
 """
 
 import logging
+from this import d
 
 from shared.models import (
     Deputado,
@@ -37,6 +38,7 @@ from backend.schemas import (
     ProposicaoParaPolitico,
     TemaResumoSimples,
     VotacaoResumida,
+    ProposicaoResumida
 )
 
 logger = logging.getLogger(__name__)
@@ -673,7 +675,6 @@ class PoliticoRepository:
         offset: int = 0,
         q: str | None = None,
     ) -> tuple[list, int]:
-        from schemas import ProposicaoResumida  # import local evita circular
 
         safe_limit = min(abs(limit), 100)
         safe_offset = max(offset, 0)
