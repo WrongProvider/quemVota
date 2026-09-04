@@ -24,6 +24,7 @@ import {
   obterPoliticoTemasService,
   obterFidelidadePartidariaService,
   obterPoliticoAfinidadesService,
+  obterRedeCoautoriaService,
   PoliticoServiceError,
 } from "../services/politicos.service"
 import type {
@@ -43,6 +44,8 @@ import type {
   FidelidadePartidariaParams,
   AfinidadesPoliticoResponse,
   AfinidadesPoliticoParams,
+  RedeCoautoriaResponse,
+  RedeCoautoriaParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -104,6 +107,8 @@ export const politicoKeys = {
     [...politicoKeys.all, "fidelidade", String(idOrSlug), limitDivergencias ?? 50] as const,
   afinidades:   (idOrSlug: string | number, params?: AfinidadesPoliticoParams) =>
     [...politicoKeys.all, "afinidades", String(idOrSlug), params ?? {}] as const,
+  coautoria:    (idOrSlug: string | number, limit?: number) =>
+    [...politicoKeys.all, "coautoria", String(idOrSlug), limit ?? 20] as const,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -393,6 +398,28 @@ export function usePoliticoAfinidades(
   return useQuery({
     queryKey: politicoKeys.afinidades(idOrSlug ?? "", params),
     queryFn: ({ signal }) => obterPoliticoAfinidadesService(idOrSlug!, params, signal),
+    enabled,
+    staleTime: 10 * 60 * 1_000,
+    gcTime: 15 * 60 * 1_000,
+    retry: false, // 404/400 gracioso
+  })
+}
+
+/**
+ * Retorna a rede de coautoria e parcerias legislativas em proposições.
+ *
+ * Cache de 10 min. Retorna null se não houver registros suficientes (404/400 gracioso).
+ */
+export function usePoliticoCoautoria(
+  idOrSlug?: string | number,
+  params?: RedeCoautoriaParams,
+): UseQueryResult<RedeCoautoriaResponse | null, PoliticoServiceError> {
+  const s = String(idOrSlug ?? "").trim()
+  const enabled = Boolean(s && s !== "null" && s !== "undefined")
+
+  return useQuery({
+    queryKey: politicoKeys.coautoria(idOrSlug ?? "", params?.limit),
+    queryFn: ({ signal }) => obterRedeCoautoriaService(idOrSlug!, params, signal),
     enabled,
     staleTime: 10 * 60 * 1_000,
     gcTime: 15 * 60 * 1_000,

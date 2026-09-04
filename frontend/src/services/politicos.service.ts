@@ -45,6 +45,9 @@ import {
   fetchPoliticoAfinidades,
   type AfinidadesPoliticoResponse,
   type AfinidadesPoliticoParams,
+  fetchRedeCoautoria,
+  type RedeCoautoriaResponse,
+  type RedeCoautoriaParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -338,5 +341,17 @@ export async function obterPoliticoAfinidadesService(
     return await fetchPoliticoAfinidades(idOrSlug, params, signal)
   } catch (error) {
     throw normalizeError(error, "obterPoliticoAfinidadesService")
+  }
+}
+
+export async function obterRedeCoautoriaService(
+  idOrSlug: string | number,
+  params?: RedeCoautoriaParams,
+  signal?: AbortSignal,
+): Promise<RedeCoautoriaResponse | null> {
+  try {
+    return await fetchRedeCoautoria(idOrSlug, params, signal)
+  } catch (error) {
+    throw normalizeError(error, "obterRedeCoautoriaService")
   }
 }

@@ -732,3 +732,77 @@ export async function fetchPoliticoAfinidades(
     throw err
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rede de Coautoria Legislativa (Parcerias em Proposições)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ProposicaoParceriaResumo {
+  readonly id: number
+  readonly sigla_tipo?: string | null
+  readonly numero?: number | null
+  readonly ano?: number | null
+  readonly ementa?: string | null
+  readonly proponente_principal_id?: number | null
+}
+
+export interface ParceiroCoautoria {
+  readonly politico: PoliticoResumoComparacao
+  readonly total_proposicoes_juntos: number
+  readonly proposicoes_como_autor_principal: number
+  readonly proposicoes_como_coautor: number
+  readonly mesmo_partido: boolean
+  readonly temas_comuns: string[]
+  readonly amostra_proposicoes: ProposicaoParceriaResumo[]
+}
+
+export interface RedeCoautoriaResponse {
+  readonly politico_base: PoliticoResumoComparacao
+  readonly total_parceiros_distintos: number
+  readonly total_proposicoes_em_parceria: number
+  readonly taxa_coautoria_multipartidaria: number
+  readonly top_parceiros: ParceiroCoautoria[]
+  readonly fonte_dados: string
+}
+
+export interface RedeCoautoriaParams {
+  readonly limit?: number
+}
+
+/**
+ * GET /politicos/{idOrSlug}/grafo/coautoria
+ *
+ * Mapeia a rede de cooperação legislativa do parlamentar: deputados parceiros
+ * em proposições, autoria principal vs coautoria e temas comuns.
+ * Retorna null em caso de 404/400.
+ */
+export async function fetchRedeCoautoria(
+  idOrSlug: string | number,
+  params?: RedeCoautoriaParams,
+  signal?: AbortSignal,
+): Promise<RedeCoautoriaResponse | null> {
+  try {
+    const { data } = await api.get<RedeCoautoriaResponse>(
+      `/politicos/${idOrSlug}/grafo/coautoria`,
+      {
+        params: {
+          limit: 20,
+          ...params,
+        },
+        signal,
+      },
+    )
+    return data
+  } catch (err: unknown) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "response" in err &&
+      ((err as { response?: { status?: number } }).response?.status === 404 ||
+       (err as { response?: { status?: number } }).response?.status === 400)
+    ) {
+      return null
+    }
+    throw err
+  }
+}
