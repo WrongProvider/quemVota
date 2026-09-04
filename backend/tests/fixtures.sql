@@ -14,4 +14,6 @@ VALUES
   (1, 204554, 'Fulano Silva', 'fulano-silva', 'SP', 'PT', 1, 'Exercício'),
   (2, 204555, 'Ciclana Souza', 'ciclana-souza', 'RJ', 'PT', 1, 'Exercício');
 
-INSERT INTO votacoes
+-- 4. Votação de teste
+INSERT INTO votacoes (id, "idCamara", data, descricao, aprovacao)
+VALUES (1, 'VOT-1001', '2024-03-01', 'Votação do Projeto de Lei de Teste', 1);

@@ -4,7 +4,11 @@ from sqlalchemy import text
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from httpx import AsyncClient, ASGITransport
-from main import app
+
+try:
+    from backend.main import app
+except ImportError:
+    from main import app
 from shared.database import get_db
 from shared.config import settings
 
@@ -20,8 +24,15 @@ async def engine():
     yield _engine
     await _engine.dispose()
 
+
 @pytest.fixture(autouse=True, scope="session")
 async def seed_db(engine):
+    # Trava de segurança: impede TRUNCATE se não for banco de teste isolado
+    db_name = settings.DATABASE_URL.split("/")[-1].split("?")[0]
+    if "test" not in db_name.lower():
+        yield
+        return
+
     with open("tests/fixtures.sql") as f:
         sql = f.read()
     linhas = [lines for lines in sql.splitlines() if not lines.strip().startswith("--")]
@@ -29,9 +40,11 @@ async def seed_db(engine):
     statements = [s.strip() for s in sql_limpo.split(";") if s.strip()]
 
     async with engine.begin() as conn:
-        await conn.execute(text(
-        "TRUNCATE TABLE deputados, partidos, legislaturas RESTART IDENTITY CASCADE"
-    ))
+        await conn.execute(
+            text(
+                "TRUNCATE TABLE deputados, partidos, legislaturas RESTART IDENTITY CASCADE"
+            )
+        )
         for statement in statements:
             await conn.execute(text(statement))
 
@@ -39,11 +52,14 @@ async def seed_db(engine):
 
     # cleanup
     async with engine.begin() as conn:
-        await conn.execute(text(
-            "TRUNCATE TABLE deputados, partidos, legislaturas RESTART IDENTITY CASCADE"
-        ))
- 
-@pytest.fixture(scope="session")       
+        await conn.execute(
+            text(
+                "TRUNCATE TABLE deputados, partidos, legislaturas RESTART IDENTITY CASCADE"
+            )
+        )
+
+
+@pytest.fixture(scope="session")
 async def client(engine):  # <- recebe o engine da session
     # sobrescreve o get_db da app para usar o mesmo engine
     async_session = async_sessionmaker(engine, expire_on_commit=False)
@@ -52,13 +68,12 @@ async def client(engine):  # <- recebe o engine da session
         async with async_session() as session:
             yield session
             await session.close()
+
     app.dependency_overrides[get_db] = override_get_db
 
     async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as c:
         yield c
 
     app.dependency_overrides.clear()
-

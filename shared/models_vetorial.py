@@ -30,6 +30,7 @@ from sqlalchemy.sql import func
 
 from shared.config import settings
 from shared.database import Base
+import shared.models  # noqa: F401 (Registra classes relacionais como Deputado)
 
 EMBEDDING_DIM = settings.EMBEDDING_DIMENSION
 
@@ -437,4 +438,3 @@ class DeputadoImpacto(Base):
 #   - ef_construction = 128 (tamanho da lista de candidatos durante construção)
 #   - metric = vector_cosine_ops (distância por cosseno para embeddings normalizados)
 # ===========================================================================
-

@@ -1,0 +1,28 @@
+FROM pgvector/pgvector:0.8.5-pg18-trixie
+
+# Instala dependências necessárias para compilar o Apache AGE
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    flex \
+    bison \
+    git \
+    postgresql-server-dev-18 \
+    libreadline-dev \
+    zlib1g-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clona a branch oficial PG18 do Apache AGE e compila a extensão
+RUN git clone --depth 1 --branch PG18 https://github.com/apache/age.git /tmp/age \
+    && cd /tmp/age \
+    && make PG_CONFIG=/usr/lib/postgresql/18/bin/pg_config install \
+    && rm -rf /tmp/age
+
+# Remove ferramentas de compilação para manter a imagem enxuta
+RUN apt-get purge -y --auto-remove \
+    build-essential \
+    flex \
+    bison \
+    git \
+    postgresql-server-dev-18 \
+    && rm -rf /var/lib/apt/lists/*

@@ -55,7 +55,10 @@ services:
 
   # ── Banco de Dados (Produção - QuemVota) ───────────────────────────────────
   postgres:
-    image: pgvector/pgvector:0.8.5-pg18-trixie
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.postgres
+    image: quemvota_postgres:age-pgvector
     container_name: quemvota_postgres
     restart: unless-stopped
     environment:

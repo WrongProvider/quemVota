@@ -6,3 +6,5 @@ quemvota_env/
 .venv
 /airflow/logs
 .worktrees/
+*etl_cache*
+*etl_camara.log*
