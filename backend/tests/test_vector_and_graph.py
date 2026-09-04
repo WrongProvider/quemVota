@@ -247,3 +247,61 @@ async def test_api_comparador_politicos_filtro_tema(client):
             data_filtrada["votos_alinhados"] + data_filtrada["votos_divergentes"]
             == data_filtrada["total_votacoes_comuns"]
         )
+
+
+async def test_api_rede_coautoria(client):
+    """Valida o endpoint GET /politicos/{id}/grafo/coautoria."""
+    response = await client.get("/politicos/26/grafo/coautoria")
+    assert response.status_code == 200
+    data = response.json()
+    assert "politico_base" in data
+    assert data["politico_base"]["id"] == 26
+    assert "total_parceiros_distintos" in data
+    assert "taxa_coautoria_multipartidaria" in data
+    assert isinstance(data["top_parceiros"], list)
+    if data["top_parceiros"]:
+        p0 = data["top_parceiros"][0]
+        assert "politico" in p0
+        assert "total_proposicoes_juntos" in p0
+        assert "mesmo_partido" in p0
+
+
+async def test_api_afinidades_voto(client):
+    """Valida o endpoint GET /politicos/{id}/grafo/afinidades."""
+    response = await client.get("/politicos/26/grafo/afinidades?min_votacoes_comuns=3")
+    assert response.status_code == 200
+    data = response.json()
+    assert "politico_base" in data
+    assert "mais_alinhados" in data
+    assert "mais_divergentes" in data
+    assert "alinhamento_por_bancada" in data
+    assert isinstance(data["mais_alinhados"], list)
+    assert isinstance(data["mais_divergentes"], list)
+
+
+async def test_api_fidelidade_partidaria(client):
+    """Valida o endpoint GET /politicos/{id}/grafo/fidelidade-partidaria."""
+    response = await client.get("/politicos/26/grafo/fidelidade-partidaria")
+    assert response.status_code == 200
+    data = response.json()
+    assert "politico" in data
+    assert "sigla_partido" in data
+    assert "total_votacoes_orientadas" in data
+    assert "taxa_fidelidade" in data
+    assert 0.0 <= data["taxa_fidelidade"] <= 100.0
+
+
+async def test_api_grafo_proposicao(client):
+    """Valida o endpoint GET /proposicoes/{id}/grafo."""
+    res_list = await client.get("/proposicoes/?limit=1")
+    props = res_list.json()
+    prop_id = props[0]["id"] if props else 1
+
+    response = await client.get(f"/proposicoes/{prop_id}/grafo")
+    assert response.status_code == 200
+    data = response.json()
+    assert "id_proposicao" in data
+    assert "proposicao" in data
+    assert "temas" in data
+    assert "votacoes" in data
+    assert "fonte_dados" in data

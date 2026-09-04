@@ -32,6 +32,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.api.v1.keybuilder import politico_key_builder
 from backend.schemas import (
     ProposicaoDetalhe,
+    ProposicaoGrafoResponse,
     ProposicaoResponse,
     VotacaoDetalhe,
     VotacaoResponse,
@@ -187,6 +188,25 @@ async def get_votacoes_da_proposicao(
     """
     logger.info("Votações da proposição id=%s", proposicao_id)
     return await service.get_votacoes_da_proposicao_service(proposicao_id)
+
+
+@router_proposicoes.get(
+    "/{proposicao_id}/grafo",
+    response_model=ProposicaoGrafoResponse,
+    summary="Ecossistema em Grafo da Proposição (Apache AGE)",
+    description=(
+        "Retorna a visão panorâmica da matéria: autor principal, lista de coautores, "
+        "temas legislativos associados e histórico de votações nominais."
+    ),
+    responses={404: {"description": "Proposição não encontrada"}},
+)
+@cache(expire=3600, key_builder=politico_key_builder)
+async def get_grafo_da_proposicao(
+    proposicao_id: ProposicaoIdPath,
+    service: ProposicaoService = Depends(_proposicao_service),
+):
+    logger.info("Grafo da proposição id=%s", proposicao_id)
+    return await service.get_grafo_proposicao_service(proposicao_id)
 
 
 # ===========================================================================

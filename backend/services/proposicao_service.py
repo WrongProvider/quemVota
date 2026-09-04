@@ -25,9 +25,11 @@ import logging
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.repositories.politico_repository import PoliticoRepository
 from backend.repositories.proposicao_repository import ProposicaoRepository
 from backend.schemas import (
     ProposicaoDetalhe,
+    ProposicaoGrafoResponse,
     ProposicaoResponse,
     VotacaoDetalhe,
     VotacaoResponse,
@@ -50,6 +52,8 @@ class ProposicaoService:
 
     def __init__(self, db: AsyncSession) -> None:
         self._repo = ProposicaoRepository(db)
+        self._politico_repo = PoliticoRepository(db)
+        self._db = db
 
     # ------------------------------------------------------------------
     # Proposições — listagem
@@ -227,3 +231,51 @@ class ProposicaoService:
             )
 
         return votacao
+
+    # ------------------------------------------------------------------
+    # Grafo da Proposição (Apache AGE + Fallback Relacional)
+    # ------------------------------------------------------------------
+
+    async def get_grafo_proposicao_service(
+        self, proposicao_id: int
+    ) -> ProposicaoGrafoResponse:
+        """
+        Retorna o ecossistema integrado da proposição em grafo:
+        autor principal, coautores, temas legislativos e votações associadas.
+        """
+        data = None
+        fonte = "apache_age_graph"
+        try:
+            from shared.graph import cypher_grafo_proposicao_async
+
+            data = await cypher_grafo_proposicao_async(self._db, proposicao_id)
+        except Exception as e:
+            logger.warning(
+                "Falha ao buscar grafo da proposição no AGE (id=%s): %s",
+                proposicao_id,
+                e,
+            )
+            data = None
+
+        if not data or not data.get("autor_proponente"):
+            fonte = "relacional"
+            data = await self._politico_repo.get_grafo_proposicao_relacional_repo(
+                proposicao_id
+            )
+
+        if not data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Proposição com id={proposicao_id} não encontrada.",
+            )
+
+        return ProposicaoGrafoResponse(
+            id_proposicao=data["id_proposicao"],
+            proposicao=data["proposicao"],
+            ementa=data["ementa"],
+            autor_proponente=data["autor_proponente"],
+            coautores=data["coautores"],
+            temas=data["temas"],
+            votacoes=data["votacoes"],
+            fonte_dados=fonte,
+        )

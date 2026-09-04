@@ -25,8 +25,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.v1.keybuilder import politico_key_builder
 from backend.schemas import (
+    AfinidadesPoliticoResponse,
     AtividadeLegislativaResponse,
     ComparacaoPoliticosGrafoResponse,
+    FidelidadePartidariaResponse,
     PoliticoDespesaDetalhe,
     PoliticoDespesaResumo,
     PoliticoDespesaResumoCompleto,
@@ -34,6 +36,7 @@ from backend.schemas import (
     PoliticoResponse,
     PoliticoVoto,
     ProposicaoParaPolitico,
+    RedeCoautoriaResponse,
 )
 from backend.services.politico_service import PoliticoService
 
@@ -222,6 +225,113 @@ async def comparar_politicos_alias(
         tema=tema,
         limit_divergencias=limit_divergencias,
         limit_alinhamentos=limit_alinhamentos,
+    )
+
+
+@router.get(
+    "/{politico_id}/grafo/coautoria",
+    response_model=RedeCoautoriaResponse,
+    summary="Rede de Coautoria Legislativa (Apache AGE Graph)",
+    description=(
+        "Mapeia a rede de cooperação legislativa do parlamentar: deputados com quem mais "
+        "apresenta proposições em conjunto, proporção de autoria principal vs coautoria, "
+        "parcerias suprapartidárias e temas mais frequentes."
+    ),
+    responses={404: {"description": "Deputado não encontrado"}},
+)
+@cache(expire=3600, key_builder=politico_key_builder)
+async def rede_coautoria(
+    politico_id: DeputadoSlugPath,
+    limit: Annotated[
+        int,
+        Query(
+            ge=1,
+            le=50,
+            description="Quantidade de parceiros principais a retornar",
+        ),
+    ] = 20,
+    service: PoliticoService = Depends(_politico_service),
+):
+    logger.info("Rede de coautoria | politico=%s limit=%s", politico_id, limit)
+    return await service.get_rede_coautoria_service(politico_id, limit=limit)
+
+
+@router.get(
+    "/{politico_id}/grafo/afinidades",
+    response_model=AfinidadesPoliticoResponse,
+    summary="Radar de Afinidades e Oposições de Voto (Apache AGE Graph)",
+    description=(
+        "Identifica parlamentares com maior convergência e divergência em votações nominais, "
+        "além da taxa média de alinhamento por bancada partidária."
+    ),
+    responses={404: {"description": "Deputado não encontrado"}},
+)
+@cache(expire=3600, key_builder=politico_key_builder)
+async def afinidades_voto(
+    politico_id: DeputadoSlugPath,
+    min_votacoes_comuns: Annotated[
+        int,
+        Query(
+            ge=1,
+            le=100,
+            description="Mínimo de votações em comum para significância estatística",
+        ),
+    ] = 10,
+    apenas_outros_partidos: Annotated[
+        bool,
+        Query(
+            description="Se True, filtra apenas parlamentares de partidos diferentes do deputado base"
+        ),
+    ] = False,
+    limit: Annotated[
+        int, Query(ge=1, le=30, description="Quantidade de parlamentares por lista")
+    ] = 10,
+    service: PoliticoService = Depends(_politico_service),
+):
+    logger.info(
+        "Afinidades de voto | politico=%s min_comuns=%s outros_partidos=%s limit=%s",
+        politico_id,
+        min_votacoes_comuns,
+        apenas_outros_partidos,
+        limit,
+    )
+    return await service.get_afinidades_service(
+        id_or_slug=politico_id,
+        min_comuns=min_votacoes_comuns,
+        apenas_outros_partidos=apenas_outros_partidos,
+        limit=limit,
+    )
+
+
+@router.get(
+    "/{politico_id}/grafo/fidelidade-partidaria",
+    response_model=FidelidadePartidariaResponse,
+    summary="Fidelidade Partidária em Votações Nominais (Cruzamento Factual)",
+    description=(
+        "Calcula o alinhamento factual entre os votos individuais do parlamentar e as "
+        "orientações oficiais emitidas pela liderança da bancada do seu partido."
+    ),
+    responses={
+        400: {"description": "Parlamentar sem partido registrado"},
+        404: {"description": "Deputado não encontrado"},
+    },
+)
+@cache(expire=3600, key_builder=politico_key_builder)
+async def fidelidade_partidaria(
+    politico_id: DeputadoSlugPath,
+    limit_divergencias: Annotated[
+        int, Query(ge=1, le=100, description="Limite de matérias divergentes a exibir")
+    ] = 50,
+    service: PoliticoService = Depends(_politico_service),
+):
+    logger.info(
+        "Fidelidade partidaria | politico=%s lim_div=%s",
+        politico_id,
+        limit_divergencias,
+    )
+    return await service.get_fidelidade_partidaria_service(
+        id_or_slug=politico_id,
+        limit_divergencias=limit_divergencias,
     )
 
 

@@ -19,10 +19,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.repositories.politico_repository import PoliticoRepository
 from backend.repositories.ranking_repository import RankingRepository
 from backend.schemas import (
+    AfinidadesPoliticoResponse,
     AtividadeLegislativaResponse,
     ComparacaoPoliticosGrafoResponse,
+    FidelidadePartidariaResponse,
     PoliticoResumoComparacao,
     PoliticoResponse,
+    ProposicaoGrafoResponse,
+    RedeCoautoriaResponse,
     TemaComparadoResumo,
     VotoComparado,
 )
@@ -517,4 +521,227 @@ class PoliticoService:
             fonte_dados=fonte,
             tema_filtrado=tema,
             temas_disponiveis=temas_disponiveis,
+        )
+
+    # ------------------------------------------------------------------
+    # Rede de Coautoria Legislativa
+    # ------------------------------------------------------------------
+
+    async def get_rede_coautoria_service(
+        self, id_or_slug: str, limit: int = 20
+    ) -> RedeCoautoriaResponse:
+        """
+        Retorna a rede de coautoria do parlamentar (parceiros mais frequentes em proposições).
+        Prioriza Apache AGE com fallback relacional.
+        """
+        pol = await self.get_politico_by_id_or_slug_service(id_or_slug)
+        safe_limit = min(abs(limit), 50)
+
+        parceiros = []
+        fonte = "apache_age_graph"
+        try:
+            from shared.graph import cypher_rede_coautoria_async
+
+            parceiros = await cypher_rede_coautoria_async(
+                self._db, pol.id, limit=safe_limit
+            )
+        except Exception as e:
+            logger.warning(
+                "Falha ao buscar rede de coautoria no AGE (id=%s): %s", pol.id, e
+            )
+            parceiros = []
+
+        if not parceiros:
+            fonte = "relacional"
+            parceiros = await self._repo.get_rede_coautoria_relacional_repo(
+                pol.id, limit=safe_limit
+            )
+
+        total_distintos = len(parceiros)
+        total_proposicoes = sum(p["total_proposicoes_juntos"] for p in parceiros)
+        outros_partidos = sum(1 for p in parceiros if not p["mesmo_partido"])
+        taxa_multi = (
+            round((outros_partidos / total_distintos) * 100.0, 1)
+            if total_distintos > 0
+            else 0.0
+        )
+
+        return RedeCoautoriaResponse(
+            politico_base=PoliticoResumoComparacao(
+                id=pol.id,
+                nome=pol.nome,
+                slug=pol.slug,
+                sigla_partido=pol.sigla_partido,
+                sigla_uf=pol.sigla_uf,
+                url_foto=pol.url_foto,
+            ),
+            total_parceiros_distintos=total_distintos,
+            total_proposicoes_em_parceria=total_proposicoes,
+            taxa_coautoria_multipartidaria=taxa_multi,
+            top_parceiros=parceiros,
+            fonte_dados=fonte,
+        )
+
+    # ------------------------------------------------------------------
+    # Radar de Afinidades e Oposição de Votos Nominais
+    # ------------------------------------------------------------------
+
+    async def get_afinidades_service(
+        self,
+        id_or_slug: str,
+        min_comuns: int = 10,
+        apenas_outros_partidos: bool = False,
+        limit: int = 10,
+    ) -> AfinidadesPoliticoResponse:
+        """
+        Retorna deputados mais alinhados, mais divergentes e médias por bancada partidária.
+        Prioriza Apache AGE com fallback relacional.
+        """
+        pol = await self.get_politico_by_id_or_slug_service(id_or_slug)
+        safe_min = max(min_comuns, 1)
+        safe_limit = min(abs(limit), 30)
+
+        data = {}
+        fonte = "apache_age_graph"
+        try:
+            from shared.graph import cypher_afinidades_voto_async
+
+            data = await cypher_afinidades_voto_async(
+                self._db,
+                pol.id,
+                min_comuns=safe_min,
+                apenas_outros_partidos=apenas_outros_partidos,
+                limit=safe_limit,
+            )
+        except Exception as e:
+            logger.warning("Falha ao buscar afinidades no AGE (id=%s): %s", pol.id, e)
+            data = {}
+
+        if not data or (
+            not data.get("mais_alinhados") and not data.get("mais_divergentes")
+        ):
+            fonte = "relacional"
+            data = await self._repo.get_afinidades_voto_relacional_repo(
+                pol.id,
+                min_comuns=safe_min,
+                apenas_outros_partidos=apenas_outros_partidos,
+                limit=safe_limit,
+            )
+
+        return AfinidadesPoliticoResponse(
+            politico_base=PoliticoResumoComparacao(
+                id=pol.id,
+                nome=pol.nome,
+                slug=pol.slug,
+                sigla_partido=pol.sigla_partido,
+                sigla_uf=pol.sigla_uf,
+                url_foto=pol.url_foto,
+            ),
+            min_votacoes_comuns=safe_min,
+            mais_alinhados=data.get("mais_alinhados", []),
+            mais_divergentes=data.get("mais_divergentes", []),
+            alinhamento_por_bancada=data.get("alinhamento_por_bancada", []),
+            fonte_dados=fonte,
+        )
+
+    # ------------------------------------------------------------------
+    # Fidelidade Partidária em Votações Nominais
+    # ------------------------------------------------------------------
+
+    async def get_fidelidade_partidaria_service(
+        self, id_or_slug: str, limit_divergencias: int = 50
+    ) -> FidelidadePartidariaResponse:
+        """
+        Calcula o alinhamento factual entre os votos do deputado e a orientação oficial da bancada.
+        """
+        pol = await self.get_politico_by_id_or_slug_service(id_or_slug)
+        sigla_partido = pol.sigla_partido
+        if not sigla_partido:
+            # Fallback: consultar o partido mais recente registrado em Voto
+            from shared.models import Voto
+            from sqlalchemy import select
+
+            stmt_partido = (
+                select(Voto.siglaPartido)
+                .where(Voto.idDeputado == pol.id, Voto.siglaPartido.isnot(None))
+                .order_by(Voto.id.desc())
+                .limit(1)
+            )
+            res_partido = await self._db.execute(stmt_partido)
+            sigla_partido = res_partido.scalar()
+
+        if not sigla_partido:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Parlamentar sem sigla partidária registrada para cálculo de fidelidade.",
+            )
+
+        safe_lim_div = min(abs(limit_divergencias), 100)
+        data = await self._repo.get_fidelidade_partidaria_relacional_repo(
+            politico_id=pol.id,
+            partido_sigla=sigla_partido,
+            limit_divergencias=safe_lim_div,
+        )
+
+        return FidelidadePartidariaResponse(
+            politico=PoliticoResumoComparacao(
+                id=pol.id,
+                nome=pol.nome,
+                slug=pol.slug,
+                sigla_partido=sigla_partido,
+                sigla_uf=pol.sigla_uf,
+                url_foto=pol.url_foto,
+            ),
+            sigla_partido=sigla_partido,
+            total_votacoes_orientadas=data["total_votacoes_orientadas"],
+            votos_com_bancada=data["votos_com_bancada"],
+            votos_contra_bancada=data["votos_contra_bancada"],
+            taxa_fidelidade=data["taxa_fidelidade"],
+            divergencias=data["divergencias"],
+            fonte_dados="relacional",
+        )
+
+    # ------------------------------------------------------------------
+    # Grafo da Proposição
+    # ------------------------------------------------------------------
+
+    async def get_grafo_proposicao_service(
+        self, proposicao_id: int
+    ) -> ProposicaoGrafoResponse:
+        """
+        Retorna a visão panorâmica em grafo da proposição: autor principal, coautores, temas e votações.
+        """
+        data = None
+        fonte = "apache_age_graph"
+        try:
+            from shared.graph import cypher_grafo_proposicao_async
+
+            data = await cypher_grafo_proposicao_async(self._db, proposicao_id)
+        except Exception as e:
+            logger.warning(
+                "Falha ao buscar grafo da proposição no AGE (id=%s): %s",
+                proposicao_id,
+                e,
+            )
+            data = None
+
+        if not data or not data.get("autor_proponente"):
+            fonte = "relacional"
+            data = await self._repo.get_grafo_proposicao_relacional_repo(proposicao_id)
+
+        if not data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Proposição com id={proposicao_id} não encontrada.",
+            )
+
+        return ProposicaoGrafoResponse(
+            id_proposicao=data["id_proposicao"],
+            proposicao=data["proposicao"],
+            ementa=data["ementa"],
+            autor_proponente=data["autor_proponente"],
+            coautores=data["coautores"],
+            temas=data["temas"],
+            votacoes=data["votacoes"],
+            fonte_dados=fonte,
         )

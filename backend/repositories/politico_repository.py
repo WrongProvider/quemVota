@@ -19,6 +19,7 @@ from shared.models import (
     Tema,
     VerbaGabinete,
     Votacao,
+    VotacaoOrientacao,
     Voto,
     proposicoesTemas,
 )
@@ -936,3 +937,470 @@ class PoliticoRepository:
                 id_dep2,
             )
             return []
+
+    # ------------------------------------------------------------------
+    # Rede de Coautoria (Relacional)
+    # ------------------------------------------------------------------
+
+    async def get_rede_coautoria_relacional_repo(
+        self, politico_id: int, limit: int = 20
+    ) -> list[dict]:
+        """
+        Retorna a lista dos deputados que mais coautoram proposições com o parlamentar informado,
+        com métricas de autoria principal, coautoria e amostra de matérias.
+        """
+        pa1 = aliased(ProposicaoAutor)
+        pa2 = aliased(ProposicaoAutor)
+        d2 = aliased(Deputado)
+        d1 = aliased(Deputado)
+
+        stmt = (
+            select(
+                d2.id.label("parceiro_id"),
+                d2.nome.label("parceiro_nome"),
+                d2.slug.label("parceiro_slug"),
+                d2.siglaPartido.label("parceiro_partido"),
+                d2.siglaUF.label("parceiro_uf"),
+                d1.siglaPartido.label("base_partido"),
+                func.count(func.distinct(pa1.idProposicao)).label("total_juntos"),
+                func.count(
+                    func.distinct(
+                        case((pa1.proponente.is_(True), pa1.idProposicao), else_=None)
+                    )
+                ).label("como_principal"),
+                func.count(
+                    func.distinct(
+                        case(
+                            (
+                                pa2.proponente.is_(True) & pa1.proponente.is_(False),
+                                pa1.idProposicao,
+                            ),
+                            else_=None,
+                        )
+                    )
+                ).label("como_coautor"),
+            )
+            .join(
+                pa2,
+                (pa1.idProposicao == pa2.idProposicao)
+                & (pa2.idDeputadoAutor != politico_id),
+            )
+            .join(d2, d2.id == pa2.idDeputadoAutor)
+            .join(d1, d1.id == politico_id)
+            .where(pa1.idDeputadoAutor == politico_id)
+            .group_by(
+                d2.id,
+                d2.nome,
+                d2.slug,
+                d2.siglaPartido,
+                d2.siglaUF,
+                d1.siglaPartido,
+            )
+            .order_by(desc("total_juntos"))
+            .limit(limit)
+        )
+
+        try:
+            res = await self.db.execute(stmt)
+            rows = res.all()
+        except SQLAlchemyError:
+            logger.exception(
+                "Erro ao buscar rede de coautoria do deputado id=%s", politico_id
+            )
+            return []
+
+        if not rows:
+            return []
+
+        resultados = []
+        for r in rows:
+            mesmo_partido = bool(
+                r.base_partido
+                and r.parceiro_partido
+                and r.base_partido.upper() == r.parceiro_partido.upper()
+            )
+
+            stmt_props = (
+                select(Proposicao)
+                .join(
+                    pa1,
+                    (pa1.idProposicao == Proposicao.id)
+                    & (pa1.idDeputadoAutor == politico_id),
+                )
+                .join(
+                    pa2,
+                    (pa2.idProposicao == Proposicao.id)
+                    & (pa2.idDeputadoAutor == r.parceiro_id),
+                )
+                .options(selectinload(Proposicao.temas))
+                .order_by(desc(Proposicao.dataApresentacao))
+                .limit(5)
+            )
+            res_props = await self.db.execute(stmt_props)
+            props_orm = res_props.scalars().all()
+
+            temas_cont: dict[str, int] = {}
+            amostra = []
+            for p in props_orm:
+                for t in p.temas:
+                    temas_cont[t.tema] = temas_cont.get(t.tema, 0) + 1
+                amostra.append(
+                    {
+                        "id": p.id,
+                        "sigla_tipo": p.siglaTipo,
+                        "numero": p.numero,
+                        "ano": p.ano,
+                        "ementa": p.ementa,
+                        "proponente_principal_id": (
+                            politico_id if r.como_principal > 0 else r.parceiro_id
+                        ),
+                    }
+                )
+
+            temas_ordenados = sorted(
+                temas_cont.keys(), key=lambda t: temas_cont[t], reverse=True
+            )
+
+            resultados.append(
+                {
+                    "politico": {
+                        "id": r.parceiro_id,
+                        "nome": r.parceiro_nome,
+                        "slug": r.parceiro_slug,
+                        "sigla_partido": r.parceiro_partido,
+                        "sigla_uf": r.parceiro_uf,
+                        "url_foto": f"https://www.camara.leg.br/internet/deputado/bandep/{r.parceiro_id}.jpg",
+                    },
+                    "total_proposicoes_juntos": r.total_juntos,
+                    "proposicoes_como_autor_principal": r.como_principal,
+                    "proposicoes_como_coautor": r.como_coautor,
+                    "mesmo_partido": mesmo_partido,
+                    "temas_comuns": temas_ordenados[:5],
+                    "amostra_proposicoes": amostra,
+                }
+            )
+
+        return resultados
+
+    # ------------------------------------------------------------------
+    # Afinidades e Oposições de Voto (Relacional)
+    # ------------------------------------------------------------------
+
+    async def get_afinidades_voto_relacional_repo(
+        self,
+        politico_id: int,
+        min_comuns: int = 10,
+        apenas_outros_partidos: bool = False,
+        limit: int = 10,
+    ) -> dict:
+        """
+        Calcula as afinidades e divergências de votações com todos os demais parlamentares,
+        além do alinhamento agregado por bancada partidária.
+        """
+        v1 = aliased(Voto)
+        v2 = aliased(Voto)
+        d2 = aliased(Deputado)
+        d1 = aliased(Deputado)
+
+        stmt = (
+            select(
+                d2.id.label("outro_id"),
+                d2.nome.label("outro_nome"),
+                d2.slug.label("outro_slug"),
+                d2.siglaPartido.label("outro_partido"),
+                d2.siglaUF.label("outro_uf"),
+                d1.siglaPartido.label("base_partido"),
+                func.count(func.distinct(v1.idVotacao)).label("total_comuns"),
+                func.count(
+                    func.distinct(
+                        case(
+                            (
+                                (func.lower(v1.voto) == func.lower(v2.voto))
+                                & (v1.voto != ""),
+                                v1.idVotacao,
+                            ),
+                            else_=None,
+                        )
+                    )
+                ).label("alinhados"),
+            )
+            .join(v2, (v1.idVotacao == v2.idVotacao) & (v2.idDeputado != politico_id))
+            .join(d2, d2.id == v2.idDeputado)
+            .join(d1, d1.id == politico_id)
+            .where(v1.idDeputado == politico_id)
+            .group_by(
+                d2.id,
+                d2.nome,
+                d2.slug,
+                d2.siglaPartido,
+                d2.siglaUF,
+                d1.siglaPartido,
+            )
+            .having(func.count(func.distinct(v1.idVotacao)) >= min_comuns)
+        )
+
+        try:
+            res = await self.db.execute(stmt)
+            rows = res.all()
+        except SQLAlchemyError:
+            logger.exception("Erro ao buscar afinidades do deputado id=%s", politico_id)
+            return {
+                "min_votacoes_comuns": min_comuns,
+                "mais_alinhados": [],
+                "mais_divergentes": [],
+                "alinhamento_por_bancada": [],
+            }
+
+        itens = []
+        bancadas: dict[str, dict[str, int]] = {}
+
+        for r in rows:
+            mesmo_partido = bool(
+                r.base_partido
+                and r.outro_partido
+                and r.base_partido.upper() == r.outro_partido.upper()
+            )
+            if apenas_outros_partidos and mesmo_partido:
+                continue
+
+            tot = r.total_comuns
+            aln = r.alinhados
+            div = tot - aln
+            taxa = round((aln / tot) * 100.0, 1) if tot > 0 else 0.0
+
+            itens.append(
+                {
+                    "politico": {
+                        "id": r.outro_id,
+                        "nome": r.outro_nome,
+                        "slug": r.outro_slug,
+                        "sigla_partido": r.outro_partido,
+                        "sigla_uf": r.outro_uf,
+                        "url_foto": f"https://www.camara.leg.br/internet/deputado/bandep/{r.outro_id}.jpg",
+                    },
+                    "total_votacoes_comuns": tot,
+                    "votos_alinhados": aln,
+                    "votos_divergentes": div,
+                    "taxa_alinhamento": taxa,
+                    "mesmo_partido": mesmo_partido,
+                }
+            )
+
+            if r.outro_partido:
+                sigla = r.outro_partido.upper()
+                if sigla not in bancadas:
+                    bancadas[sigla] = {"total": 0, "alinhados": 0}
+                bancadas[sigla]["total"] += tot
+                bancadas[sigla]["alinhados"] += aln
+
+        mais_alinhados = sorted(
+            itens,
+            key=lambda x: (x["taxa_alinhamento"], x["total_votacoes_comuns"]),
+            reverse=True,
+        )[:limit]
+        mais_divergentes = sorted(
+            itens, key=lambda x: (x["taxa_alinhamento"], -x["total_votacoes_comuns"])
+        )[:limit]
+
+        bancadas_resumo = []
+        for sigla, bdata in bancadas.items():
+            btot = bdata["total"]
+            baln = bdata["alinhados"]
+            if btot >= 5:
+                btaxa = round((baln / btot) * 100.0, 1)
+                bancadas_resumo.append(
+                    {
+                        "sigla_partido": sigla,
+                        "total_votacoes": btot,
+                        "votos_alinhados": baln,
+                        "taxa_alinhamento": btaxa,
+                    }
+                )
+        bancadas_resumo.sort(key=lambda x: x["taxa_alinhamento"], reverse=True)
+
+        return {
+            "min_votacoes_comuns": min_comuns,
+            "mais_alinhados": mais_alinhados,
+            "mais_divergentes": mais_divergentes,
+            "alinhamento_por_bancada": bancadas_resumo,
+        }
+
+    # ------------------------------------------------------------------
+    # Fidelidade Partidária (Relacional)
+    # ------------------------------------------------------------------
+
+    async def get_fidelidade_partidaria_relacional_repo(
+        self, politico_id: int, partido_sigla: str, limit_divergencias: int = 50
+    ) -> dict:
+        """
+        Compara cada voto do deputado com a orientação oficial da bancada do seu partido.
+        """
+        stmt = (
+            select(
+                Voto.idVotacao,
+                Votacao.data,
+                Votacao.descricao,
+                Voto.voto.label("voto_politico"),
+                VotacaoOrientacao.orientacao.label("orientacao_partido"),
+                Proposicao.siglaTipo,
+                Proposicao.numero,
+                Proposicao.ano,
+                Proposicao.ementa,
+            )
+            .join(
+                VotacaoOrientacao,
+                (VotacaoOrientacao.idVotacao == Voto.idVotacao)
+                & (
+                    func.upper(VotacaoOrientacao.siglaBancada)
+                    == func.upper(partido_sigla)
+                ),
+            )
+            .join(Votacao, Votacao.id == Voto.idVotacao)
+            .outerjoin(Proposicao, Proposicao.id == Votacao.idProposicao)
+            .where(
+                Voto.idDeputado == politico_id,
+                VotacaoOrientacao.orientacao.isnot(None),
+                ~func.lower(VotacaoOrientacao.orientacao).in_(
+                    ["libera", "liberado", ""]
+                ),
+            )
+            .order_by(desc(Votacao.data).nullslast(), desc(Voto.idVotacao))
+        )
+
+        try:
+            res = await self.db.execute(stmt)
+            rows = res.all()
+        except SQLAlchemyError:
+            logger.exception(
+                "Erro ao buscar fidelidade partidária do deputado id=%s", politico_id
+            )
+            return {
+                "total_votacoes_orientadas": 0,
+                "votos_com_bancada": 0,
+                "votos_contra_bancada": 0,
+                "taxa_fidelidade": 0.0,
+                "divergencias": [],
+            }
+
+        total = len(rows)
+        alinhados = 0
+        divergencias = []
+
+        for r in rows:
+            v_dep = (r.voto_politico or "").strip()
+            v_orient = (r.orientacao_partido or "").strip()
+            if v_dep.lower() == v_orient.lower():
+                alinhados += 1
+            else:
+                prop_str = f"{r.siglaTipo} {r.numero}/{r.ano}" if r.siglaTipo else None
+                divergencias.append(
+                    {
+                        "id_votacao": r.idVotacao,
+                        "data": r.data,
+                        "proposicao": prop_str,
+                        "ementa": r.ementa or r.descricao,
+                        "voto_politico": v_dep,
+                        "orientacao_partido": v_orient,
+                    }
+                )
+
+        contra = total - alinhados
+        taxa = round((alinhados / total) * 100.0, 1) if total > 0 else 0.0
+
+        return {
+            "total_votacoes_orientadas": total,
+            "votos_com_bancada": alinhados,
+            "votos_contra_bancada": contra,
+            "taxa_fidelidade": taxa,
+            "divergencias": divergencias[:limit_divergencias],
+        }
+
+    # ------------------------------------------------------------------
+    # Grafo da Proposição (Relacional)
+    # ------------------------------------------------------------------
+
+    async def get_grafo_proposicao_relacional_repo(
+        self, proposicao_id: int
+    ) -> dict | None:
+        """
+        Retorna o ecossistema completo de uma proposição via joins relacionais:
+        autor principal, coautores, temas e votações.
+        """
+        stmt = (
+            select(Proposicao)
+            .where(Proposicao.id == proposicao_id)
+            .options(
+                selectinload(Proposicao.autores),
+                selectinload(Proposicao.temas),
+                selectinload(Proposicao.votacoes).selectinload(Votacao.orientacoes),
+            )
+        )
+        try:
+            res = await self.db.execute(stmt)
+            p = res.scalar_one_or_none()
+        except SQLAlchemyError:
+            logger.exception("Erro ao buscar grafo da proposicao id=%s", proposicao_id)
+            return None
+
+        if not p:
+            return None
+
+        autor_proponente = None
+        coautores = []
+        for a in p.autores:
+            p_dict = {
+                "id": a.idDeputadoAutor,
+                "nome": a.nomeAutor,
+                "slug": None,
+                "sigla_partido": None,
+                "sigla_uf": None,
+                "url_foto": (
+                    f"https://www.camara.leg.br/internet/deputado/bandep/{a.idDeputadoAutor}.jpg"
+                    if a.idDeputadoAutor
+                    else None
+                ),
+            }
+            if a.proponente and not autor_proponente:
+                autor_proponente = p_dict
+            else:
+                coautores.append(p_dict)
+
+        temas = [t.tema for t in p.temas]
+
+        votacoes = []
+        for vt in p.votacoes:
+            orientacoes = [
+                {
+                    "sigla_partido": o.siglaBancada or "",
+                    "orientacao_voto": o.orientacao or "",
+                }
+                for o in vt.orientacoes
+                if o.siglaBancada and o.orientacao
+            ]
+            votacoes.append(
+                {
+                    "id_votacao": vt.id,
+                    "data": vt.data,
+                    "descricao": vt.descricao,
+                    "aprovacao": vt.aprovacao,
+                    "votos_sim": vt.votosSim,
+                    "votos_nao": vt.votosNao,
+                    "votos_outros": vt.votosOutros,
+                    "orientacoes": orientacoes,
+                }
+            )
+
+        prop_str = (
+            f"{p.siglaTipo} {p.numero}/{p.ano}"
+            if p.siglaTipo
+            else f"Proposição #{p.id}"
+        )
+        return {
+            "id_proposicao": p.id,
+            "proposicao": prop_str,
+            "ementa": p.ementa,
+            "autor_proponente": autor_proponente,
+            "coautores": coautores,
+            "temas": temas,
+            "votacoes": votacoes,
+        }

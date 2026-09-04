@@ -530,6 +530,347 @@ async def cypher_sample_alinhamento_votos_async(
     return list(votes_map.values())
 
 
+async def cypher_rede_coautoria_async(
+    session: AsyncSession,
+    politico_id: int,
+    limit: int = 20,
+) -> List[Dict[str, Any]]:
+    """
+    Consulta no Apache AGE a rede de coautoria legislativa de um parlamentar.
+    Identifica outros deputados que apresentaram matérias conjuntamente.
+    """
+    cypher = f"""
+    MATCH (p1:{LABEL_POLITICO} {{id: {politico_id}}})-[aut1:{EDGE_PROPOSED}]->(pr:{LABEL_PROPOSICAO})<-[aut2:{EDGE_PROPOSED}]-(p2:{LABEL_POLITICO})
+    WHERE p2.id <> {politico_id}
+    OPTIONAL MATCH (pr)-[:{EDGE_BELONGS_TO_THEME}]->(t:{LABEL_TEMA})
+    RETURN p2.id, p2.nome, p2.partido, p2.uf, p2.slug, aut1.proponente, aut2.proponente, pr.id, pr.siglaTipo, pr.numero, pr.ano, pr.ementa, t.tema, p1.partido
+    """
+    rows = await execute_cypher_async(
+        session,
+        cypher,
+        "p2_id agtype, p2_nome agtype, p2_partido agtype, p2_uf agtype, p2_slug agtype, aut1_prop agtype, aut2_prop agtype, pr_id agtype, pr_tipo agtype, pr_num agtype, pr_ano agtype, pr_ementa agtype, tema agtype, p1_partido agtype",
+    )
+
+    parceiros_map: Dict[int, Dict[str, Any]] = {}
+    props_por_parceiro: Dict[int, Dict[int, Dict[str, Any]]] = {}
+    temas_por_parceiro: Dict[int, Dict[str, int]] = {}
+
+    for r in rows:
+        p2_id_str = _clean_agtype(r[0])
+        if not p2_id_str.isdigit():
+            continue
+        p2_id = int(p2_id_str)
+        p2_nome = _clean_agtype(r[1])
+        p2_partido = _clean_agtype(r[2])
+        p2_uf = _clean_agtype(r[3])
+        p2_slug = _clean_agtype(r[4])
+        aut1_prop = str(_clean_agtype(r[5])).lower() in ("true", "1")
+        aut2_prop = str(_clean_agtype(r[6])).lower() in ("true", "1")
+        pr_id_str = _clean_agtype(r[7])
+        pr_id = int(pr_id_str) if pr_id_str.isdigit() else 0
+        pr_tipo = _clean_agtype(r[8])
+        pr_num = _clean_agtype(r[9])
+        pr_ano = _clean_agtype(r[10])
+        pr_ementa = _clean_agtype(r[11])
+        tema_val = _clean_agtype(r[12])
+        p1_partido = _clean_agtype(r[13])
+
+        if p2_id not in parceiros_map:
+            parceiros_map[p2_id] = {
+                "politico": {
+                    "id": p2_id,
+                    "nome": p2_nome,
+                    "slug": p2_slug or None,
+                    "sigla_partido": p2_partido or None,
+                    "sigla_uf": p2_uf or None,
+                    "url_foto": f"https://www.camara.leg.br/internet/deputado/bandep/{p2_id}.jpg",
+                },
+                "mesmo_partido": (
+                    bool(
+                        p1_partido
+                        and p2_partido
+                        and p1_partido.upper() == p2_partido.upper()
+                    )
+                ),
+            }
+            props_por_parceiro[p2_id] = {}
+            temas_por_parceiro[p2_id] = {}
+
+        if pr_id and pr_id not in props_por_parceiro[p2_id]:
+            props_por_parceiro[p2_id][pr_id] = {
+                "id": pr_id,
+                "sigla_tipo": pr_tipo or None,
+                "numero": int(pr_num) if pr_num.isdigit() else None,
+                "ano": int(pr_ano) if pr_ano.isdigit() else None,
+                "ementa": pr_ementa or None,
+                "p1_era_principal": aut1_prop,
+                "p2_era_principal": aut2_prop,
+            }
+
+        if tema_val:
+            temas_por_parceiro[p2_id][tema_val] = (
+                temas_por_parceiro[p2_id].get(tema_val, 0) + 1
+            )
+
+    resultados = []
+    for p2_id, info in parceiros_map.items():
+        props = list(props_por_parceiro[p2_id].values())
+        total_juntos = len(props)
+        como_principal = sum(1 for p in props if p["p1_era_principal"])
+        como_coautor = sum(
+            1 for p in props if p["p2_era_principal"] and not p["p1_era_principal"]
+        )
+        temas_ordenados = sorted(
+            temas_por_parceiro[p2_id].keys(),
+            key=lambda t: temas_por_parceiro[p2_id][t],
+            reverse=True,
+        )
+        amostra = [
+            {
+                "id": p["id"],
+                "sigla_tipo": p["sigla_tipo"],
+                "numero": p["numero"],
+                "ano": p["ano"],
+                "ementa": p["ementa"],
+                "proponente_principal_id": politico_id
+                if p["p1_era_principal"]
+                else p2_id,
+            }
+            for p in props[:5]
+        ]
+        resultados.append(
+            {
+                "politico": info["politico"],
+                "total_proposicoes_juntos": total_juntos,
+                "proposicoes_como_autor_principal": como_principal,
+                "proposicoes_como_coautor": como_coautor,
+                "mesmo_partido": info["mesmo_partido"],
+                "temas_comuns": temas_ordenados[:5],
+                "amostra_proposicoes": amostra,
+            }
+        )
+
+    resultados.sort(key=lambda x: x["total_proposicoes_juntos"], reverse=True)
+    return resultados[:limit]
+
+
+async def cypher_afinidades_voto_async(
+    session: AsyncSession,
+    politico_id: int,
+    min_comuns: int = 10,
+    apenas_outros_partidos: bool = False,
+    limit: int = 10,
+) -> Dict[str, Any]:
+    """
+    Analisa a afinidade e oposição de votações nominais de um parlamentar em relação
+    a todos os outros parlamentares no grafo Apache AGE.
+    """
+    cypher = f"""
+    MATCH (p1:{LABEL_POLITICO} {{id: {politico_id}}})-[v1:{EDGE_VOTED_IN}]->(vt:{LABEL_VOTACAO})<-[v2:{EDGE_VOTED_IN}]-(p2:{LABEL_POLITICO})
+    WHERE p2.id <> {politico_id}
+    RETURN p2.id, p2.nome, p2.partido, p2.uf, p2.slug, p1.partido, v1.voto, v2.voto, vt.id
+    """
+    rows = await execute_cypher_async(
+        session,
+        cypher,
+        "p2_id agtype, p2_nome agtype, p2_partido agtype, p2_uf agtype, p2_slug agtype, p1_partido agtype, v1_voto agtype, v2_voto agtype, vt_id agtype",
+    )
+
+    dep_stats: Dict[int, Dict[str, Any]] = {}
+    bancada_stats: Dict[str, Dict[str, int]] = {}
+
+    for r in rows:
+        p2_id_str = _clean_agtype(r[0])
+        if not p2_id_str.isdigit():
+            continue
+        p2_id = int(p2_id_str)
+        p2_nome = _clean_agtype(r[1])
+        p2_partido = _clean_agtype(r[2])
+        p2_uf = _clean_agtype(r[3])
+        p2_slug = _clean_agtype(r[4])
+        p1_partido = _clean_agtype(r[5])
+        voto1 = _clean_agtype(r[6]).strip().lower()
+        voto2 = _clean_agtype(r[7]).strip().lower()
+
+        if p2_id not in dep_stats:
+            dep_stats[p2_id] = {
+                "politico": {
+                    "id": p2_id,
+                    "nome": p2_nome,
+                    "slug": p2_slug or None,
+                    "sigla_partido": p2_partido or None,
+                    "sigla_uf": p2_uf or None,
+                    "url_foto": f"https://www.camara.leg.br/internet/deputado/bandep/{p2_id}.jpg",
+                },
+                "mesmo_partido": (
+                    bool(
+                        p1_partido
+                        and p2_partido
+                        and p1_partido.upper() == p2_partido.upper()
+                    )
+                ),
+                "total": 0,
+                "alinhados": 0,
+            }
+
+        dep_stats[p2_id]["total"] += 1
+        alinhou = voto1 == voto2 and voto1 != ""
+        if alinhou:
+            dep_stats[p2_id]["alinhados"] += 1
+
+        if p2_partido:
+            sigla_bancada = p2_partido.upper()
+            if sigla_bancada not in bancada_stats:
+                bancada_stats[sigla_bancada] = {"total": 0, "alinhados": 0}
+            bancada_stats[sigla_bancada]["total"] += 1
+            if alinhou:
+                bancada_stats[sigla_bancada]["alinhados"] += 1
+
+    candidatos = []
+    for info in dep_stats.values():
+        total = info["total"]
+        if total < min_comuns:
+            continue
+        if apenas_outros_partidos and info["mesmo_partido"]:
+            continue
+        alinhados = info["alinhados"]
+        divergentes = total - alinhados
+        taxa = round((alinhados / total) * 100.0, 1) if total > 0 else 0.0
+        candidatos.append(
+            {
+                "politico": info["politico"],
+                "total_votacoes_comuns": total,
+                "votos_alinhados": alinhados,
+                "votos_divergentes": divergentes,
+                "taxa_alinhamento": taxa,
+                "mesmo_partido": info["mesmo_partido"],
+            }
+        )
+
+    mais_alinhados = sorted(
+        candidatos,
+        key=lambda x: (x["taxa_alinhamento"], x["total_votacoes_comuns"]),
+        reverse=True,
+    )[:limit]
+    mais_divergentes = sorted(
+        candidatos, key=lambda x: (x["taxa_alinhamento"], -x["total_votacoes_comuns"])
+    )[:limit]
+
+    bancadas_resumo = []
+    for sigla, bdata in bancada_stats.items():
+        btotal = bdata["total"]
+        baln = bdata["alinhados"]
+        if btotal >= 5:
+            btaxa = round((baln / btotal) * 100.0, 1)
+            bancadas_resumo.append(
+                {
+                    "sigla_partido": sigla,
+                    "total_votacoes": btotal,
+                    "votos_alinhados": baln,
+                    "taxa_alinhamento": btaxa,
+                }
+            )
+    bancadas_resumo.sort(key=lambda x: x["taxa_alinhamento"], reverse=True)
+
+    return {
+        "min_votacoes_comuns": min_comuns,
+        "mais_alinhados": mais_alinhados,
+        "mais_divergentes": mais_divergentes,
+        "alinhamento_por_bancada": bancadas_resumo,
+    }
+
+
+async def cypher_grafo_proposicao_async(
+    session: AsyncSession,
+    proposicao_id: int,
+) -> Optional[Dict[str, Any]]:
+    """
+    Consulta o ecossistema completo de uma proposição no Apache AGE:
+    autores, coautores, temas e votações associadas.
+    """
+    cypher = f"""
+    MATCH (pr:{LABEL_PROPOSICAO} {{id: {proposicao_id}}})
+    OPTIONAL MATCH (p:{LABEL_POLITICO})-[aut:{EDGE_PROPOSED}]->(pr)
+    OPTIONAL MATCH (pr)-[:{EDGE_BELONGS_TO_THEME}]->(t:{LABEL_TEMA})
+    OPTIONAL MATCH (vt:{LABEL_VOTACAO})-[:{EDGE_REGARDING}]->(pr)
+    RETURN pr.id, pr.siglaTipo, pr.numero, pr.ano, pr.ementa,
+           p.id, p.nome, p.partido, p.uf, p.slug, aut.proponente,
+           t.tema, vt.id, vt.data, vt.descricao, vt.aprovacao
+    """
+    rows = await execute_cypher_async(
+        session,
+        cypher,
+        "pr_id agtype, pr_tipo agtype, pr_num agtype, pr_ano agtype, pr_ementa agtype, p_id agtype, p_nome agtype, p_partido agtype, p_uf agtype, p_slug agtype, aut_prop agtype, t_tema agtype, vt_id agtype, vt_data agtype, vt_desc agtype, vt_aprov agtype",
+    )
+    if not rows:
+        return None
+
+    pr_info: Dict[str, Any] = {}
+    autor_proponente = None
+    coautores_map: Dict[int, Dict[str, Any]] = {}
+    temas_set = set()
+    votacoes_map: Dict[int, Dict[str, Any]] = {}
+
+    for r in rows:
+        pr_id = int(_clean_agtype(r[0])) if _clean_agtype(r[0]).isdigit() else 0
+        tipo = _clean_agtype(r[1])
+        num = _clean_agtype(r[2])
+        ano = _clean_agtype(r[3])
+        ementa = _clean_agtype(r[4])
+
+        if not pr_info:
+            pr_info = {
+                "id_proposicao": pr_id,
+                "proposicao": f"{tipo} {num}/{ano}" if tipo else f"Proposição #{pr_id}",
+                "ementa": ementa or None,
+            }
+
+        p_id_str = _clean_agtype(r[5])
+        if p_id_str.isdigit():
+            p_id = int(p_id_str)
+            p_dict = {
+                "id": p_id,
+                "nome": _clean_agtype(r[6]),
+                "sigla_partido": _clean_agtype(r[7]) or None,
+                "sigla_uf": _clean_agtype(r[8]) or None,
+                "slug": _clean_agtype(r[9]) or None,
+                "url_foto": f"https://www.camara.leg.br/internet/deputado/bandep/{p_id}.jpg",
+            }
+            is_prop = str(_clean_agtype(r[10])).lower() in ("true", "1")
+            if is_prop and not autor_proponente:
+                autor_proponente = p_dict
+            elif p_id not in coautores_map:
+                coautores_map[p_id] = p_dict
+
+        tema_str = _clean_agtype(r[11])
+        if tema_str:
+            temas_set.add(tema_str)
+
+        vt_id_str = _clean_agtype(r[12])
+        if vt_id_str.isdigit():
+            vt_id = int(vt_id_str)
+            if vt_id not in votacoes_map:
+                vt_aprov = _clean_agtype(r[15])
+                votacoes_map[vt_id] = {
+                    "id_votacao": vt_id,
+                    "data": _clean_agtype(r[13]) or None,
+                    "descricao": _clean_agtype(r[14]) or None,
+                    "aprovacao": int(vt_aprov)
+                    if vt_aprov.lstrip("-").isdigit()
+                    else None,
+                    "votos_sim": None,
+                    "votos_nao": None,
+                    "votos_outros": None,
+                    "orientacoes": [],
+                }
+
+    pr_info["autor_proponente"] = autor_proponente
+    pr_info["coautores"] = list(coautores_map.values())
+    pr_info["temas"] = sorted(temas_set)
+    pr_info["votacoes"] = list(votacoes_map.values())
+    return pr_info
+
+
 def graph_rag_retrieval(
     session: Session,
     query_vector: List[float],

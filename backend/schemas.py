@@ -695,3 +695,152 @@ class ComparacaoPoliticosGrafoResponse(BaseModel):
     temas_disponiveis: List[TemaComparadoResumo] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# =============================================================================
+# SCHEMAS — Análise Avançada em Grafo (Apache AGE + Reconciliação Relacional)
+# =============================================================================
+
+
+class ProposicaoParceriaResumo(BaseModel):
+    """Resumo de proposição apresentada em coautoria."""
+
+    id: int
+    sigla_tipo: Optional[str] = None
+    numero: Optional[int] = None
+    ano: Optional[int] = None
+    ementa: Optional[str] = None
+    proponente_principal_id: Optional[int] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ParceiroCoautoria(BaseModel):
+    """Deputado parceiro de coautoria com métricas de colaboração."""
+
+    politico: PoliticoResumoComparacao
+    total_proposicoes_juntos: int
+    proposicoes_como_autor_principal: int
+    proposicoes_como_coautor: int
+    mesmo_partido: bool
+    temas_comuns: List[str] = []
+    amostra_proposicoes: List[ProposicaoParceriaResumo] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RedeCoautoriaResponse(BaseModel):
+    """Resposta estruturada da rede de coautoria de um parlamentar."""
+
+    politico_base: PoliticoResumoComparacao
+    total_parceiros_distintos: int
+    total_proposicoes_em_parceria: int
+    taxa_coautoria_multipartidaria: float
+    top_parceiros: List[ParceiroCoautoria] = []
+    fonte_dados: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PoliticoAfinidadeItem(BaseModel):
+    """Item de afinidade ou divergência de votações nominais com outro parlamentar."""
+
+    politico: PoliticoResumoComparacao
+    total_votacoes_comuns: int
+    votos_alinhados: int
+    votos_divergentes: int
+    taxa_alinhamento: float
+    mesmo_partido: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AlinhamentoBancadaResumo(BaseModel):
+    """Resumo agregado do alinhamento médio de votos com uma bancada partidária."""
+
+    sigla_partido: str
+    total_votacoes: int
+    votos_alinhados: int
+    taxa_alinhamento: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AfinidadesPoliticoResponse(BaseModel):
+    """Resposta estruturada do radar de afinidades e oposições nominais."""
+
+    politico_base: PoliticoResumoComparacao
+    min_votacoes_comuns: int
+    mais_alinhados: List[PoliticoAfinidadeItem] = []
+    mais_divergentes: List[PoliticoAfinidadeItem] = []
+    alinhamento_por_bancada: List[AlinhamentoBancadaResumo] = []
+    fonte_dados: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class VotoDivergentePartido(BaseModel):
+    """Matéria em que o parlamentar divergiu da orientação oficial da bancada."""
+
+    id_votacao: int
+    data: Optional[date] = None
+    proposicao: Optional[str] = None
+    ementa: Optional[str] = None
+    voto_politico: str
+    orientacao_partido: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FidelidadePartidariaResponse(BaseModel):
+    """Resposta estruturada da fidelidade de votações com a orientação partidária."""
+
+    politico: PoliticoResumoComparacao
+    sigla_partido: str
+    total_votacoes_orientadas: int
+    votos_com_bancada: int
+    votos_contra_bancada: int
+    taxa_fidelidade: float
+    divergencias: List[VotoDivergentePartido] = []
+    fonte_dados: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OrientacaoBancadaResumo(BaseModel):
+    """Orientação da bancada partidária em votação relacionada."""
+
+    sigla_partido: str
+    orientacao_voto: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class VotacaoGrafoResumo(BaseModel):
+    """Votação nominal vinculada à proposição."""
+
+    id_votacao: int
+    data: Optional[date] = None
+    descricao: Optional[str] = None
+    aprovacao: Optional[int] = None
+    votos_sim: Optional[int] = None
+    votos_nao: Optional[int] = None
+    votos_outros: Optional[int] = None
+    orientacoes: List[OrientacaoBancadaResumo] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProposicaoGrafoResponse(BaseModel):
+    """Visão integrada em grafo do ecossistema de uma proposição."""
+
+    id_proposicao: int
+    proposicao: str
+    ementa: Optional[str] = None
+    autor_proponente: Optional[PoliticoResumoComparacao] = None
+    coautores: List[PoliticoResumoComparacao] = []
+    temas: List[str] = []
+    votacoes: List[VotacaoGrafoResumo] = []
+    fonte_dados: str
+
+    model_config = ConfigDict(from_attributes=True)
