@@ -31,6 +31,7 @@ from backend.schemas import (
     VotoComparado,
 )
 from backend.services.performance_calc import calcular_score
+from shared.models import Deputado
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,27 @@ class PoliticoService:
     # Detalhe
     # ------------------------------------------------------------------
 
+    async def _enrich_politico(self, deputado: Deputado) -> PoliticoResponse:
+        resp = PoliticoResponse.model_validate(deputado)
+        if not resp.sigla_partido or not resp.sigla_uf:
+            from shared.models import Voto
+            from sqlalchemy import select
+
+            stmt = (
+                select(Voto.siglaPartido, Voto.siglaUF)
+                .where(Voto.idDeputado == deputado.id, Voto.siglaPartido.isnot(None))
+                .order_by(Voto.id.desc())
+                .limit(1)
+            )
+            res = await self._db.execute(stmt)
+            row = res.first()
+            if row:
+                if not resp.sigla_partido and row[0]:
+                    resp.sigla_partido = row[0]
+                if not resp.sigla_uf and row[1]:
+                    resp.sigla_uf = row[1]
+        return resp
+
     async def get_politicos_detalhe_service(self, deputado_id: int) -> PoliticoResponse:
         deputado = await self._repo.get_politico_repo(deputado_id)
         if not deputado:
@@ -84,7 +106,7 @@ class PoliticoService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Deputado não encontrado.",
             )
-        return PoliticoResponse.model_validate(deputado)
+        return await self._enrich_politico(deputado)
 
     async def get_politico_by_slug_service(self, slug: str) -> PoliticoResponse:
         deputado = await self._repo.get_politico_by_slug_repo(slug)
@@ -93,7 +115,7 @@ class PoliticoService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Deputado não encontrado.",
             )
-        return PoliticoResponse.model_validate(deputado)
+        return await self._enrich_politico(deputado)
 
     async def get_politico_by_id_or_slug_service(
         self, id_or_slug: str
