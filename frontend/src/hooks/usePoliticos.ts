@@ -23,6 +23,7 @@ import {
   obterComparacaoPoliticosService,
   obterPoliticoTemasService,
   obterFidelidadePartidariaService,
+  obterPoliticoAfinidadesService,
   PoliticoServiceError,
 } from "../services/politicos.service"
 import type {
@@ -40,6 +41,8 @@ import type {
   PoliticoTemasParams,
   FidelidadePartidariaResponse,
   FidelidadePartidariaParams,
+  AfinidadesPoliticoResponse,
+  AfinidadesPoliticoParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -99,6 +102,8 @@ export const politicoKeys = {
     [...politicoKeys.all, "temas", String(idOrSlug), legislatura ?? 57] as const,
   fidelidade:   (idOrSlug: string | number, limitDivergencias?: number) =>
     [...politicoKeys.all, "fidelidade", String(idOrSlug), limitDivergencias ?? 50] as const,
+  afinidades:   (idOrSlug: string | number, params?: AfinidadesPoliticoParams) =>
+    [...politicoKeys.all, "afinidades", String(idOrSlug), params ?? {}] as const,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -366,6 +371,28 @@ export function usePoliticoFidelidade(
   return useQuery({
     queryKey: politicoKeys.fidelidade(idOrSlug ?? "", params?.limit_divergencias),
     queryFn: ({ signal }) => obterFidelidadePartidariaService(idOrSlug!, params, signal),
+    enabled,
+    staleTime: 10 * 60 * 1_000,
+    gcTime: 15 * 60 * 1_000,
+    retry: false, // 404/400 gracioso
+  })
+}
+
+/**
+ * Retorna os parlamentares com maior convergência e divergência em votações nominais.
+ *
+ * Cache de 10 min. Retorna null se não houver dados suficientes (404/400 gracioso).
+ */
+export function usePoliticoAfinidades(
+  idOrSlug?: string | number,
+  params?: AfinidadesPoliticoParams,
+): UseQueryResult<AfinidadesPoliticoResponse | null, PoliticoServiceError> {
+  const s = String(idOrSlug ?? "").trim()
+  const enabled = Boolean(s && s !== "null" && s !== "undefined")
+
+  return useQuery({
+    queryKey: politicoKeys.afinidades(idOrSlug ?? "", params),
+    queryFn: ({ signal }) => obterPoliticoAfinidadesService(idOrSlug!, params, signal),
     enabled,
     staleTime: 10 * 60 * 1_000,
     gcTime: 15 * 60 * 1_000,

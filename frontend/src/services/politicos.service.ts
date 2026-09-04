@@ -42,6 +42,9 @@ import {
   fetchFidelidadePartidaria,
   type FidelidadePartidariaResponse,
   type FidelidadePartidariaParams,
+  fetchPoliticoAfinidades,
+  type AfinidadesPoliticoResponse,
+  type AfinidadesPoliticoParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -323,5 +326,17 @@ export async function obterFidelidadePartidariaService(
     return await fetchFidelidadePartidaria(idOrSlug, params, signal)
   } catch (error) {
     throw normalizeError(error, "obterFidelidadePartidariaService")
+  }
+}
+
+export async function obterPoliticoAfinidadesService(
+  idOrSlug: string | number,
+  params?: AfinidadesPoliticoParams,
+  signal?: AbortSignal,
+): Promise<AfinidadesPoliticoResponse | null> {
+  try {
+    return await fetchPoliticoAfinidades(idOrSlug, params, signal)
+  } catch (error) {
+    throw normalizeError(error, "obterPoliticoAfinidadesService")
   }
 }

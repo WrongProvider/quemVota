@@ -658,3 +658,77 @@ export async function fetchFidelidadePartidaria(
     throw err
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Radar de Afinidades e Oposições Nominais (Cruzamento de Votos)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface PoliticoAfinidadeItem {
+  readonly politico: PoliticoResumoComparacao
+  readonly total_votacoes_comuns: number
+  readonly votos_alinhados: number
+  readonly votos_divergentes: number
+  readonly taxa_alinhamento: number
+  readonly mesmo_partido: boolean
+}
+
+export interface AlinhamentoBancadaResumo {
+  readonly sigla_partido: string
+  readonly total_votacoes: number
+  readonly votos_alinhados: number
+  readonly taxa_alinhamento: number
+}
+
+export interface AfinidadesPoliticoResponse {
+  readonly politico_base: PoliticoResumoComparacao
+  readonly min_votacoes_comuns: number
+  readonly mais_alinhados: PoliticoAfinidadeItem[]
+  readonly mais_divergentes: PoliticoAfinidadeItem[]
+  readonly alinhamento_por_bancada: AlinhamentoBancadaResumo[]
+  readonly fonte_dados: string
+}
+
+export interface AfinidadesPoliticoParams {
+  readonly min_votacoes_comuns?: number
+  readonly apenas_outros_partidos?: boolean
+  readonly limit?: number
+}
+
+/**
+ * GET /politicos/{idOrSlug}/grafo/afinidades
+ *
+ * Retorna os parlamentares com maior convergência e maior divergência em
+ * votações nominais registradas, além da taxa média por bancada.
+ * Retorna null em caso de 404/400.
+ */
+export async function fetchPoliticoAfinidades(
+  idOrSlug: string | number,
+  params?: AfinidadesPoliticoParams,
+  signal?: AbortSignal,
+): Promise<AfinidadesPoliticoResponse | null> {
+  try {
+    const { data } = await api.get<AfinidadesPoliticoResponse>(
+      `/politicos/${idOrSlug}/grafo/afinidades`,
+      {
+        params: {
+          min_votacoes_comuns: 10,
+          limit: 10,
+          ...params,
+        },
+        signal,
+      },
+    )
+    return data
+  } catch (err: unknown) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "response" in err &&
+      ((err as { response?: { status?: number } }).response?.status === 404 ||
+       (err as { response?: { status?: number } }).response?.status === 400)
+    ) {
+      return null
+    }
+    throw err
+  }
+}
