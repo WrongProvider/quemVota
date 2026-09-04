@@ -782,8 +782,9 @@ const VOTO_CONFIG: Record<string, { label: string; cls: string; clsLight: string
   "Abstenção": { label: "Abstenção", cls: "text-slate-500 bg-slate-100 border-slate-200",       clsLight: "bg-slate-50",    icon: <MinusCircle size={11} /> },
 }
 
-function VotoBadge({ voto }: { voto: string }) {
-  const cfg = VOTO_CONFIG[voto] ?? { label: voto, cls: "text-slate-600 bg-slate-50 border-slate-200", icon: <MinusCircle size={11} /> }
+function VotoBadge({ voto }: { voto?: string | null }) {
+  const v = voto || "Não registrado"
+  const cfg = VOTO_CONFIG[v] ?? { label: v, cls: "text-slate-600 bg-slate-50 border-slate-200", icon: <MinusCircle size={11} /> }
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-semibold flex-shrink-0 ${cfg.cls}`}>
       {cfg.icon} {cfg.label}
@@ -825,7 +826,7 @@ function PainelDetalheVotacao({
   onClose,
 }: {
   votacaoId: number
-  votoDeputado: string   // voto já conhecido — exibido imediatamente sem aguardar fetch
+  votoDeputado?: string | null
   onClose: () => void
 }) {
   const { data: votacao, isLoading } = useVotacao(votacaoId)
@@ -836,7 +837,8 @@ function PainelDetalheVotacao({
     return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
   }
 
-  const cfg = VOTO_CONFIG[votoDeputado] ?? { cls: "text-slate-600 bg-slate-50 border-slate-200", clsLight: "bg-slate-50" }
+  const vDep = votoDeputado || "Não registrado"
+  const cfg = VOTO_CONFIG[vDep] ?? { cls: "text-slate-600 bg-slate-50 border-slate-200", clsLight: "bg-slate-50" }
 
   return (
     <>

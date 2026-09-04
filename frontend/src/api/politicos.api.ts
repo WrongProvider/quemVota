@@ -385,7 +385,7 @@ export interface VotacaoResumida {
   readonly proposicao_numero: number | null
   readonly proposicao_ano: number | null
   readonly proposicao_ementa: string | null
-  readonly voto: string                        // "Sim", "Não", "Obstrução", "Abstenção"...
+  readonly voto: string | null                 // "Sim", "Não", "Obstrução", "Abstenção"...
   readonly aprovacao: number | null            // 1 aprovada, 0 rejeitada, -1 indefinido
   readonly tipo_votacao: string | null
   readonly sigla_orgao: string | null

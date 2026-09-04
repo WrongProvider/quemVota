@@ -74,7 +74,7 @@ class PoliticoVoto(BaseModel):
     proposicao_numero: int | None = None
     proposicao_ano: int | None = None
     ementa: str | None = None
-    voto: str  # Sim, Não, Obstrução, etc.
+    voto: str | None = None  # Sim, Não, Obstrução, etc.
     resultado_da_votacao: Optional[str] = None
     tipo_votacao: Optional[str] = None
     uri: str | None = None
@@ -434,7 +434,7 @@ class VotoDeputado(BaseModel):
     nome: str
     sigla_partido: Optional[str] = None
     sigla_uf: Optional[str] = None
-    voto: str
+    voto: Optional[str] = None
     data_hora_voto: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -573,7 +573,7 @@ class VotacaoResumida(BaseModel):
     proposicao_ano: Optional[int] = None
     proposicao_ementa: Optional[str] = None
 
-    voto: str
+    voto: Optional[str] = None
     aprovacao: Optional[int] = None
     tipo_votacao: Optional[str] = None
     sigla_orgao: Optional[str] = None

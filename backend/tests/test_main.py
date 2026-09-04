@@ -54,3 +54,18 @@ async def test_politico_votacoes(client):
         "resultado_da_votacao",
     }
     assert expected_keys.issubset(data[0].keys())
+
+
+async def test_politico_atividade_legislativa(client):
+    # Testa deputado 213 (Erika Hilton), garantindo que votos nulos ou matérias sem voto não quebrem
+    response = await client.get(
+        "/politicos/213/atividade-legislativa?limit_votacoes=15&limit_proposicoes=20&offset_votacoes=0"
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "votacoes" in data
+    assert "proposicoes" in data
+    assert "total_votacoes" in data
+    assert "total_proposicoes" in data
+    assert isinstance(data["votacoes"], list)
+
