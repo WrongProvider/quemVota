@@ -10,10 +10,6 @@ import {
 } from "../hooks/usePoliticos"
 import PoliticoGraficos from "../components/PoliticoGraficos"
 import LinhaDoTempo from "../components/LinhaDoTempo"
-import PainelTemasAtuacao from "../components/PainelTemasAtuacao"
-import PainelFidelidadePartidaria from "../components/PainelFidelidadePartidaria"
-import PainelRadarAfinidades from "../components/PainelRadarAfinidades"
-import PainelRedeCoautoria from "../components/PainelRedeCoautoria"
 import InfoBotao from "../components/InfoDicaBotao"
 import ToolDica from "../components/InfoDica"
 import Header from "../components/Header"
@@ -43,13 +39,12 @@ import {
   ChevronDown,
   Loader2,
   ArrowLeftRight,
-  AlertCircle,
 } from "lucide-react"
 import { useRegistrarBusca } from "../hooks/useBuscaPopular"
 import { useVotacao } from "../hooks/useProposicoes"
-import { type VotacaoResumida, nomeParaSlug } from "../api/politicos.api"
+import type { VotacaoResumida } from "../api/politicos.api"
 import ModalSelecionarPolitico from "../components/ModalSelecionarPolitico"
-import { formatarMoedaBRL, formatarNumero } from "../utils/formatters"
+import PerfilHistorico from "../components/PerfilHistorico"
 
 const PATH_FOTOS = "/fotos_politicos/"
 
@@ -65,22 +60,25 @@ function SeoHead({
   nome,
   partido,
   uf,
+  score,
   fotoUrl,
   pageUrl,
 }: {
   nome: string
   partido?: string
   uf?: string
+  score?: number
   fotoUrl: string
   pageUrl: string
 }) {
+  const scoreTexto = score != null ? ` | Score: ${score.toFixed(0)}/100` : ""
   const localTexto = [partido, uf].filter(Boolean).join(" • ")
 
   useSeo({
     title: `${nome} — Perfil Parlamentar${localTexto ? ` | ${localTexto}` : ""}`,
     description:
       `Veja o perfil completo de ${nome}${localTexto ? ` (${localTexto})` : ""}` +
-      `. Gastos, votações e atividade parlamentar.`,
+      `${scoreTexto}. Gastos, votações e performance parlamentar.`,
     url: pageUrl,
     image: fotoUrl,
     type: "profile",
@@ -250,42 +248,46 @@ function TimelineSelector({
 }) {
   if (!anos.length) return null
 
+  const idx = anoSelecionado ? anos.indexOf(anoSelecionado) : -1
+
+  const handlePrev = () => {
+    if (idx > 0) onChange(anos[idx - 1])
+    else if (idx === -1) onChange(anos[anos.length - 1])
+  }
+
+  const handleNext = () => {
+    if (idx === -1) return
+    if (idx < anos.length - 1) onChange(anos[idx + 1])
+    else onChange(null)
+  }
+
   return (
-    <div
-      className="bg-white border border-slate-200/90 rounded-2xl shadow-2xs overflow-hidden"
-      data-testid="year-selector-container"
-    >
-      <div className="bg-slate-50 border-b border-slate-100 px-4 sm:px-6 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-center sm:text-left">
-        <p className="text-xs sm:text-sm font-medium text-slate-600 flex items-center justify-center sm:justify-start gap-1.5">
-          <Calendar size={14} className="text-slate-400 flex-shrink-0" />
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden" data-testid="year-selector-container">
+      <div className="bg-slate-50 border-b border-slate-100 px-6 py-3 text-center">
+        <p className="text-sm font-medium text-slate-500">
           {anoSelecionado ? (
-            <>
-              Exibindo dados de <strong className="text-slate-900 font-bold">{anoSelecionado}</strong>
-            </>
+            <>Exibindo dados de <strong className="text-slate-800">{anoSelecionado}</strong></>
           ) : (
             "Selecione um ano abaixo ou veja o mandato completo"
           )}
         </p>
-        <span className="text-[11px] text-slate-400 hidden sm:inline">
-          Informações disponíveis desde {anos[0]}
-        </span>
       </div>
 
-      <div className="p-3 sm:p-4">
-        {/* Mobile & Desktop: botões responsivos com scroll horizontal suave */}
-        <div className="flex flex-wrap items-center justify-center gap-2">
+      <div className="px-4 py-5">
+        {/* Mobile: botões individuais em grid */}
+        <div className="flex flex-wrap justify-center gap-2">
           {/* Botão "Tudo" */}
           <button
             onClick={() => onChange(null)}
             data-testid="year-button-all"
-            className={`flex items-center justify-center min-w-[3.5rem] px-3.5 h-9 rounded-xl border text-xs font-bold transition-all ${
+            className={`flex items-center justify-center w-12 h-10 rounded-xl border-2 text-xs font-bold transition-all ${
               anoSelecionado === null
-                ? "bg-slate-700 border-slate-700 text-white shadow-xs"
-                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                ? "bg-slate-700 border-slate-700 text-white shadow-md"
+                : "bg-white border-slate-200 text-slate-500 hover:border-slate-400"
             }`}
             title="Mandato completo"
           >
-            ∑ Todos
+            ∑
           </button>
 
           {anos.map((ano) => {
@@ -295,10 +297,10 @@ function TimelineSelector({
                 key={ano}
                 onClick={() => onChange(ativo ? null : ano)}
                 data-testid={`year-button-${ano}`}
-                className={`flex items-center justify-center px-3.5 h-9 rounded-xl border text-xs font-semibold transition-all ${
+                className={`flex items-center justify-center px-3 h-10 rounded-xl border-2 text-xs font-semibold transition-all ${
                   ativo
-                    ? "bg-yellow-400 border-yellow-400 text-white shadow-xs scale-105"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50"
+                    ? "bg-yellow-400 border-yellow-400 text-white shadow-md scale-105"
+                    : "bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600"
                 }`}
               >
                 {ano}
@@ -306,6 +308,10 @@ function TimelineSelector({
             )
           })}
         </div>
+
+        <p className="text-center text-[11px] text-slate-400 mt-4">
+          ⓘ Informações disponíveis desde {anos[0]}
+        </p>
       </div>
     </div>
   )
@@ -319,45 +325,8 @@ export default function PoliticoDetalhe() {
   const isNumerico = /^\d+$/.test(idOuSlug ?? "")
 
   const [anoSelecionado, setAnoSelecionado] = useState<number | null>(null)
-  const [abaAtiva, setAbaAtiva] = useState<"visao-geral" | "votacoes" | "gastos" | "atuacao">("visao-geral")
   const [avisoSaidaAberto, setAvisoSaidaAberto] = useState(false)
   const [modalCompararAberto, setModalCompararAberto] = useState(false)
-
-  const scrollParaSecao = (id: string, aba: "visao-geral" | "votacoes" | "gastos" | "atuacao") => {
-    setAbaAtiva(aba)
-    const el = document.querySelector(`[data-testid="${id}"]`) || document.getElementById(id)
-    if (el) {
-      const topOffset = 130
-      const elementPosition = el.getBoundingClientRect().top + window.pageYOffset
-      window.scrollTo({
-        top: Math.max(elementPosition - topOffset, 0),
-        behavior: "smooth",
-      })
-    }
-  }
-
-  useEffect(() => {
-    const secoes = [
-      { id: "section-stats", aba: "visao-geral" as const },
-      { id: "section-atuacao", aba: "atuacao" as const },
-      { id: "section-historico-de-gastos", aba: "gastos" as const },
-      { id: "section-votacoes", aba: "votacoes" as const },
-    ]
-
-    const handleScroll = () => {
-      const scrollPos = window.scrollY + 200
-      for (const sec of secoes.slice().reverse()) {
-        const el = document.querySelector(`[data-testid="${sec.id}"]`) || document.getElementById(sec.id)
-        if (el && el.getBoundingClientRect().top + window.scrollY <= scrollPos) {
-          setAbaAtiva(sec.aba)
-          break
-        }
-      }
-    }
-
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
 
   // Busca por ID numérico (legado) ou por slug (canônico)
   const porId   = usePoliticoDetalhe(isNumerico ? Number(idOuSlug) : 0)
@@ -390,6 +359,29 @@ export default function PoliticoDetalhe() {
   if (error) return <ErrorScreen />
   if (!data) return null
 
+  // ── Detecção de Perfil Histórico ──────────────────────────────────────────
+  // Ativa quando não há absolutamente nenhum dado digitalizado: nenhuma
+  // votação, nenhuma despesa e nenhum ano disponível na timeline.
+  // Ocorre com parlamentares de mandatos anteriores à 52ª Legislatura (2003),
+  // quando a Câmara não disponibilizava registros eletrônicos.
+  const isPerfilHistorico =
+    !timelineLoading &&
+    stats != null &&
+    stats.total_votacoes === 0 &&
+    stats.total_despesas === 0 &&
+    stats.total_gasto === 0 &&
+    anosDisponiveis.length === 0
+
+  if (isPerfilHistorico) return <PerfilHistorico data={data} />
+
+  const scoreColor =
+    performance?.score_final >= 70
+      ? "text-emerald-500"
+      : performance?.score_final >= 40
+      ? "text-amber-500"
+      : "text-red-500"
+
+
   const pageUrl = `${window.location.origin}/politicos/${data.slug}`
   const fotoAbsoluta = `${window.location.origin}${PATH_FOTOS}${data.id}.jpg`
 
@@ -400,14 +392,17 @@ export default function PoliticoDetalhe() {
         nome={data.nome}
         partido={data.sigla_partido}
         uf={data.sigla_uf}
+        score={performance?.score_final}
         fotoUrl={fotoAbsoluta}
         pageUrl={pageUrl}
       />
 
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,400&display=swap');
+
         .detail-root { font-family: 'DM Sans', sans-serif; }
-        .display-font { font-family: 'DM Sans', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-        .mono-font { font-family: 'DM Mono', monospace; font-variant-numeric: tabular-nums; }
+        .display-font { font-family: 'Fraunces', serif; }
+        .mono-font { font-family: 'DM Mono', monospace; }
 
         .profile-photo {
           animation: photoReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -441,6 +436,35 @@ export default function PoliticoDetalhe() {
 
         .pill-badge {
           background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        }
+
+        .score-ring {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .score-ring::before {
+          content: '';
+          position: absolute;
+          inset: -4px;
+          border-radius: 50%;
+          background: conic-gradient(
+            #2563eb calc(var(--score, 0) * 3.6deg),
+            #e2e8f0 0deg
+          );
+          z-index: 0;
+        }
+        .score-ring-inner {
+          position: relative;
+          z-index: 1;
+          background: white;
+          border-radius: 50%;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .section-fade {
@@ -481,22 +505,11 @@ export default function PoliticoDetalhe() {
 
                 {/* ── BOTÕES DE AÇÃO ── */}
                 <div className="flex items-center gap-2">
-                  {/* ── LINK OFICIAL DA CÂMARA ── */}
-                  <a
-                    href={`https://www.camara.leg.br/deputados/${data.id_camara}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors shadow-2xs"
-                  >
-                    <ExternalLink size={13} className="text-slate-400" />
-                    <span className="hidden sm:inline">Ficha na Câmara</span>
-                    <span className="sm:hidden">Câmara</span>
-                  </a>
-
                   {/* ── BOTÃO COMPARAR ── */}
                   <button
                     onClick={() => setModalCompararAberto(true)}
                     data-testid="btn-comparar"
+
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium transition-colors shadow-sm shadow-blue-200"
                   >
                     <ArrowLeftRight size={15} />
@@ -530,15 +543,24 @@ export default function PoliticoDetalhe() {
                     )}
                   </div>
 
-                  {/* Indicador de presença no mobile */}
+                  {/* Score ring visível só no mobile, ao lado da foto */}
                   {performance && (
                     <div className="flex md:hidden flex-shrink-0 text-center">
-                      <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-center">
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Presença</p>
-                        <p className="mono-font text-lg font-bold text-slate-800">
-                          {performance.detalhes?.nota_assiduidade != null ? `${performance.detalhes.nota_assiduidade.toFixed(0)}%` : "—"}
-                        </p>
-                        <p className="text-[9px] text-slate-400">Assiduidade</p>
+                      <div>
+                        <div
+                          className="score-ring w-24 h-24"
+                          style={{ "--score": performance.score_final } as React.CSSProperties}
+                        >
+                          <div className="score-ring-inner flex-col">
+                            <span className={`mono-font text-xl font-bold ${scoreColor}`}>
+                              {performance.score_final.toFixed(0)}
+                            </span>
+                            <span className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                              {anoSelecionado ? anoSelecionado : "score"}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-2 font-medium">Performance</p>
                       </div>
                     </div>
                   )}
@@ -555,39 +577,35 @@ export default function PoliticoDetalhe() {
                         {data.condicao_eleitoral}
                       </span>
                     )}
-                    <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/70">
-                      57ª Legislatura
-                    </span>
                   </div>
 
-                  <h1 data-testid="politician-name" className="display-font text-3xl md:text-4xl font-bold text-slate-900 mb-2.5 leading-tight">
+                  <h1 data-testid="politician-name" className="display-font text-3xl md:text-4xl font-bold text-slate-900 mb-3 leading-tight">
                     {data.nome}
                   </h1>
 
-                  {/* IDENTIFICAÇÃO CÍVICA: PARTIDO, ESTADO E ESCOLARIDADE */}
-                  <div className="flex flex-wrap items-center gap-2 mb-3">
-                    {data.sigla_partido && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200/90 text-amber-900 font-bold text-xs shadow-2xs">
-                        <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
-                        {data.sigla_partido}
-                      </span>
-                    )}
+                  <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
                     {data.sigla_uf && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200/90 text-blue-900 font-bold text-xs shadow-2xs">
-                        <MapPin size={12} className="text-blue-600" />
+                      <span className="flex items-center gap-1.5">
+                        <MapPin size={14} className="text-slate-400" />
                         {data.sigla_uf}
                       </span>
                     )}
+                    {data.sigla_partido && (
+                      <span className="flex items-center gap-1.5">
+                        <Users size={20} className="text-slate-400" />
+                        {data.sigla_partido}
+                      </span>
+                    )}
                     {data.escolaridade && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 font-medium text-xs">
-                        <GraduationCap size={13} className="text-slate-400" />
+                      <span className="flex items-center gap-1.5">
+                        <GraduationCap size={14} className="text-slate-400" />
                         {data.escolaridade}
                       </span>
                     )}
                   </div>
 
                   {/* Contacts */}
-                  <div className="flex flex-wrap gap-2 sm:gap-3 mt-3">
+                  <div className="flex flex-wrap gap-3 mt-4">
                     {data.email_gabinete && (
                       <a
                         href={`mailto:${data.email_gabinete}`}
@@ -609,86 +627,50 @@ export default function PoliticoDetalhe() {
                   </div>
                 </div>
 
-                {/* INDICADOR RÁPIDO DE MANDATO (DESKTOP) */}
+                {/* SCORE RING — oculto no mobile (aparece ao lado da foto) */}
                 {performance && (
                   <div className="hidden md:flex flex-shrink-0 text-center" data-testid="performance-container">
-                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center min-w-[120px]">
-                      <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Presença</p>
-                      <p data-testid="performance-score" className="mono-font text-2xl font-bold text-slate-800 mt-1">
-                        {performance.detalhes?.nota_assiduidade != null ? `${performance.detalhes.nota_assiduidade.toFixed(0)}%` : "—"}
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        {anoSelecionado ? `em ${anoSelecionado}` : "assiduidade"}
-                      </p>
+                    <div>
+                      <div
+                        className="score-ring w-28 h-28"
+                        style={{ "--score": performance.score_final } as React.CSSProperties}
+                      >
+                        <div className="score-ring-inner flex-col">
+                          <span data-testid="performance-score" className={`mono-font text-2xl font-bold ${scoreColor}`}>
+                            {performance.score_final.toFixed(0)}
+                          </span>
+                          <span className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                            {anoSelecionado ? anoSelecionado : "score"}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-2 font-medium">Performance</p>
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* ── LINK OFICIAL DA CÂMARA ── */}
+              <div className="mt-8 flex justify-center border-t border-slate-100 pt-6">
+                <a
+                  href={`https://www.camara.leg.br/deputados/${data.id_camara}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 transition-colors"
+                >
+                  <ExternalLink size={16} />
+                  Confira os dados oficiais da Câmara:{" "}
+                  <span className="font-medium underline underline-offset-2">
+                    https://www.camara.leg.br/deputados/{data.id_camara}
+                  </span>
+                </a>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── BARRA DE ABAS CÍVICAS (STICKY MOBILE & DESKTOP) ── */}
-        <div className="sticky top-14 sm:top-16 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <nav
-              className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none py-2 text-xs sm:text-sm font-medium"
-              aria-label="Navegação de seções"
-            >
-              <button
-                data-testid="tab-visao-geral"
-                onClick={() => scrollParaSecao("section-stats", "visao-geral")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-                  abaAtiva === "visao-geral"
-                    ? "bg-slate-900 text-white font-semibold shadow-xs"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
-              >
-                <BarChart2 size={14} />
-                <span>Visão Geral</span>
-              </button>
-              <button
-                data-testid="tab-votacoes"
-                onClick={() => scrollParaSecao("section-votacoes", "votacoes")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-                  abaAtiva === "votacoes"
-                    ? "bg-slate-900 text-white font-semibold shadow-xs"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
-              >
-                <Vote size={14} />
-                <span>Votações</span>
-              </button>
-              <button
-                data-testid="tab-gastos"
-                onClick={() => scrollParaSecao("section-historico-de-gastos", "gastos")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-                  abaAtiva === "gastos"
-                    ? "bg-slate-900 text-white font-semibold shadow-xs"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
-              >
-                <Receipt size={14} />
-                <span>Gastos & Recursos</span>
-              </button>
-              <button
-                data-testid="tab-atuacao"
-                onClick={() => scrollParaSecao("section-atuacao", "atuacao")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-                  abaAtiva === "atuacao"
-                    ? "bg-slate-900 text-white font-semibold shadow-xs"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
-              >
-                <TrendingUp size={14} />
-                <span>Atuação & Parcerias</span>
-              </button>
-            </nav>
-          </div>
-        </div>
-
         {/* ── MAIN CONTENT ── */}
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+        <div className="max-w-5xl mx-auto px-6 py-10 space-y-10">
           {/* ── SELETOR DE ANO ── */}
           {!timelineLoading && anosDisponiveis.length > 0 && (
             <section data-testid="section-timeline">
@@ -701,20 +683,19 @@ export default function PoliticoDetalhe() {
           )}
 
           {timelineLoading && (
-            <div className="bg-white border border-slate-200 rounded-2xl h-20 flex items-center justify-center">
+            <div className="bg-white border border-slate-200 rounded-2xl h-28 flex items-center justify-center">
               <div className="w-6 h-6 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
             </div>
           )}
 
           {anoSelecionado && (
-            <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
-              <p className="text-sm text-slate-800 font-medium flex items-center gap-2">
-                <Calendar size={15} className="text-slate-500" />
-                <span>Dados filtrados para o ano <strong>{anoSelecionado}</strong></span>
+            <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+              <p className="text-sm text-blue-700 font-medium">
+                📅 Dados filtrados para o ano <strong>{anoSelecionado}</strong>
               </p>
               <button
                 onClick={() => setAnoSelecionado(null)}
-                className="text-xs text-slate-600 hover:text-slate-900 font-medium underline underline-offset-2 transition-colors"
+                className="text-xs text-blue-500 hover:text-blue-700 font-medium underline underline-offset-2 transition-colors"
               >
                 Ver mandato completo
               </button>
@@ -723,163 +704,106 @@ export default function PoliticoDetalhe() {
 
           {/* ── ESTATÍSTICAS ── */}
           {stats && (
-            <section data-testid="section-stats" key={`stats-${anoSelecionado}`} className="section-fade space-y-5">
-              <div className="flex items-center gap-2 mb-1">
+            <section data-testid="section-stats" key={`stats-${anoSelecionado}`} className="section-fade">
+              <div className="flex items-center gap-2 mb-5">
                 <BarChart2 size={18} className="text-blue-500" />
-                <h2 className="display-font text-xl font-bold text-slate-800">Estatísticas Consolidadas</h2>
+                <h2 className="display-font text-xl font-bold text-slate-800">Estatísticas</h2>
                 <ToolDica
                   side="bottom"
-                  content="Estatísticas consolidadas a partir de dados oficiais abertos da Câmara dos Deputados."
+                  content="O score é calculado com base em assiduidade, economia e produção parlamentar."
                 >
                   <InfoBotao />
                 </ToolDica>
               </div>
 
-              {/* SUB-BLOCO 1: ATIVIDADE EM PLENÁRIO */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Vote size={14} className="text-blue-500" />
-                  Atividade em Plenário & Votações
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <StatCard
-                    data-testid="stat-total-votacoes"
-                    icon={<BadgeCheck size={16} className="text-blue-500" />}
-                    titulo="Total de Votações"
-                    valor={formatarNumero(stats.total_votacoes)}
-                    subtitulo="Sessões deliberativas convocadas"
-                    accent="blue"
-                  />
-                  <StatCard
-                    icon={<CheckCircle2 size={16} className="text-emerald-500" />}
-                    titulo="Assiduidade em Plenário"
-                    valor={performance?.detalhes?.nota_assiduidade != null ? `${performance.detalhes.nota_assiduidade.toFixed(0)}%` : "—"}
-                    subtitulo="Presença e votos registrados"
-                    accent="emerald"
-                  />
-                  {data.sigla_partido && (
-                    <StatCard
-                      icon={<Users size={16} className="text-indigo-500" />}
-                      titulo={`Bancada ${data.sigla_partido}`}
-                      valor={data.sigla_partido}
-                      subtitulo={data.sigla_uf ? `Representação por ${data.sigla_uf}` : "Filiação partidária oficial"}
-                      accent="violet"
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* SUB-BLOCO 2: RECURSOS PÚBLICOS E GESTÃO */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Receipt size={14} className="text-emerald-500" />
-                  Recursos Públicos e Gestão Orçamentária
-                </h3>
-
-                {/* Card destaque de Gasto Total */}
-                <div className="p-4 sm:p-5 rounded-xl bg-slate-900 text-white shadow-xs mb-4">
-                  <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 mb-3">
-                    <div>
-                      <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-0.5">
-                        Gasto Total ({anoSelecionado ? `Ano ${anoSelecionado}` : "Mandato Completo"})
-                      </span>
-                      <span className="mono-font text-2xl sm:text-3xl font-extrabold text-white">
-                        {formatarMoedaBRL(stats.total_gasto_combinado ?? stats.total_gasto)}
-                      </span>
-                    </div>
-                    <div className="text-left sm:text-right">
-                      <span className="text-[11px] text-slate-400 block">Média mensal (CEAP):</span>
-                      <span className="mono-font text-sm font-bold text-amber-300">
-                        {formatarMoedaBRL(stats.media_mensal)} / mês
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Proporção CEAP vs Gabinete */}
-                  {((stats.total_gasto_gabinete ?? 0) > 0 || stats.total_gasto > 0) && (() => {
-                    const ceap = stats.total_gasto || 0
-                    const gab = stats.total_gasto_gabinete || 0
-                    const total = ceap + gab || 1
-                    const pctCeap = Math.round((ceap / total) * 100)
-                    const pctGab = 100 - pctCeap
-                    return (
-                      <div className="space-y-1.5 pt-2 border-t border-slate-800">
-                        <div className="flex justify-between text-[11px] text-slate-300 font-medium">
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-                            Cota Parlamentar ({pctCeap}%)
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block" />
-                            Verba de Gabinete ({pctGab}%)
-                          </span>
-                        </div>
-                        <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden flex">
-                          <div className="bg-emerald-400 h-full transition-all duration-300" style={{ width: `${pctCeap}%` }} />
-                          <div className="bg-indigo-400 h-full transition-all duration-300" style={{ width: `${pctGab}%` }} />
-                        </div>
-                      </div>
-                    )
-                  })()}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <StatCard
-                    icon={<TrendingUp size={16} className="text-emerald-500" />}
-                    titulo="Cota Parlamentar (CEAP)"
-                    valor={formatarMoedaBRL(stats.total_gasto)}
-                    subtitulo="Passagens, combustíveis e serviços"
-                    accent="emerald"
-                  />
-                  <StatCard
-                    icon={<Wallet size={16} className="text-indigo-500" />}
-                    titulo="Verba de Gabinete"
-                    valor={formatarMoedaBRL(stats.total_gasto_gabinete ?? 0)}
-                    subtitulo="Salários e encargos da equipe"
-                    accent="violet"
-                  />
-                  <StatCard
-                    data-testid="stat-total-despesas"
-                    icon={<Receipt size={16} className="text-blue-500" />}
-                    titulo="Comprovantes Auditados"
-                    valor={`${formatarNumero(stats.total_despesas)} notas`}
-                    subtitulo="Notas fiscais e recibos na CEAP"
-                    accent="blue"
-                  />
-                </div>
-
-                {(stats.total_gasto_gabinete ?? 0) > 0 && (
-                  <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">
-                    ℹ️ <strong>Cota Parlamentar (CEAP)</strong> cobre deslocamentos, passagens, materiais e serviços operacionais.{" "}
-                    <strong>Verba de Gabinete</strong> remunera secretários parlamentares e assessores técnicos.
-                  </p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <StatCard data-testid="stat-total-votacoes" icon={<BadgeCheck size={16} className="text-blue-500" />}    titulo="Total de Votações"   valor={stats.total_votacoes}                                                        accent="blue"    />
+                <StatCard data-testid="stat-total-despesas" icon={<Receipt size={16} className="text-violet-500" />}     titulo="Total de Despesas"   valor={stats.total_despesas}                                                        accent="violet"  />
+                <StatCard icon={<TrendingUp size={16} className="text-emerald-500" />} titulo="Cota Parlamentar"    valor={`R$ ${stats.total_gasto.toLocaleString("pt-BR")}`}                           accent="emerald" />
+                <StatCard icon={<Wallet size={16} className="text-orange-500" />}      titulo="Verba de Gabinete"   valor={`R$ ${(stats.total_gasto_gabinete ?? 0).toLocaleString("pt-BR")}`}           accent="amber"   />
+                <StatCard icon={<Receipt size={16} className="text-red-500" />}        titulo="Gasto Total"         valor={`R$ ${(stats.total_gasto_combinado ?? stats.total_gasto).toLocaleString("pt-BR")}`} accent="slate" />
+                <StatCard icon={<Receipt size={16} className="text-amber-500" />}      titulo="Média Mensal"        valor={`R$ ${stats.media_mensal.toLocaleString("pt-BR")}`}                          accent="amber"   />
+                {!anoSelecionado && (
+                  <>
+                    <StatCard icon={<Calendar size={16} className="text-slate-400" />} titulo="Primeiro Ano" valor={stats.primeiro_ano ?? "—"} accent="slate" />
+                    <StatCard icon={<Calendar size={16} className="text-slate-400" />} titulo="Último Ano"   valor={stats.ultimo_ano ?? "—"}   accent="slate" />
+                  </>
                 )}
               </div>
+
+              {/* Aviso quando gabinete != 0 */}
+              {(stats.total_gasto_gabinete ?? 0) > 0 && (
+                <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                  ℹ️ <strong>Cota Parlamentar</strong> cobre deslocamentos, materiais e serviços de terceiros.{" "}
+                  <strong>Verba de Gabinete</strong> cobre salários e encargos dos funcionários do escritório.
+                </p>
+              )}
             </section>
           )}
 
-          {/* ── SEÇÃO DE ATUAÇÃO E PARCERIAS ── */}
-          <div id="section-atuacao" data-testid="section-atuacao" className="space-y-10">
-            {/* ── ATUAÇÃO E RECURSOS PARLAMENTARES ── */}
-            {performance && (
-              <section key={`perf-${anoSelecionado}`} className="section-fade">
-                <div className="flex items-center gap-2 mb-5">
-                  <TrendingUp size={18} className="text-blue-500" />
-                  <h2 className="display-font text-xl font-bold text-slate-800">Atuação e Recursos Parlamentares</h2>
+          {/* ── PERFORMANCE PARLAMENTAR ── */}
+          {performance && (
+            <section key={`perf-${anoSelecionado}`} className="section-fade">
+              <div className="flex items-center gap-2 mb-5">
+                <TrendingUp size={18} className="text-blue-500" />
+                <h2 className="display-font text-xl font-bold text-slate-800">Performance Parlamentar</h2>
+              </div>
+              <PoliticoGraficos performance={performance} />
+
+              {/* Breakdown do orçamento — exibido quando há dados de gabinete */}
+              {(performance.info?.gasto_gabinete ?? 0) > 0 && (
+                <div className="mt-4 bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                  <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/60">
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                      💰 Composição do Orçamento
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100">
+                    {[
+                      {
+                        label: "Cota Parlamentar",
+                        value: `R$ ${(performance.info.total_gasto ?? 0).toLocaleString("pt-BR")}`,
+                        sub: "gastos CEAP",
+                        color: "text-violet-600",
+                      },
+                      {
+                        label: "Verba de Gabinete",
+                        value: `R$ ${(performance.info.gasto_gabinete ?? 0).toLocaleString("pt-BR")}`,
+                        sub: "pessoal / funcionários",
+                        color: "text-orange-500",
+                      },
+                      {
+                        label: "Gasto Total",
+                        value: `R$ ${(performance.info.gasto_total ?? 0).toLocaleString("pt-BR")}`,
+                        sub: "CEAP + gabinete",
+                        color: "text-red-500",
+                      },
+                      {
+                        label: "Orçamento Utilizado",
+                        value: `${(performance.info.orcamento_utilizado_pct ?? performance.info.cota_utilizada_pct ?? 0).toFixed(1)}%`,
+                        sub: "do total disponível",
+                        color:
+                          (performance.info.orcamento_utilizado_pct ?? 0) > 85
+                            ? "text-red-500"
+                            : (performance.info.orcamento_utilizado_pct ?? 0) > 60
+                            ? "text-amber-500"
+                            : "text-emerald-600",
+                      },
+                    ].map((item) => (
+                      <div key={item.label} className="px-5 py-4 text-center">
+                        <p className={`mono-font font-bold text-base ${item.color}`}>{item.value}</p>
+                        <p className="text-[11px] font-semibold text-slate-600 mt-1">{item.label}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{item.sub}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <PoliticoGraficos performance={performance} />
-              </section>
-            )}
-
-            {/* ── FOCO TEMÁTICO DA ATUAÇÃO (SPEC-001) ── */}
-            <PainelTemasAtuacao politicoId={data.slug || data.id} />
-
-            {/* ── REDE DE COAUTORIA E PARCERIAS LEGISLATIVAS ── */}
-            <PainelRedeCoautoria politicoId={data.slug || data.id} />
-          </div>
+              )}
+            </section>
+          )}
 
           {/* ── HISTÓRICO DE GASTOS ── */}
-          <section id="section-historico-de-gastos" className="mt-10" data-testid="section-historico-de-gastos">
+          <section className="mt-10" data-testid="section-historico-de-gastos">
             <div className="flex items-center gap-2 mb-5">
               <Receipt size={18} className="text-blue-500" />
               <h2 className="display-font text-xl font-bold text-slate-800">Histórico de Gastos</h2>
@@ -887,19 +811,10 @@ export default function PoliticoDetalhe() {
             <LinhaDoTempo politicoId={data.id} />
           </section>
 
-          {/* ── HISTÓRICO DE VOTAÇÕES E POSICIONAMENTO ── */}
-          <div id="section-votacoes-container" className="space-y-10">
-            {/* ── FIDELIDADE PARTIDÁRIA NAS VOTAÇÕES ── */}
-            <PainelFidelidadePartidaria politicoId={data.slug || data.id} />
-
-            {/* ── RADAR DE AFINIDADES E DIVERGÊNCIAS DE VOTO ── */}
-            <PainelRadarAfinidades politicoId={data.slug || data.id} />
-
-            {/* ── HISTÓRICO DE VOTAÇÕES ── */}
-            <section id="section-votacoes" data-testid="section-votacoes">
-              <HistoricoVotacoes politicoId={data.id} anoSelecionado={anoSelecionado} />
-            </section>
-          </div>
+          {/* ── HISTÓRICO DE VOTAÇÕES ── */}
+          <section data-testid="section-votacoes">
+            <HistoricoVotacoes politicoId={data.id} anoSelecionado={anoSelecionado} />
+          </section>
         </div>
       </div>
 
@@ -907,7 +822,7 @@ export default function PoliticoDetalhe() {
       {modalCompararAberto && (
         <ModalSelecionarPolitico
           politicoAtualId={data.id}
-          politicoAtualSlug={data.slug || nomeParaSlug(data.nome)}
+          politicoAtualSlug={data.slug}
           onClose={() => setModalCompararAberto(false)}
         />
       )}
@@ -924,9 +839,8 @@ const VOTO_CONFIG: Record<string, { label: string; cls: string; clsLight: string
   "Abstenção": { label: "Abstenção", cls: "text-slate-500 bg-slate-100 border-slate-200",       clsLight: "bg-slate-50",    icon: <MinusCircle size={11} /> },
 }
 
-function VotoBadge({ voto }: { voto?: string | null }) {
-  const v = voto || "Não registrado"
-  const cfg = VOTO_CONFIG[v] ?? { label: v, cls: "text-slate-600 bg-slate-50 border-slate-200", icon: <MinusCircle size={11} /> }
+function VotoBadge({ voto }: { voto: string }) {
+  const cfg = VOTO_CONFIG[voto] ?? { label: voto, cls: "text-slate-600 bg-slate-50 border-slate-200", icon: <MinusCircle size={11} /> }
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-semibold flex-shrink-0 ${cfg.cls}`}>
       {cfg.icon} {cfg.label}
@@ -968,7 +882,7 @@ function PainelDetalheVotacao({
   onClose,
 }: {
   votacaoId: number
-  votoDeputado?: string | null
+  votoDeputado: string   // voto já conhecido — exibido imediatamente sem aguardar fetch
   onClose: () => void
 }) {
   const { data: votacao, isLoading } = useVotacao(votacaoId)
@@ -979,8 +893,7 @@ function PainelDetalheVotacao({
     return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
   }
 
-  const vDep = votoDeputado || "Não registrado"
-  const cfg = VOTO_CONFIG[vDep] ?? { cls: "text-slate-600 bg-slate-50 border-slate-200", clsLight: "bg-slate-50" }
+  const cfg = VOTO_CONFIG[votoDeputado] ?? { cls: "text-slate-600 bg-slate-50 border-slate-200", clsLight: "bg-slate-50" }
 
   return (
     <>
@@ -1384,51 +1297,31 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
   )
 }
 
-// ── STAT CARD CÍVICO ──────────────────────────────────────────────────────────────
+// ── STAT CARD ──────────────────────────────────────────────────────────────
 const accentMap: Record<string, string> = {
-  blue:    "bg-white border-slate-200/90 hover:border-blue-400 shadow-2xs",
-  violet:  "bg-white border-slate-200/90 hover:border-indigo-400 shadow-2xs",
-  emerald: "bg-white border-slate-200/90 hover:border-emerald-400 shadow-2xs",
-  amber:   "bg-white border-slate-200/90 hover:border-amber-400 shadow-2xs",
-  slate:   "bg-white border-slate-200/90 hover:border-slate-400 shadow-2xs",
+  blue:    "bg-blue-50 border-blue-100 hover:border-blue-300",
+  violet:  "bg-violet-50 border-violet-100 hover:border-violet-300",
+  emerald: "bg-emerald-50 border-emerald-100 hover:border-emerald-300",
+  amber:   "bg-amber-50 border-amber-100 hover:border-amber-300",
+  slate:   "bg-white border-slate-200 hover:border-slate-300",
 }
 
 function StatCard({
-  icon,
-  titulo,
-  valor,
-  subtitulo,
-  accent = "slate",
-  "data-testid": testId,
+  icon, titulo, valor, accent = "slate", "data-testid": testId
 }: {
   icon: React.ReactNode
   titulo: string
   valor: any
-  subtitulo?: string
   accent?: string
   "data-testid"?: string
 }) {
   return (
-    <div
-      data-testid={testId}
-      className={`stat-card rounded-xl border p-4 transition-all duration-150 cursor-default ${
-        accentMap[accent] ?? accentMap.slate
-      }`}
-    >
-      <div className="flex items-center gap-2 mb-1.5">
+    <div data-testid={testId} className={`stat-card rounded-xl border p-4 transition-colors duration-200 cursor-default ${accentMap[accent] ?? accentMap.slate}`}>
+      <div className="flex items-center gap-2 mb-2">
         {icon}
-        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider leading-tight">
-          {titulo}
-        </p>
+        <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide leading-tight">{titulo}</p>
       </div>
-      <p className="font-mono tabular-nums text-lg font-bold text-slate-900 leading-tight truncate">
-        {valor}
-      </p>
-      {subtitulo && (
-        <p className="text-[10px] text-slate-400 mt-1 leading-snug">
-          {subtitulo}
-        </p>
-      )}
+      <p className="mono-font text-lg font-semibold text-slate-800 leading-tight truncate">{valor}</p>
     </div>
   )
 }
@@ -1453,18 +1346,18 @@ function ErrorScreen() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-canvas flex items-center justify-center pt-16">
+      <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center pt-16">
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <AlertCircle size={28} className="text-red-500" />
+            <span className="text-2xl">⚠️</span>
           </div>
-          <h2 className="text-lg font-semibold text-slate-800 mb-1">Erro ao carregar</h2>
-          <p className="text-sm text-slate-500">Não foi possível carregar o perfil deste parlamentar.</p>
+          <h2 className="text-lg font-semibold text-slate-700 mb-1">Erro ao carregar</h2>
+          <p className="text-sm text-slate-400">Não foi possível carregar o perfil deste parlamentar.</p>
           <Link
             to="/politicos"
-            className="inline-flex items-center gap-1.5 mt-5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-xs"
+            className="inline-flex items-center gap-1.5 mt-5 text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
-            <ArrowLeft size={13} />
+            <ArrowLeft size={14} />
             Voltar aos Parlamentares
           </Link>
         </div>
