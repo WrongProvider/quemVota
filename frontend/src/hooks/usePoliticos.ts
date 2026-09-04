@@ -22,6 +22,7 @@ import {
   obterPoliticoAtividadeService,
   obterComparacaoPoliticosService,
   obterPoliticoTemasService,
+  obterFidelidadePartidariaService,
   PoliticoServiceError,
 } from "../services/politicos.service"
 import type {
@@ -37,6 +38,8 @@ import type {
   CompararPoliticosParams,
   PoliticoTemasResponse,
   PoliticoTemasParams,
+  FidelidadePartidariaResponse,
+  FidelidadePartidariaParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,6 +97,8 @@ export const politicoKeys = {
     [...politicoKeys.all, "comparacao", String(idOrSlug1), String(idOrSlug2), params ?? {}] as const,
   temas:        (idOrSlug: string | number, legislatura?: number) =>
     [...politicoKeys.all, "temas", String(idOrSlug), legislatura ?? 57] as const,
+  fidelidade:   (idOrSlug: string | number, limitDivergencias?: number) =>
+    [...politicoKeys.all, "fidelidade", String(idOrSlug), limitDivergencias ?? 50] as const,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -343,5 +348,27 @@ export function usePoliticoTemas(
     staleTime: 10 * 60 * 1_000,
     gcTime: 15 * 60 * 1_000,
     retry: false, // 404 significa que o pipeline ainda não processou dados para o parlamentar
+  })
+}
+
+/**
+ * Retorna a fidelidade partidária e divergências em votações nominais.
+ *
+ * Cache de 10 min. Retorna null se não houver dados/partido (404/400).
+ */
+export function usePoliticoFidelidade(
+  idOrSlug?: string | number,
+  params?: FidelidadePartidariaParams,
+): UseQueryResult<FidelidadePartidariaResponse | null, PoliticoServiceError> {
+  const s = String(idOrSlug ?? "").trim()
+  const enabled = Boolean(s && s !== "null" && s !== "undefined")
+
+  return useQuery({
+    queryKey: politicoKeys.fidelidade(idOrSlug ?? "", params?.limit_divergencias),
+    queryFn: ({ signal }) => obterFidelidadePartidariaService(idOrSlug!, params, signal),
+    enabled,
+    staleTime: 10 * 60 * 1_000,
+    gcTime: 15 * 60 * 1_000,
+    retry: false, // 404/400 gracioso
   })
 }

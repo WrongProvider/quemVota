@@ -592,3 +592,69 @@ export async function fetchPoliticoTemas(
     throw err
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fidelidade Partidária em Votações Nominais (Cruzamento Factual)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface VotoDivergentePartido {
+  readonly id_votacao: number
+  readonly data: string | null
+  readonly proposicao: string | null
+  readonly ementa: string | null
+  readonly voto_politico: string
+  readonly orientacao_partido: string
+}
+
+export interface FidelidadePartidariaResponse {
+  readonly politico: PoliticoResumoComparacao
+  readonly sigla_partido: string
+  readonly total_votacoes_orientadas: number
+  readonly votos_com_bancada: number
+  readonly votos_contra_bancada: number
+  readonly taxa_fidelidade: number
+  readonly divergencias: VotoDivergentePartido[]
+  readonly fonte_dados: string
+}
+
+export interface FidelidadePartidariaParams {
+  readonly limit_divergencias?: number
+}
+
+/**
+ * GET /politicos/{idOrSlug}/grafo/fidelidade-partidaria
+ *
+ * Retorna o alinhamento factual entre os votos do parlamentar e as orientações
+ * oficiais emitidas pela liderança da bancada do seu partido.
+ * Retorna null em caso de 404/400 (deputado sem histórico ou sem partido).
+ */
+export async function fetchFidelidadePartidaria(
+  idOrSlug: string | number,
+  params?: FidelidadePartidariaParams,
+  signal?: AbortSignal,
+): Promise<FidelidadePartidariaResponse | null> {
+  try {
+    const { data } = await api.get<FidelidadePartidariaResponse>(
+      `/politicos/${idOrSlug}/grafo/fidelidade-partidaria`,
+      {
+        params: {
+          limit_divergencias: 50,
+          ...params,
+        },
+        signal,
+      },
+    )
+    return data
+  } catch (err: unknown) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "response" in err &&
+      ((err as { response?: { status?: number } }).response?.status === 404 ||
+       (err as { response?: { status?: number } }).response?.status === 400)
+    ) {
+      return null
+    }
+    throw err
+  }
+}

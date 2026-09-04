@@ -39,6 +39,9 @@ import {
   fetchPoliticoTemas,
   type PoliticoTemasResponse,
   type PoliticoTemasParams,
+  fetchFidelidadePartidaria,
+  type FidelidadePartidariaResponse,
+  type FidelidadePartidariaParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -308,5 +311,17 @@ export async function obterPoliticoTemasService(
     return await fetchPoliticoTemas(idOrSlug, params, signal)
   } catch (error) {
     throw normalizeError(error, "obterPoliticoTemasService")
+  }
+}
+
+export async function obterFidelidadePartidariaService(
+  idOrSlug: string | number,
+  params?: FidelidadePartidariaParams,
+  signal?: AbortSignal,
+): Promise<FidelidadePartidariaResponse | null> {
+  try {
+    return await fetchFidelidadePartidaria(idOrSlug, params, signal)
+  } catch (error) {
+    throw normalizeError(error, "obterFidelidadePartidariaService")
   }
 }
