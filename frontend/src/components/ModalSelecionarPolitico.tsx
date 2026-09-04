@@ -12,17 +12,21 @@ interface Props {
   politicoAtualId: number
   politicoAtualSlug: string
   onClose: () => void
+  onSelect?: (politico: Politico) => void
+  titulo?: string
 }
 
 /**
  * Modal que permite buscar e selecionar um segundo político para comparação.
  * Usa usePoliticos + useDebounce — sem fetch manual, sem estado de loading próprio.
- * Ao selecionar, navega para /comparar/:slugAtual/:slugEscolhido
+ * Ao selecionar, navega para /comparar/:slugAtual/:slugEscolhido ou chama onSelect se fornecido.
  */
 export default function ModalSelecionarPolitico({
   politicoAtualId,
   politicoAtualSlug,
   onClose,
+  onSelect,
+  titulo = "Comparar com outro parlamentar",
 }: Props) {
   const navigate  = useNavigate()
   const inputRef  = useRef<HTMLInputElement>(null)
@@ -54,6 +58,10 @@ export default function ModalSelecionarPolitico({
 
   const selecionarPolitico = (p: Politico) => {
     onClose()
+    if (onSelect) {
+      onSelect(p)
+      return
+    }
     const slugOrigem =
       politicoAtualSlug &&
       politicoAtualSlug !== "null" &&
@@ -91,7 +99,7 @@ export default function ModalSelecionarPolitico({
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <div>
               <h2 className="font-semibold text-slate-800 text-base">
-                Comparar com outro parlamentar
+                {titulo}
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">Busque pelo nome do político</p>
             </div>

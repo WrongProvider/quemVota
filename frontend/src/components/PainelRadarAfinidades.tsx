@@ -261,16 +261,19 @@ export default function PainelRadarAfinidades({
                           style={{ width: `${taxa}%` }}
                         />
                       </div>
-                      <div className="flex justify-between text-[11px] text-slate-500 mt-1">
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
                         <span>
                           <strong className="text-slate-700 font-semibold">
                             {item.votos_alinhados}
                           </strong>{" "}
-                          votos em comum
+                          votos em comum ({item.total_votacoes_comuns} total)
                         </span>
-                        <span className="text-slate-400">
-                          {item.total_votacoes_comuns} votações conjuntas
-                        </span>
+                        <Link
+                          to={`/comparar/${politicoId}/${slugOrId}`}
+                          className="text-emerald-700 hover:text-emerald-900 font-semibold inline-flex items-center gap-1 hover:underline"
+                        >
+                          Comparar <ArrowRight size={11} />
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -375,16 +378,19 @@ export default function PainelRadarAfinidades({
                           style={{ width: `${taxa}%` }}
                         />
                       </div>
-                      <div className="flex justify-between text-[11px] text-slate-500 mt-1">
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
                         <span>
                           <strong className="text-slate-700 font-semibold">
                             {item.votos_divergentes}
                           </strong>{" "}
-                          votos divergentes
+                          votos divergentes ({item.total_votacoes_comuns} total)
                         </span>
-                        <span className="text-slate-400">
-                          {item.total_votacoes_comuns} votações conjuntas
-                        </span>
+                        <Link
+                          to={`/comparar/${politicoId}/${slugOrId}`}
+                          className="text-amber-700 hover:text-amber-900 font-semibold inline-flex items-center gap-1 hover:underline"
+                        >
+                          Comparar <ArrowRight size={11} />
+                        </Link>
                       </div>
                     </div>
                   </div>

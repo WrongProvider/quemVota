@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { useParams, Link } from "react-router-dom"
+import { useParams, Link, useNavigate } from "react-router-dom"
+import ModalSelecionarPolitico from "../components/ModalSelecionarPolitico"
 import {
   usePoliticoDetalheBySlug,
   usePoliticoEstatisticas,
@@ -31,6 +32,9 @@ import {
   XCircle,
   Tag,
 } from "lucide-react"
+import {
+  nomeParaSlug,
+} from "../api/politicos.api"
 import type {
   PoliticoDetalhe,
   PoliticoEstatisticas,
@@ -255,13 +259,21 @@ function ErrorScreen() {
           </div>
           <h2 className="text-lg font-semibold text-slate-700 mb-1">Erro ao carregar</h2>
           <p className="text-sm text-slate-400">Não foi possível carregar os parlamentares.</p>
-          <Link
-            to="/politicos"
-            className="inline-flex items-center gap-1.5 mt-5 text-sm text-blue-600 hover:text-blue-800 font-medium"
-          >
-            <ArrowLeft size={14} />
-            Voltar aos Parlamentares
-          </Link>
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
+            <Link
+              to="/comparar"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors shadow-xs"
+            >
+              <ArrowLeft size={13} />
+              Escolher outros deputados
+            </Link>
+            <Link
+              to="/politicos"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-800 text-xs font-semibold transition-colors shadow-xs"
+            >
+              Ver todos parlamentares
+            </Link>
+          </div>
         </div>
       </div>
     </>
@@ -273,9 +285,11 @@ function ErrorScreen() {
 function ColunaPerfil({
   data,
   performance,
+  onTrocar,
 }: {
   data: PoliticoDetalhe
   performance: PoliticoPerformance | undefined
+  onTrocar?: () => void
 }) {
   return (
     <div className="flex flex-col items-center text-center gap-2 md:gap-3">
@@ -350,8 +364,8 @@ function ColunaPerfil({
         </div>
       )}
 
-      {/* Links */}
-      <div className="flex flex-col items-center gap-1">
+      {/* Links e Troca */}
+      <div className="flex flex-col items-center gap-1.5 mt-0.5">
         <Link
           to={`/politicos/${data.slug}`}
           className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
@@ -360,12 +374,23 @@ function ColunaPerfil({
           <span className="sm:hidden">Ver perfil</span>
           <ChevronRight size={11} />
         </Link>
+        {onTrocar && (
+          <button
+            type="button"
+            onClick={onTrocar}
+            data-testid={`btn-trocar-politico-${data.id}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 transition-all mt-0.5"
+          >
+            <ArrowLeftRight size={11} />
+            <span>Trocar</span>
+          </button>
+        )}
         {data.id_camara && (
           <a
             href={`https://www.camara.leg.br/deputados/${data.id_camara}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-blue-600 transition-colors"
+            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-blue-600 transition-colors"
           >
             <ExternalLink size={10} />
             <span className="hidden sm:inline">Câmara dos Deputados</span>
@@ -1075,8 +1100,10 @@ function BlocoAlinhamentoVotos({
 // ── PAGE ────────────────────────────────────────────────────────────────────
 
 export default function ComparacaoPoliticos() {
+  const navigate = useNavigate()
   const { slug1: slugA, slug2: slugB } = useParams<{ slug1: string; slug2: string }>()
   const [temaFiltro, setTemaFiltro] = useState<string | null>(null)
+  const [trocandoLado, setTrocandoLado] = useState<"A" | "B" | null>(null)
 
   const isSlugAInvalido = !slugA || slugA === "null" || slugA === "undefined"
   const isSlugBInvalido = !slugB || slugB === "null" || slugB === "undefined"
@@ -1210,16 +1237,24 @@ export default function ComparacaoPoliticos() {
               <div className="mb-8">
                 {/* Linha 1: breadcrumb + badge */}
                 <div className="flex items-center justify-between gap-2">
-                  <Link
-                    to={`/politicos/${dataA.slug}`}
-                    className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors group min-w-0"
-                  >
-                    <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform flex-shrink-0" />
-                    <span className="truncate hidden sm:inline">{dataA.nome}</span>
-                    <span className="truncate sm:hidden">{dataA.nome.split(" ")[0]}</span>
+                  <div className="flex items-center gap-1.5 text-sm text-slate-400 group min-w-0">
+                    <Link
+                      to="/comparar"
+                      className="inline-flex items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors flex-shrink-0"
+                    >
+                      <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+                      <span>Comparador</span>
+                    </Link>
                     <ChevronRight size={12} className="opacity-50 flex-shrink-0" />
-                    <span className="text-slate-600 font-medium flex-shrink-0">Comparação</span>
-                  </Link>
+                    <Link
+                      to={`/politicos/${dataA.slug}`}
+                      className="truncate text-slate-500 hover:text-slate-800 transition-colors hidden sm:inline"
+                    >
+                      {dataA.nome}
+                    </Link>
+                    <ChevronRight size={12} className="opacity-50 flex-shrink-0 hidden sm:inline" />
+                    <span className="text-slate-700 font-medium flex-shrink-0">Confronto</span>
+                  </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {compData && compData.total_votacoes_comuns > 0 && (
@@ -1228,10 +1263,21 @@ export default function ComparacaoPoliticos() {
                         {compData.taxa_alinhamento.toFixed(0)}% de alinhamento
                       </span>
                     )}
-                    <span className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 text-sm font-medium">
-                      <ArrowLeftRight size={14} />
-                      Comparando
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const sA = dataA.slug || slugA
+                        const sB = dataB.slug || slugB
+                        navigate(`/comparar/${sB}/${sA}`)
+                      }}
+                      data-testid="btn-inverter-lados"
+                      title="Inverter ordem dos parlamentares"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-xs font-semibold border border-slate-200 hover:border-blue-200 transition-all shadow-xs"
+                    >
+                      <ArrowLeftRight size={13} />
+                      <span className="hidden sm:inline">Inverter lados</span>
+                      <span className="sm:hidden">Inverter</span>
+                    </button>
                     <BotoesCompartilhamento
                       texto={`Compare ${dataA.nome} e ${dataB.nome} no QuemVota`}
                       url={`${window.location.origin}/comparar/${slugA}/${slugB}`}
@@ -1254,10 +1300,18 @@ export default function ComparacaoPoliticos() {
 
               {/* Perfis lado a lado */}
               <div className="grid grid-cols-2 gap-3 md:gap-16 items-start">
-                <ColunaPerfil data={dataA} performance={perfA} />
+                <ColunaPerfil
+                  data={dataA}
+                  performance={perfA}
+                  onTrocar={() => setTrocandoLado("A")}
+                />
                 {/* Divisor vertical — só desktop */}
                 <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-slate-100 -translate-x-1/2 pointer-events-none" />
-                <ColunaPerfil data={dataB} performance={perfB} />
+                <ColunaPerfil
+                  data={dataB}
+                  performance={perfB}
+                  onTrocar={() => setTrocandoLado("B")}
+                />
               </div>
             </div>
           </div>
@@ -1328,6 +1382,25 @@ export default function ComparacaoPoliticos() {
 
         </div>
       </div>
+
+      {/* ── MODAL TROCAR PARLAMENTAR ── */}
+      {trocandoLado && (
+        <ModalSelecionarPolitico
+          politicoAtualId={trocandoLado === "A" ? dataB.id : dataA.id}
+          politicoAtualSlug={trocandoLado === "A" ? (dataB.slug || slugB!) : (dataA.slug || slugA!)}
+          titulo={trocandoLado === "A" ? "Substituir 1º Parlamentar" : "Substituir 2º Parlamentar"}
+          onClose={() => setTrocandoLado(null)}
+          onSelect={(novoPolitico) => {
+            const novoSlug =
+              novoPolitico.slug || nomeParaSlug(novoPolitico.nome) || String(novoPolitico.id)
+            if (trocandoLado === "A") {
+              navigate(`/comparar/${novoSlug}/${dataB.slug || slugB}`)
+            } else {
+              navigate(`/comparar/${dataA.slug || slugA}/${novoSlug}`)
+            }
+          }}
+        />
+      )}
     </>
   )
 }
