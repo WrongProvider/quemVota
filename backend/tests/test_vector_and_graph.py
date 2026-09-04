@@ -264,6 +264,8 @@ async def test_api_rede_coautoria(client):
         assert "politico" in p0
         assert "total_proposicoes_juntos" in p0
         assert "mesmo_partido" in p0
+        if p0["politico"].get("url_foto"):
+            assert p0["politico"]["url_foto"].startswith("http")
 
 
 async def test_api_afinidades_voto(client):
@@ -277,6 +279,10 @@ async def test_api_afinidades_voto(client):
     assert "alinhamento_por_bancada" in data
     assert isinstance(data["mais_alinhados"], list)
     assert isinstance(data["mais_divergentes"], list)
+    if data["mais_alinhados"]:
+        al0 = data["mais_alinhados"][0]
+        if al0["politico"].get("url_foto"):
+            assert al0["politico"]["url_foto"].startswith("http")
 
 
 async def test_api_fidelidade_partidaria(client):

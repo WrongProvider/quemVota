@@ -27,8 +27,39 @@ import { usePoliticoCoautoria } from "../hooks/usePoliticos"
 import type { ParceiroCoautoria, ProposicaoParceriaResumo } from "../api/politicos.api"
 import InfoDica from "./InfoDica"
 
-interface PainelRedeCoautoriaProps {
-  politicoId: string | number
+const PATH_FOTOS = "/fotos_politicos/"
+
+interface FotoPoliticoProps {
+  id: number
+  nome: string
+  urlFoto?: string | null
+}
+
+function FotoPolitico({ id, nome, urlFoto }: FotoPoliticoProps) {
+  const [tentativa, setTentativa] = useState(0)
+
+  const candidatas = [
+    `${PATH_FOTOS}${id}.jpg`,
+    ...(urlFoto ? [urlFoto] : []),
+  ]
+
+  if (tentativa >= candidatas.length) {
+    return (
+      <span className="font-bold select-none text-slate-500">
+        {nome.slice(0, 2).toUpperCase()}
+      </span>
+    )
+  }
+
+  return (
+    <img
+      src={candidatas[tentativa]}
+      alt={nome}
+      onError={() => setTentativa((prev) => prev + 1)}
+      className="w-full h-full object-cover"
+      loading="lazy"
+    />
+  )
 }
 
 export default function PainelRedeCoautoria({
@@ -41,11 +72,6 @@ export default function PainelRedeCoautoria({
   const [itensVisiveis, setItensVisiveis] = useState(6)
   const [parceiroExpandido, setParceiroExpandido] = useState<number | null>(null)
   const [filtroTexto, setFiltroTexto] = useState("")
-  const [fotoErros, setFotoErros] = useState<Record<number, boolean>>({})
-
-  const marcarFotoErro = (id: number) => {
-    setFotoErros((prev) => ({ ...prev, [id]: true }))
-  }
 
   const toggleExpandirParceiro = (id: number) => {
     setParceiroExpandido((prev) => (prev === id ? null : id))
@@ -233,7 +259,6 @@ export default function PainelRedeCoautoria({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {parceirosFiltrados.slice(0, itensVisiveis).map((item: ParceiroCoautoria) => {
             const slugOrId = item.politico.slug || item.politico.id
-            const semFoto = Boolean(fotoErros[item.politico.id]) || !item.politico.url_foto
             const aberto = parceiroExpandido === item.politico.id
 
             return (
@@ -247,17 +272,11 @@ export default function PainelRedeCoautoria({
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
-                        {!semFoto ? (
-                          <img
-                            src={item.politico.url_foto!}
-                            alt={item.politico.nome}
-                            onError={() => marcarFotoErro(item.politico.id)}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          item.politico.nome.slice(0, 2).toUpperCase()
-                        )}
+                        <FotoPolitico
+                          id={item.politico.id}
+                          nome={item.politico.nome}
+                          urlFoto={item.politico.url_foto}
+                        />
                       </div>
 
                       <div className="min-w-0">

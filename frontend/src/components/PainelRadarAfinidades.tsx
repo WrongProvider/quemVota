@@ -29,23 +29,52 @@ interface PainelRadarAfinidadesProps {
 }
 
 const OPCOES_MIN_VOTACOES = [10, 25, 50]
+const PATH_FOTOS = "/fotos_politicos/"
+
+interface FotoPoliticoProps {
+  id: number
+  nome: string
+  urlFoto?: string | null
+}
+
+function FotoPolitico({ id, nome, urlFoto }: FotoPoliticoProps) {
+  const [tentativa, setTentativa] = useState(0)
+
+  const candidatas = [
+    `${PATH_FOTOS}${id}.jpg`,
+    ...(urlFoto ? [urlFoto] : []),
+  ]
+
+  if (tentativa >= candidatas.length) {
+    return (
+      <span className="font-bold select-none text-slate-500">
+        {nome.slice(0, 2).toUpperCase()}
+      </span>
+    )
+  }
+
+  return (
+    <img
+      src={candidatas[tentativa]}
+      alt={nome}
+      onError={() => setTentativa((prev) => prev + 1)}
+      className="w-full h-full object-cover"
+      loading="lazy"
+    />
+  )
+}
 
 export default function PainelRadarAfinidades({
   politicoId,
 }: PainelRadarAfinidadesProps) {
   const [minVotacoes, setMinVotacoes] = useState(10)
   const [apenasOutrosPartidos, setApenasOutrosPartidos] = useState(false)
-  const [fotoErros, setFotoErros] = useState<Record<number, boolean>>({})
 
   const { data, isLoading, isError } = usePoliticoAfinidades(politicoId, {
     min_votacoes_comuns: minVotacoes,
     apenas_outros_partidos: apenasOutrosPartidos,
     limit: 10,
   })
-
-  const marcarFotoErro = (id: number) => {
-    setFotoErros((prev) => ({ ...prev, [id]: true }))
-  }
 
   // Não renderiza em erro ou quando não há dados suficientes para exibir
   if (
@@ -194,7 +223,6 @@ export default function PainelRadarAfinidades({
               {data.mais_alinhados.map((item: PoliticoAfinidadeItem) => {
                 const taxa = Math.min(Math.max(item.taxa_alinhamento, 0), 100)
                 const slugOrId = item.politico.slug || item.politico.id
-                const semFoto = Boolean(fotoErros[item.politico.id]) || !item.politico.url_foto
 
                 return (
                   <div
@@ -206,17 +234,11 @@ export default function PainelRadarAfinidades({
                       {/* Avatar e Nome */}
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
-                          {!semFoto ? (
-                            <img
-                              src={item.politico.url_foto!}
-                              alt={item.politico.nome}
-                              onError={() => marcarFotoErro(item.politico.id)}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          ) : (
-                            item.politico.nome.slice(0, 2).toUpperCase()
-                          )}
+                          <FotoPolitico
+                            id={item.politico.id}
+                            nome={item.politico.nome}
+                            urlFoto={item.politico.url_foto}
+                          />
                         </div>
 
                         <div className="min-w-0">
@@ -316,7 +338,6 @@ export default function PainelRadarAfinidades({
               {data.mais_divergentes.map((item: PoliticoAfinidadeItem) => {
                 const taxa = Math.min(Math.max(item.taxa_alinhamento, 0), 100)
                 const slugOrId = item.politico.slug || item.politico.id
-                const semFoto = Boolean(fotoErros[item.politico.id]) || !item.politico.url_foto
 
                 return (
                   <div
@@ -328,17 +349,11 @@ export default function PainelRadarAfinidades({
                       {/* Avatar e Nome */}
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
-                          {!semFoto ? (
-                            <img
-                              src={item.politico.url_foto!}
-                              alt={item.politico.nome}
-                              onError={() => marcarFotoErro(item.politico.id)}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          ) : (
-                            item.politico.nome.slice(0, 2).toUpperCase()
-                          )}
+                          <FotoPolitico
+                            id={item.politico.id}
+                            nome={item.politico.nome}
+                            urlFoto={item.politico.url_foto}
+                          />
                         </div>
 
                         <div className="min-w-0">

@@ -957,11 +957,17 @@ class PoliticoRepository:
         stmt = (
             select(
                 d2.id.label("parceiro_id"),
+                d2.idCamara.label("parceiro_id_camara"),
                 d2.nome.label("parceiro_nome"),
                 d2.slug.label("parceiro_slug"),
-                d2.siglaPartido.label("parceiro_partido"),
-                d2.siglaUF.label("parceiro_uf"),
-                d1.siglaPartido.label("base_partido"),
+                func.coalesce(d2.siglaPartido, pa2.siglaPartidoAutor).label(
+                    "parceiro_partido"
+                ),
+                func.coalesce(d2.siglaUF, pa2.siglaUFAutor).label("parceiro_uf"),
+                d2.urlFoto.label("parceiro_url_foto"),
+                func.coalesce(d1.siglaPartido, pa1.siglaPartidoAutor).label(
+                    "base_partido"
+                ),
                 func.count(func.distinct(pa1.idProposicao)).label("total_juntos"),
                 func.count(
                     func.distinct(
@@ -990,11 +996,16 @@ class PoliticoRepository:
             .where(pa1.idDeputadoAutor == politico_id)
             .group_by(
                 d2.id,
+                d2.idCamara,
                 d2.nome,
                 d2.slug,
                 d2.siglaPartido,
+                pa2.siglaPartidoAutor,
                 d2.siglaUF,
+                pa2.siglaUFAutor,
+                d2.urlFoto,
                 d1.siglaPartido,
+                pa1.siglaPartidoAutor,
             )
             .order_by(desc("total_juntos"))
             .limit(limit)
@@ -1061,6 +1072,12 @@ class PoliticoRepository:
                 temas_cont.keys(), key=lambda t: temas_cont[t], reverse=True
             )
 
+            parceiro_url_foto = r.parceiro_url_foto or (
+                f"https://www.camara.leg.br/internet/deputado/bandep/{r.parceiro_id_camara}.jpg"
+                if r.parceiro_id_camara
+                else None
+            )
+
             resultados.append(
                 {
                     "politico": {
@@ -1069,7 +1086,7 @@ class PoliticoRepository:
                         "slug": r.parceiro_slug,
                         "sigla_partido": r.parceiro_partido,
                         "sigla_uf": r.parceiro_uf,
-                        "url_foto": f"https://www.camara.leg.br/internet/deputado/bandep/{r.parceiro_id}.jpg",
+                        "url_foto": parceiro_url_foto,
                     },
                     "total_proposicoes_juntos": r.total_juntos,
                     "proposicoes_como_autor_principal": r.como_principal,
@@ -1105,11 +1122,13 @@ class PoliticoRepository:
         stmt = (
             select(
                 d2.id.label("outro_id"),
+                d2.idCamara.label("outro_id_camara"),
                 d2.nome.label("outro_nome"),
                 d2.slug.label("outro_slug"),
-                d2.siglaPartido.label("outro_partido"),
-                d2.siglaUF.label("outro_uf"),
-                d1.siglaPartido.label("base_partido"),
+                func.coalesce(d2.siglaPartido, v2.siglaPartido).label("outro_partido"),
+                func.coalesce(d2.siglaUF, v2.siglaUF).label("outro_uf"),
+                d2.urlFoto.label("outro_url_foto"),
+                func.coalesce(d1.siglaPartido, v1.siglaPartido).label("base_partido"),
                 func.count(func.distinct(v1.idVotacao)).label("total_comuns"),
                 func.count(
                     func.distinct(
@@ -1130,11 +1149,16 @@ class PoliticoRepository:
             .where(v1.idDeputado == politico_id)
             .group_by(
                 d2.id,
+                d2.idCamara,
                 d2.nome,
                 d2.slug,
                 d2.siglaPartido,
+                v2.siglaPartido,
                 d2.siglaUF,
+                v2.siglaUF,
+                d2.urlFoto,
                 d1.siglaPartido,
+                v1.siglaPartido,
             )
             .having(func.count(func.distinct(v1.idVotacao)) >= min_comuns)
         )
@@ -1168,6 +1192,12 @@ class PoliticoRepository:
             div = tot - aln
             taxa = round((aln / tot) * 100.0, 1) if tot > 0 else 0.0
 
+            outro_url_foto = r.outro_url_foto or (
+                f"https://www.camara.leg.br/internet/deputado/bandep/{r.outro_id_camara}.jpg"
+                if r.outro_id_camara
+                else None
+            )
+
             itens.append(
                 {
                     "politico": {
@@ -1176,7 +1206,7 @@ class PoliticoRepository:
                         "slug": r.outro_slug,
                         "sigla_partido": r.outro_partido,
                         "sigla_uf": r.outro_uf,
-                        "url_foto": f"https://www.camara.leg.br/internet/deputado/bandep/{r.outro_id}.jpg",
+                        "url_foto": outro_url_foto,
                     },
                     "total_votacoes_comuns": tot,
                     "votos_alinhados": aln,
@@ -1330,7 +1360,7 @@ class PoliticoRepository:
             select(Proposicao)
             .where(Proposicao.id == proposicao_id)
             .options(
-                selectinload(Proposicao.autores),
+                selectinload(Proposicao.autores).selectinload(ProposicaoAutor.deputado),
                 selectinload(Proposicao.temas),
                 selectinload(Proposicao.votacoes).selectinload(Votacao.orientacoes),
             )
@@ -1348,17 +1378,20 @@ class PoliticoRepository:
         autor_proponente = None
         coautores = []
         for a in p.autores:
+            dep = a.deputado
+            url_foto = (dep.urlFoto if dep else None) or (
+                f"https://www.camara.leg.br/internet/deputado/bandep/{dep.idCamara}.jpg"
+                if dep and dep.idCamara
+                else None
+            )
             p_dict = {
                 "id": a.idDeputadoAutor,
                 "nome": a.nomeAutor,
-                "slug": None,
-                "sigla_partido": None,
-                "sigla_uf": None,
-                "url_foto": (
-                    f"https://www.camara.leg.br/internet/deputado/bandep/{a.idDeputadoAutor}.jpg"
-                    if a.idDeputadoAutor
-                    else None
-                ),
+                "slug": dep.slug if dep else None,
+                "sigla_partido": (dep.siglaPartido if dep else None)
+                or a.siglaPartidoAutor,
+                "sigla_uf": (dep.siglaUF if dep else None) or a.siglaUFAutor,
+                "url_foto": url_foto,
             }
             if a.proponente and not autor_proponente:
                 autor_proponente = p_dict

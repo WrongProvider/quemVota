@@ -182,7 +182,8 @@ def sync_relational_to_graph(
         SET p.idCamara = {d.idCamara or 0},
             p.nome = '{_escape(d.nome or "")}',
             p.siglaPartido = '{_escape(d.siglaPartido or "")}',
-            p.siglaUF = '{_escape(d.siglaUF or "")}'
+            p.siglaUF = '{_escape(d.siglaUF or "")}',
+            p.urlFoto = '{_escape(d.urlFoto or "")}'
         """
         try:
             execute_cypher(session, cypher)
@@ -543,12 +544,12 @@ async def cypher_rede_coautoria_async(
     MATCH (p1:{LABEL_POLITICO} {{id: {politico_id}}})-[aut1:{EDGE_PROPOSED}]->(pr:{LABEL_PROPOSICAO})<-[aut2:{EDGE_PROPOSED}]-(p2:{LABEL_POLITICO})
     WHERE p2.id <> {politico_id}
     OPTIONAL MATCH (pr)-[:{EDGE_BELONGS_TO_THEME}]->(t:{LABEL_TEMA})
-    RETURN p2.id, p2.nome, p2.partido, p2.uf, p2.slug, aut1.proponente, aut2.proponente, pr.id, pr.siglaTipo, pr.numero, pr.ano, pr.ementa, t.tema, p1.partido
+    RETURN p2.id, p2.nome, coalesce(p2.siglaPartido, p2.partido), coalesce(p2.siglaUF, p2.uf), p2.slug, aut1.proponente, aut2.proponente, pr.id, pr.siglaTipo, pr.numero, pr.ano, pr.ementa, t.tema, coalesce(p1.siglaPartido, p1.partido), p2.idCamara, p2.urlFoto
     """
     rows = await execute_cypher_async(
         session,
         cypher,
-        "p2_id agtype, p2_nome agtype, p2_partido agtype, p2_uf agtype, p2_slug agtype, aut1_prop agtype, aut2_prop agtype, pr_id agtype, pr_tipo agtype, pr_num agtype, pr_ano agtype, pr_ementa agtype, tema agtype, p1_partido agtype",
+        "p2_id agtype, p2_nome agtype, p2_partido agtype, p2_uf agtype, p2_slug agtype, aut1_prop agtype, aut2_prop agtype, pr_id agtype, pr_tipo agtype, pr_num agtype, pr_ano agtype, pr_ementa agtype, tema agtype, p1_partido agtype, p2_id_camara agtype, p2_url_foto agtype",
     )
 
     parceiros_map: Dict[int, Dict[str, Any]] = {}
@@ -574,6 +575,14 @@ async def cypher_rede_coautoria_async(
         pr_ementa = _clean_agtype(r[11])
         tema_val = _clean_agtype(r[12])
         p1_partido = _clean_agtype(r[13])
+        p2_id_camara_str = _clean_agtype(r[14])
+        p2_id_camara = int(p2_id_camara_str) if p2_id_camara_str.isdigit() else None
+        p2_url_foto = _clean_agtype(r[15]) or None
+        url_foto = p2_url_foto or (
+            f"https://www.camara.leg.br/internet/deputado/bandep/{p2_id_camara}.jpg"
+            if p2_id_camara
+            else None
+        )
 
         if p2_id not in parceiros_map:
             parceiros_map[p2_id] = {
@@ -583,7 +592,7 @@ async def cypher_rede_coautoria_async(
                     "slug": p2_slug or None,
                     "sigla_partido": p2_partido or None,
                     "sigla_uf": p2_uf or None,
-                    "url_foto": f"https://www.camara.leg.br/internet/deputado/bandep/{p2_id}.jpg",
+                    "url_foto": url_foto,
                 },
                 "mesmo_partido": (
                     bool(
@@ -668,12 +677,12 @@ async def cypher_afinidades_voto_async(
     cypher = f"""
     MATCH (p1:{LABEL_POLITICO} {{id: {politico_id}}})-[v1:{EDGE_VOTED_IN}]->(vt:{LABEL_VOTACAO})<-[v2:{EDGE_VOTED_IN}]-(p2:{LABEL_POLITICO})
     WHERE p2.id <> {politico_id}
-    RETURN p2.id, p2.nome, p2.partido, p2.uf, p2.slug, p1.partido, v1.voto, v2.voto, vt.id
+    RETURN p2.id, p2.nome, coalesce(p2.siglaPartido, p2.partido), coalesce(p2.siglaUF, p2.uf), p2.slug, coalesce(p1.siglaPartido, p1.partido), v1.voto, v2.voto, vt.id, p2.idCamara, p2.urlFoto
     """
     rows = await execute_cypher_async(
         session,
         cypher,
-        "p2_id agtype, p2_nome agtype, p2_partido agtype, p2_uf agtype, p2_slug agtype, p1_partido agtype, v1_voto agtype, v2_voto agtype, vt_id agtype",
+        "p2_id agtype, p2_nome agtype, p2_partido agtype, p2_uf agtype, p2_slug agtype, p1_partido agtype, v1_voto agtype, v2_voto agtype, vt_id agtype, p2_id_camara agtype, p2_url_foto agtype",
     )
 
     dep_stats: Dict[int, Dict[str, Any]] = {}
@@ -691,6 +700,14 @@ async def cypher_afinidades_voto_async(
         p1_partido = _clean_agtype(r[5])
         voto1 = _clean_agtype(r[6]).strip().lower()
         voto2 = _clean_agtype(r[7]).strip().lower()
+        p2_id_camara_str = _clean_agtype(r[9])
+        p2_id_camara = int(p2_id_camara_str) if p2_id_camara_str.isdigit() else None
+        p2_url_foto = _clean_agtype(r[10]) or None
+        url_foto = p2_url_foto or (
+            f"https://www.camara.leg.br/internet/deputado/bandep/{p2_id_camara}.jpg"
+            if p2_id_camara
+            else None
+        )
 
         if p2_id not in dep_stats:
             dep_stats[p2_id] = {
@@ -700,7 +717,7 @@ async def cypher_afinidades_voto_async(
                     "slug": p2_slug or None,
                     "sigla_partido": p2_partido or None,
                     "sigla_uf": p2_uf or None,
-                    "url_foto": f"https://www.camara.leg.br/internet/deputado/bandep/{p2_id}.jpg",
+                    "url_foto": url_foto,
                 },
                 "mesmo_partido": (
                     bool(
@@ -794,13 +811,13 @@ async def cypher_grafo_proposicao_async(
     OPTIONAL MATCH (pr)-[:{EDGE_BELONGS_TO_THEME}]->(t:{LABEL_TEMA})
     OPTIONAL MATCH (vt:{LABEL_VOTACAO})-[:{EDGE_REGARDING}]->(pr)
     RETURN pr.id, pr.siglaTipo, pr.numero, pr.ano, pr.ementa,
-           p.id, p.nome, p.partido, p.uf, p.slug, aut.proponente,
-           t.tema, vt.id, vt.data, vt.descricao, vt.aprovacao
+           p.id, p.nome, coalesce(p.siglaPartido, p.partido), coalesce(p.siglaUF, p.uf), p.slug, aut.proponente,
+           t.tema, vt.id, vt.data, vt.descricao, vt.aprovacao, p.idCamara, p.urlFoto
     """
     rows = await execute_cypher_async(
         session,
         cypher,
-        "pr_id agtype, pr_tipo agtype, pr_num agtype, pr_ano agtype, pr_ementa agtype, p_id agtype, p_nome agtype, p_partido agtype, p_uf agtype, p_slug agtype, aut_prop agtype, t_tema agtype, vt_id agtype, vt_data agtype, vt_desc agtype, vt_aprov agtype",
+        "pr_id agtype, pr_tipo agtype, pr_num agtype, pr_ano agtype, pr_ementa agtype, p_id agtype, p_nome agtype, p_partido agtype, p_uf agtype, p_slug agtype, aut_prop agtype, t_tema agtype, vt_id agtype, vt_data agtype, vt_desc agtype, vt_aprov agtype, p_id_camara agtype, p_url_foto agtype",
     )
     if not rows:
         return None
@@ -828,13 +845,21 @@ async def cypher_grafo_proposicao_async(
         p_id_str = _clean_agtype(r[5])
         if p_id_str.isdigit():
             p_id = int(p_id_str)
+            p_id_camara_str = _clean_agtype(r[16])
+            p_id_camara = int(p_id_camara_str) if p_id_camara_str.isdigit() else None
+            p_url_foto = _clean_agtype(r[17]) or None
+            url_foto = p_url_foto or (
+                f"https://www.camara.leg.br/internet/deputado/bandep/{p_id_camara}.jpg"
+                if p_id_camara
+                else None
+            )
             p_dict = {
                 "id": p_id,
                 "nome": _clean_agtype(r[6]),
                 "sigla_partido": _clean_agtype(r[7]) or None,
                 "sigla_uf": _clean_agtype(r[8]) or None,
                 "slug": _clean_agtype(r[9]) or None,
-                "url_foto": f"https://www.camara.leg.br/internet/deputado/bandep/{p_id}.jpg",
+                "url_foto": url_foto,
             }
             is_prop = str(_clean_agtype(r[10])).lower() in ("true", "1")
             if is_prop and not autor_proponente:
