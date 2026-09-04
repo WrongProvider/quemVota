@@ -545,7 +545,7 @@ export default function PoliticoDetalhe() {
                   </div>
 
                   {/* Score ring visível só no mobile, ao lado da foto */}
-                  {performance && (
+                  {performance && performance.score_final != null && (
                     <div className="flex md:hidden flex-shrink-0 text-center">
                       <div>
                         <div
@@ -629,7 +629,7 @@ export default function PoliticoDetalhe() {
                 </div>
 
                 {/* SCORE RING — oculto no mobile (aparece ao lado da foto) */}
-                {performance && (
+                {performance && performance.score_final != null && (
                   <div className="hidden md:flex flex-shrink-0 text-center" data-testid="performance-container">
                     <div>
                       <div
