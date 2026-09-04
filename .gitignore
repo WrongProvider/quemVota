@@ -7,4 +7,5 @@ quemvota_env/
 /airflow/logs
 .worktrees/
 *etl_cache*
-*etl_camara.log*
+*etl_camara.log*.playwright-mcp/
+.playwright-mcp
