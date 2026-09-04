@@ -844,3 +844,32 @@ class ProposicaoGrafoResponse(BaseModel):
     fonte_dados: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ===========================================================================
+# SPEC-001 — Temas de Atuação Parlamentar
+# ===========================================================================
+
+class TemaAtuacaoItemResponse(BaseModel):
+    """Item individual no ranking temático de um parlamentar."""
+
+    id_tema: int
+    slug: str
+    nome: str
+    score: float
+    percentual: float
+    peso_total: float
+    rank: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PoliticoTemasResponse(BaseModel):
+    """Resposta do endpoint GET /politicos/{id}/temas."""
+
+    id_deputado: int
+    id_legislatura: int
+    total_temas_identificados: int
+    temas: List[TemaAtuacaoItemResponse]
+
+    model_config = ConfigDict(from_attributes=True)

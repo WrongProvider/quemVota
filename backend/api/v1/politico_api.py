@@ -544,3 +544,55 @@ async def atividade_legislativa(
         offset_votacoes=offset_votacoes,
         offset_proposicoes=offset_proposicoes,
     )
+
+# ---------------------------------------------------------------------------
+# SPEC-001 — Temas de Atuação Parlamentar
+# ---------------------------------------------------------------------------
+
+from backend.schemas import PoliticoTemasResponse  # noqa: E402 (import at bottom for readability)
+from backend.services.tema_service import TemaService  # noqa: E402
+
+
+def _tema_service(db: AsyncSession = Depends(get_db)) -> TemaService:
+    return TemaService(db)
+
+
+@router.get(
+    "/{politico_id}/temas",
+    response_model=PoliticoTemasResponse,
+    summary="Temas de Atuação Parlamentar (SPEC-001)",
+    description=(
+        "Retorna o ranking dos temas legislativos em que o parlamentar apresentou maior "
+        "concentração de atuação, calculado por similaridade semântica com pgvector "
+        "(modelo BAAI/bge-m3) sobre proposições apresentadas e relatadas, "
+        "ponderado por tipo de participação: autoria (peso 10), coautoria (peso 5). "
+        "Fonte: pipeline tasks/classificar_temas.py (SPEC-001)."
+    ),
+    responses={
+        404: {"description": "Parlamentar não encontrado ou pipeline não executado"},
+    },
+)
+@cache(expire=86400, key_builder=politico_key_builder)
+async def temas_atuacao(
+    politico_id: DeputadoSlugPath,
+    id_legislatura: Annotated[
+        int,
+        Query(ge=50, le=60, description="Legislatura (default: 57 — atual)"),
+    ] = 57,
+    limit: Annotated[
+        int,
+        Query(ge=1, le=20, description="Número máximo de temas a retornar"),
+    ] = 10,
+    service: TemaService = Depends(_tema_service),
+):
+    logger.info(
+        "Temas de atuação | politico=%s | legislatura=%s | limit=%s",
+        politico_id,
+        id_legislatura,
+        limit,
+    )
+    return await service.get_temas_atuacao_service(
+        id_or_slug=politico_id,
+        id_legislatura=id_legislatura,
+        limit=limit,
+    )
