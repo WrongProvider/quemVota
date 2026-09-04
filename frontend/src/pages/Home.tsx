@@ -2,17 +2,28 @@ import Header from "../components/Header"
 import { Link, useNavigate } from "react-router-dom"
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { MagnifyingGlassIcon, ArrowRightIcon, FireIcon } from "@heroicons/react/24/outline"
+import {
+  Users,
+  BarChart3,
+  FileText,
+  BookOpen,
+  ArrowRight,
+  TrendingUp,
+  Search,
+  ShieldCheck,
+  CheckCircle2,
+} from "lucide-react"
 import { useMaisPesquisados } from "../hooks/useBuscaPopular"
 import { useSeo } from "../hooks/useSeo"
+import { nomeParaSlug } from "../api/politicos.api"
 
 function EmAltaSkeleton() {
   return (
-    <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-      {Array.from({ length: 5 }).map((_, i) => (
+    <div className="flex gap-2.5 overflow-x-auto pb-1 justify-center">
+      {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="flex-shrink-0 flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-100 animate-pulse w-40 h-12"
+          className="flex-shrink-0 flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-100 animate-pulse w-36 h-10 border border-slate-200/60"
         />
       ))}
     </div>
@@ -25,59 +36,63 @@ function EmAlta() {
   if (isError) return null
 
   return (
-    <div className="max-w-xl mx-auto mt-6">
-      <div className="flex items-center gap-1.5 mb-3 justify-center">
-        <FireIcon className="w-3.5 h-3.5 text-orange-500" />
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
-          Em Alta agora
+    <div className="max-w-2xl mx-auto mt-6">
+      <div className="flex items-center gap-1.5 mb-2.5 justify-center">
+        <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          Mais consultados recentemente
         </span>
       </div>
 
       {isLoading ? (
         <EmAltaSkeleton />
       ) : (
-        <div className="flex gap-2.5 overflow-x-auto pb-1 justify-center flex-wrap">
-          {data?.map((politico, i) => (
-            <motion.div
-              key={politico.politico_id}
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: i * 0.05 }}
-            >
-              <Link
-                to={`/politicos/${politico.slug ?? politico.politico_id}`}
-                className="group flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:border-blue-300 hover:shadow-md hover:shadow-blue-500/10 hover:-translate-y-0.5 transition-all duration-200 no-underline"
+        <div className="flex gap-2 overflow-x-auto pb-1 justify-center flex-wrap">
+          {data?.map((politico, i) => {
+            const slug = politico.slug || nomeParaSlug(politico.nome) || String(politico.politico_id)
+            return (
+              <motion.div
+                key={politico.politico_id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.2, delay: i * 0.03 }}
               >
-                {/* Avatar */}
-                <div className="w-7 h-7 rounded-full bg-slate-100 overflow-hidden flex-shrink-0 ring-1 ring-slate-200 group-hover:ring-blue-300 transition-all">
-                  {politico.url_foto ? (
-                    <img
-                      src={politico.url_foto}
-                      alt={politico.nome}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none"
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-slate-400">
-                      {politico.nome.charAt(0)}
-                    </div>
-                  )}
-                </div>
+                <Link
+                  to={`/politicos/${slug}`}
+                  aria-label={politico.nome}
+                  className="group flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-xs transition-all no-underline"
+                >
+                  {/* Avatar */}
+                  <div className="w-6 h-6 rounded-full bg-slate-100 overflow-hidden flex-shrink-0 ring-1 ring-slate-200 group-hover:ring-blue-400 transition-all">
+                    {politico.url_foto ? (
+                      <img
+                        src={politico.url_foto}
+                        alt={politico.nome}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = "none"
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-slate-500">
+                        {politico.nome.charAt(0)}
+                      </div>
+                    )}
+                  </div>
 
-                {/* Info */}
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-slate-800 truncate max-w-[110px] leading-tight group-hover:text-blue-600 transition-colors">
-                    {politico.nome.split(" ")[0]}
-                  </p>
-                  <p className="text-[10px] text-slate-400 leading-tight">
-                    {politico.partido_sigla} · {politico.uf}
-                  </p>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
+                  {/* Info */}
+                  <div className="min-w-0 text-left">
+                    <p className="text-xs font-medium text-slate-800 truncate max-w-[120px] leading-tight group-hover:text-blue-700 transition-colors">
+                      {politico.nome}
+                    </p>
+                    <p className="text-[10px] text-slate-500 leading-tight">
+                      {politico.partido_sigla} · {politico.uf}
+                    </p>
+                  </div>
+                </Link>
+              </motion.div>
+            )
+          })}
         </div>
       )}
     </div>
@@ -107,278 +122,272 @@ export default function Home() {
     <>
       <Header />
 
-      <div className="font-sans bg-gray-50 min-h-screen">
+      <div className="min-h-screen bg-[#f8fafc]">
 
-        {/* ── HERO ── */}
-        <section className="relative overflow-hidden bg-white border-b border-gray-100">
-          {/* Glow de fundo */}
-          <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[560px] rounded-full bg-blue-100 opacity-40 blur-3xl pointer-events-none" />
+        {/* ── HERO SECTION CÍVICA ── */}
+        <section className="relative bg-white border-b border-slate-200/80 pt-28 pb-16">
+          <div className="max-w-4xl mx-auto px-6 text-center">
 
-          <div className="relative max-w-4xl mx-auto px-6 pt-32 pb-24 text-center">
-
-            {/* Badge */}
+            {/* Badge Institucional */}
             <motion.div
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45 }}
-              className="flex justify-center mb-7"
+              transition={{ duration: 0.35 }}
+              className="flex justify-center mb-5"
             >
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-600 text-xs font-semibold tracking-wide">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                Dados atualizados diariamente
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-700" />
+                Transparência Pública e Neutralidade Factual
               </span>
             </motion.div>
 
-            {/* Título */}
+            {/* Título Principal */}
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.08 }}
-              className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight text-slate-900 mb-5"
+              transition={{ duration: 0.45, delay: 0.05 }}
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 mb-4 max-w-2xl mx-auto leading-tight"
             >
-              Transparência sobre<br />
-              <span className="text-blue-600">quem decide</span> o seu futuro
+              Acompanhe o que seus representantes fazem no Congresso Nacional
             </motion.h1>
 
             {/* Subtítulo */}
             <motion.p
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.16 }}
-              className="text-base sm:text-lg text-slate-500 max-w-xl mx-auto mb-11 leading-relaxed"
+              transition={{ duration: 0.45, delay: 0.1 }}
+              className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto mb-8 leading-relaxed"
             >
-              Acompanhe votações, presenças, discursos e gastos do Congresso Nacional
-              com dados oficiais, organizados de forma clara e acessível.
+              Presença oficial, histórico de votações nominais, despesas de mandato e proposições
+              consolidadas diretamente a partir de dados abertos da Câmara dos Deputados.
             </motion.p>
 
-            {/* Search */}
+            {/* Formulário de Busca Amplo e Acessível */}
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.24 }}
+              transition={{ duration: 0.45, delay: 0.15 }}
             >
-              <div className="max-w-xl mx-auto mb-5">
+              <div className="max-w-xl mx-auto">
                 <form
                   onSubmit={handleSearch}
-                  className="flex items-center bg-white border-2 border-slate-200 rounded-2xl shadow-sm overflow-hidden focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all"
+                  className="flex items-center bg-white border border-slate-300 rounded-xl shadow-xs overflow-hidden focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/20 transition-all"
                 >
                   <div className="flex items-center pl-4 text-slate-400">
-                    <MagnifyingGlassIcon className="w-5 h-5" />
+                    <Search className="w-4 h-4" />
                   </div>
                   <input
                     type="text"
-                    placeholder="Pesquisar por parlamentar..."
+                    placeholder="Pesquise pelo nome do deputado (ex: Tabata, Nikolas, Arthur)..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    className="flex-1 px-3 py-4 text-sm text-slate-800 bg-transparent outline-none placeholder:text-slate-400"
+                    className="flex-1 px-3 py-3 text-sm text-slate-800 bg-transparent outline-none placeholder:text-slate-400"
                   />
                   <button
                     type="submit"
-                    className="m-1.5 px-5 py-2.5 bg-slate-900 hover:bg-blue-600 text-white text-sm font-medium rounded-xl flex items-center gap-1.5 transition-colors"
+                    className="m-1 px-4 py-2 bg-slate-900 hover:bg-blue-700 text-white text-sm font-medium rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    Buscar
-                    <ArrowRightIcon className="w-3.5 h-3.5" />
+                    Consultar
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </form>
               </div>
 
-              {/* ── EM ALTA ── */}
+              {/* Deputados em Destaque de Busca */}
               <EmAlta />
             </motion.div>
           </div>
         </section>
 
-        {/* ── STATS STRIP ── */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="bg-slate-900"
-        >
+        {/* ── FAIXA DE INDICADORES CÍVICOS GLOBAIS ── */}
+        <section className="bg-slate-900 border-y border-slate-800 text-white">
           <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 sm:grid-cols-4">
             {[
-              { num: "513",    suffix: "",    label: "Deputados Federais" },
-              { num: "81",     suffix: "",    label: "Senadores" },
-              { num: "+2",     suffix: "M",   label: "Votações registradas" },
-              { num: "R$1,2",  suffix: "B",   label: "Gastos mapeados" },
+              { num: "513",     suffix: "",    label: "Deputados Federais", sub: "57ª Legislatura" },
+              { num: "81",      suffix: "",    label: "Senadores da República", sub: "Congresso Nacional" },
+              { num: "+2",      suffix: "M",   label: "Votos Nominais", sub: "auditáveis" },
+              { num: "R$ 1,2",  suffix: "B",   label: "Despesas Mapeadas", sub: "CEAP e gabinete" },
             ].map((s, i) => (
               <div
                 key={i}
-                className="py-7 text-center border-r border-white/[0.07] last:border-r-0"
+                className="py-6 px-4 text-center border-r border-slate-800 last:border-r-0"
               >
-                <div className="text-2xl sm:text-3xl font-mono font-medium text-white leading-none mb-1.5">
-                  {s.num}
-                  <span className="text-blue-400">{s.suffix}</span>
+                <div className="text-2xl sm:text-3xl font-mono font-bold text-white tabular-nums mb-1">
+                  {s.num}<span className="text-blue-400 text-xl font-normal ml-0.5">{s.suffix}</span>
                 </div>
-                <div className="text-[11px] uppercase tracking-widest text-slate-500 font-medium">
+                <div className="text-xs font-semibold text-slate-200">
                   {s.label}
+                </div>
+                <div className="text-[11px] text-slate-400 mt-0.5">
+                  {s.sub}
                 </div>
               </div>
             ))}
           </div>
-        </motion.div>
+        </section>
 
-        {/* ── FEATURE CARDS ── */}
-        <section className="max-w-5xl mx-auto px-6 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <p className="text-xs font-semibold tracking-widest uppercase text-blue-600 mb-3">
-              Explore
+        {/* ── SEÇÃO: O QUE VOCÊ PODE ACOMPANHAR ── */}
+        <section className="max-w-5xl mx-auto px-6 py-16">
+          <div className="mb-10 text-center sm:text-left">
+            <p className="text-xs font-semibold tracking-wider uppercase text-blue-700 mb-1">
+              Transparência Cidadã
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mb-12">
-              O que você pode acompanhar
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              O que você pode acompanhar no QuemVota
             </h2>
-          </motion.div>
+            <p className="text-sm text-slate-500 mt-1">
+              Ferramentas de análise objetiva para fiscalizar a atuação dos parlamentares eleitos.
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               {
-                icon: "👥",
+                icon: <Users className="w-5 h-5 text-blue-700" />,
                 title: "Parlamentares",
-                desc: "Veja o perfil completo, presença em votações, gastos e histórico de cada parlamentar.",
+                desc: "Perfil completo com assiduidade, cotas parlamentares, histórico de votos e foco temático.",
                 link: "/politicos",
-                cta: "Explorar parlamentares",
+                cta: "Explorar deputados",
               },
               {
-                icon: "📊",
-                title: "Rankings",
-                desc: "Compare parlamentares por performance, gastos, economia e quantidade de discursos.",
+                icon: <BarChart3 className="w-5 h-5 text-indigo-700" />,
+                title: "Rankings Fatuais",
+                desc: "Métricas auditáveis de despesas da cota, volume de discursos e principais empresas recebedoras.",
                 link: "/rankings",
                 cta: "Ver rankings",
               },
               {
-                icon: "🧩",
+                icon: <FileText className="w-5 h-5 text-emerald-700" />,
                 title: "Projetos e Votações",
-                desc: "Pesquise por votações e proposições legislativas em tramitação ou encerradas.",
+                desc: "Pesquise proposições legislativas em tramitação e o posicionamento de cada partido.",
                 link: "/proposicoes",
-                cta: "Explorar proposições",
+                cta: "Consultar matérias",
               },
               {
-                icon: "⚖️",
+                icon: <BookOpen className="w-5 h-5 text-slate-700" />,
                 title: "Metodologia",
-                desc: "Entenda como coletamos, processamos e apresentamos os dados oficiais.",
+                desc: "Princípios de neutralidade factual, cálculo de alinhamento e agregação de dados públicos.",
                 link: "/metodologia",
-                cta: "Saiba mais",
+                cta: "Conhecer regras",
               },
             ].map((card, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.45, delay: i * 0.07 }}
+                transition={{ duration: 0.35, delay: i * 0.05 }}
               >
-                {card.link ? (
-                  <Link
-                    to={card.link}
-                    className="group flex flex-col bg-white border-2 border-slate-200 rounded-2xl p-6 h-full no-underline hover:border-blue-300 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-0.5 transition-all duration-200"
-                  >
-                    <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center text-xl mb-5">
-                      {card.icon}
-                    </div>
-                    <h3 className="text-sm font-semibold text-slate-900 mb-2">{card.title}</h3>
-                    <p className="text-sm text-slate-500 leading-relaxed flex-1 mb-5">{card.desc}</p>
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 group-hover:gap-2 transition-all">
-                      {card.cta}
-                      <ArrowRightIcon className="w-3 h-3" />
-                    </span>
-                  </Link>
-                ) : (
-                  <div className="flex flex-col bg-white border-2 border-slate-200 rounded-2xl p-6 h-full opacity-60">
-                    <div className="w-11 h-11 bg-slate-100 rounded-xl flex items-center justify-center text-xl mb-5">
-                      {card.icon}
-                    </div>
-                    <h3 className="text-sm font-semibold text-slate-900 mb-2">{card.title}</h3>
-                    <p className="text-sm text-slate-500 leading-relaxed flex-1 mb-5">{card.desc}</p>
-                    <span className="inline-flex items-center text-[11px] font-semibold uppercase tracking-wide text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full w-fit">
-                      Em breve
-                    </span>
+                <Link
+                  to={card.link}
+                  className="group flex flex-col bg-white border border-slate-200/90 rounded-xl p-5 h-full no-underline hover:border-blue-400 hover:shadow-xs transition-all duration-150"
+                >
+                  <div className="w-10 h-10 bg-slate-50 border border-slate-200/60 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-50 group-hover:border-blue-200 transition-colors">
+                    {card.icon}
                   </div>
-                )}
+                  <h3 className="text-sm font-semibold text-slate-900 mb-1.5 group-hover:text-blue-700 transition-colors">
+                    {card.title}
+                  </h3>
+                  <p className="text-xs text-slate-500 leading-relaxed flex-1 mb-4">
+                    {card.desc}
+                  </p>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 group-hover:gap-1.5 transition-all">
+                    {card.cta}
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
+                </Link>
               </motion.div>
             ))}
           </div>
         </section>
 
-        {/* ── HOW IT WORKS ── */}
-        <section className="bg-slate-50 border-y border-slate-100">
-          <div className="max-w-5xl mx-auto px-6 py-20 grid grid-cols-1 md:grid-cols-2 gap-16 lg:gap-24 items-center">
+        {/* ── SEÇÃO: COMO FUNCIONA / METODOLOGIA CÍVICA ── */}
+        <section className="bg-white border-t border-slate-200/80 py-16">
+          <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
 
-            {/* Texto */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.55 }}
-            >
-              <p className="text-xs font-semibold tracking-widest uppercase text-blue-600 mb-3">
-                Transparência
-              </p>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mb-4">
-                Dados públicos,<br />apresentados com clareza
+            {/* Texto explicativo */}
+            <div>
+              <span className="text-xs font-semibold tracking-wider uppercase text-blue-700">
+                Auditoria Cidadã
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mt-1 mb-3">
+                Dados oficiais, apresentados com clareza e neutralidade
               </h2>
-              <p className="text-[15px] text-slate-500 leading-relaxed mb-8">
-                Coletamos dados diretamente das APIs oficiais da Câmara dos Deputados e do Senado Federal,
-                processamos e organizamos para que qualquer cidadão possa acompanhar o trabalho dos seus representantes.
+              <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                Todas as informações do QuemVota são coletadas diariamente de forma automatizada
+                a partir das APIs oficiais de dados abertos da Câmara dos Deputados e do Senado Federal.
+                A plataforma não emite opiniões políticas, notas morais ou julgamentos de valor.
               </p>
               <Link
                 to="/metodologia"
-                className="inline-flex items-center gap-2 px-5 py-3 bg-slate-900 hover:bg-blue-600 text-white text-sm font-medium rounded-xl no-underline transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-blue-700 text-white text-sm font-medium rounded-lg no-underline transition-colors shadow-xs"
               >
-                Conhecer a metodologia
-                <ArrowRightIcon className="w-3.5 h-3.5" />
+                Conhecer a metodologia completa
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
-            </motion.div>
+            </div>
 
-            {/* Steps */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.55, delay: 0.1 }}
-              className="flex flex-col"
-            >
+            {/* Etapas do processo */}
+            <div className="space-y-4">
               {[
-                { n: "01", title: "Coleta automática",       text: "Dados coletados diariamente das APIs oficiais do Congresso Nacional." },
-                { n: "02", title: "Processamento e métricas", text: "Consolidamos métricas de assiduidade, despesas e proposições sem juízo de valor." },
-                { n: "03", title: "Visualização acessível",  text: "Apresentamos tudo de forma clara para que qualquer cidadão possa acompanhar." },
-              ].map((step, i, arr) => (
-                <div key={i} className="flex gap-5 relative">
-                  {i < arr.length - 1 && (
-                    <div className="absolute left-5 top-10 bottom-0 w-px bg-slate-200" />
-                  )}
-                  <div className="w-10 h-10 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center font-mono text-xs font-medium text-blue-600 flex-shrink-0 relative z-10">
+                {
+                  n: "01",
+                  title: "Coleta e Sanitização Diária",
+                  text: "Ingestão automatizada de votações nominais, despesas da CEAP e tramitações diretamente da Câmara.",
+                },
+                {
+                  n: "02",
+                  title: "Consolidação Desagregada",
+                  text: "Cálculo transparente de índices factuais (presença em plenário, gastos discriminados e coautorias).",
+                },
+                {
+                  n: "03",
+                  title: "Transparência sem Juízo de Valor",
+                  text: "Exibição clara e acessível para que cada cidadão avalie seus representantes com base em fatos.",
+                },
+              ].map((step, i) => (
+                <div key={i} className="flex gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-mono text-xs font-bold text-blue-700 flex-shrink-0 shadow-2xs">
                     {step.n}
                   </div>
-                  <div className={i < arr.length - 1 ? "pb-8" : ""}>
-                    <p className="text-sm font-semibold text-slate-900 mt-2 mb-1">{step.title}</p>
-                    <p className="text-sm text-slate-500 leading-relaxed">{step.text}</p>
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900 mb-0.5">{step.title}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">{step.text}</p>
                   </div>
                 </div>
               ))}
-            </motion.div>
+            </div>
           </div>
         </section>
 
-        {/* ── FOOTER STRIP ── */}
-        <div className="bg-white border-t border-slate-100 py-7 text-center">
-          <p className="text-xs text-slate-400">
-            Dados públicos da{" "}
-            <a href="https://dadosabertos.camara.leg.br" target="_blank" rel="noreferrer" className="text-slate-500 hover:text-blue-600 transition-colors">
-              Câmara dos Deputados
-            </a>
-            {" "}e do{" "}
-            <a href="https://www12.senado.leg.br/dadosabertos" target="_blank" rel="noreferrer" className="text-slate-500 hover:text-blue-600 transition-colors">
-              Senado Federal
-            </a>
-            {" "}· quemvota.com.br
-          </p>
-        </div>
+        {/* ── RODAPÉ DISCRETO ── */}
+        <footer className="bg-slate-50 border-t border-slate-200/80 py-6 text-center text-xs text-slate-500">
+          <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>
+              Dados abertos da{" "}
+              <a
+                href="https://dadosabertos.camara.leg.br"
+                target="_blank"
+                rel="noreferrer"
+                className="text-slate-700 hover:text-blue-700 underline underline-offset-2 transition-colors"
+              >
+                Câmara dos Deputados
+              </a>
+              {" "}e do{" "}
+              <a
+                href="https://www12.senado.leg.br/dadosabertos"
+                target="_blank"
+                rel="noreferrer"
+                className="text-slate-700 hover:text-blue-700 underline underline-offset-2 transition-colors"
+              >
+                Senado Federal
+              </a>
+            </p>
+            <p className="font-mono text-[11px] text-slate-400">
+              quemvota.com.br · Código Aberto
+            </p>
+          </div>
+        </footer>
 
       </div>
     </>

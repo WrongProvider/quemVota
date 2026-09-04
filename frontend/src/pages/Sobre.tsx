@@ -63,16 +63,13 @@ function PageHeader() {
   return (
     <div className="bg-white border-b border-slate-200">
       <div className="max-w-4xl mx-auto px-6 py-12">
-        <p className="text-xs font-semibold tracking-widest uppercase text-blue-600 mb-3">
+        <p className="text-xs font-semibold tracking-wider uppercase text-blue-700 mb-2">
           Institucional
         </p>
-        <h1
-          style={{ fontFamily: "'Fraunces', serif" }}
-          className="text-4xl font-bold text-slate-900 mb-4 leading-tight"
-        >
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-4 leading-tight">
           Sobre o quemvota
         </h1>
-        <p className="text-lg text-slate-500 leading-relaxed max-w-2xl">
+        <p className="text-lg text-slate-600 leading-relaxed max-w-2xl">
           Uma plataforma independente de transparência legislativa — para que qualquer
           cidadão possa acompanhar o que acontece no Congresso Nacional.
         </p>
@@ -84,10 +81,7 @@ function PageHeader() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-14">
-      <h2
-        style={{ fontFamily: "'Fraunces', serif" }}
-        className="text-2xl font-bold text-slate-800 mb-6"
-      >
+      <h2 className="text-2xl font-bold tracking-tight text-slate-900 mb-6">
         {title}
       </h2>
       {children}
@@ -111,7 +105,7 @@ export default function Sobre() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="min-h-screen bg-canvas pt-16">
         <PageHeader />
 
         <div className="max-w-4xl mx-auto px-6 py-14">
@@ -236,11 +230,8 @@ export default function Sobre() {
           </Section>
 
           {/* ── CTA FINAL ── */}
-          <div className="bg-[#1a1a1a] rounded-2xl p-8 text-center">
-            <h3
-              style={{ fontFamily: "'Fraunces', serif" }}
-              className="text-2xl font-bold text-white mb-3"
-            >
+          <div className="bg-slate-900 rounded-2xl p-8 text-center">
+            <h3 className="text-2xl font-bold tracking-tight text-white mb-3">
               Comece a explorar
             </h3>
             <p className="text-slate-400 text-sm mb-6 max-w-md mx-auto leading-relaxed">

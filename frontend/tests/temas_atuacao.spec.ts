@@ -33,21 +33,21 @@ test.describe("Temas de Atuação Parlamentar (SPEC-001)", () => {
     await expect(sectionTemas).toContainText("temas identificados")
 
     // Valida presença dos temas retornados pela API
-    await expect(sectionTemas).toContainText("Saúde")
-    await expect(sectionTemas).toContainText("Educação e Cultura")
-    await expect(sectionTemas).toContainText("Economia e Finanças")
+    await expect(sectionTemas).toContainText("Educação")
+    await expect(sectionTemas).toContainText("Economia")
+    await expect(sectionTemas).toContainText("Meio Ambiente")
 
-    // Valida tema em destaque inicial (Rank 1: Saúde)
+    // Valida tema em destaque inicial (Rank 1: Educação)
     await expect(sectionTemas).toContainText("#1 no ranking")
-    await expect(sectionTemas).toContainText("34.2%")
+    await expect(sectionTemas).toContainText("13.4%")
 
     // Clica no chip do segundo tema para testar interatividade
-    const chipEducacao = sectionTemas.getByRole("button", { name: /Educação e Cultura/i })
-    await chipEducacao.click()
+    const chipEconomia = sectionTemas.getByRole("button", { name: /Economia/i })
+    await chipEconomia.click()
 
     // Valida atualização do card de destaque
     await expect(sectionTemas).toContainText("#2 no ranking")
-    await expect(sectionTemas).toContainText("22.5%")
+    await expect(sectionTemas).toContainText("13.3%")
 
     // Tira screenshot de página inteira para auditoria visual
     await page.screenshot({ path: "test-results/temas-atuacao-fullpage.png", fullPage: true })

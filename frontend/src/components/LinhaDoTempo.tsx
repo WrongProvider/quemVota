@@ -18,6 +18,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   Cell,
+  ReferenceLine,
 } from "recharts"
 import {
   ChevronLeft,
@@ -67,12 +68,12 @@ function agruparPorAno(
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-lg px-4 py-3 text-sm">
-      <p className="font-semibold text-slate-700 mb-1">{label}</p>
-      <p className="text-blue-600 font-mono">{BRL(payload[0]?.value ?? 0)}</p>
+    <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-lg shadow-md px-3.5 py-2.5 text-xs">
+      <p className="font-semibold text-slate-800 mb-0.5">{label}</p>
+      <p className="text-blue-700 font-mono font-bold tabular-nums text-sm">{BRL(payload[0]?.value ?? 0)}</p>
       {payload[0]?.payload?.qtd_despesas !== undefined && (
-        <p className="text-slate-400 text-xs mt-0.5">
-          {payload[0].payload.qtd_despesas} despesas
+        <p className="text-slate-500 font-mono text-[11px] mt-0.5">
+          {payload[0].payload.qtd_despesas} despesas registradas
         </p>
       )}
     </div>
@@ -356,25 +357,25 @@ function LinhaTempoNav({
               data-active={isActive}
               aria-pressed={isActive}
               className={`
-                w-10 h-10 rounded-full border-2 flex items-center justify-center
-                transition-all duration-200 cursor-pointer font-semibold text-[11px]
+                px-2.5 h-8 rounded-lg border flex items-center justify-center
+                transition-all duration-150 cursor-pointer font-bold text-xs
                 ${isActive
-                  ? "bg-blue-600 border-blue-600 text-white shadow-lg scale-110"
-                  : "bg-white border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600"
+                  ? "bg-slate-900 border-slate-900 text-white shadow-xs"
+                  : "bg-white border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-900"
                 }
               `}
             >
-              {item.label === "Todos" ? "★" : item.label.slice(2)}
+              {item.label}
             </button>
             <span
-              className={`mt-1.5 text-[10px] font-medium whitespace-nowrap transition-colors
-                ${isActive ? "text-blue-600" : "text-slate-400"}
+              className={`mt-1 text-[10px] font-medium whitespace-nowrap transition-colors
+                ${isActive ? "text-slate-900 font-semibold" : "text-slate-400"}
               `}
             >
-              {item.label}
+              {item.ano ? `${BRL(item.total_gasto).slice(0, 7)}...` : "geral"}
             </span>
             {idx < anos.length - 1 && (
-              <div className="absolute top-[19px] left-[40px] w-8 h-px bg-slate-200" />
+              <div className="absolute top-[16px] left-[52px] w-4 h-px bg-slate-200" />
             )}
           </div>
         )
@@ -406,68 +407,91 @@ function PainelTodos({
     .sort((a, b) => a.ano - b.ano)
     .map((d) => ({ ...d, label: String(d.ano) }))
 
+  const mediaAnual =
+    chartData.length > 0
+      ? chartData.reduce((acc, d) => acc + d.total_gasto, 0) / chartData.length
+      : 0
+
   return (
     <div className="space-y-5">
-      {/* Cards de totais */}
+      {/* Cards de totais cívicos */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3" data-testid="resumo-cards">
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4" data-testid="card-total-gasto">
-          <p className="text-[11px] text-blue-500 font-medium uppercase tracking-wide mb-1 flex items-center gap-1">
-            <Receipt size={12} /> Total Gasto
+        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-4" data-testid="card-total-gasto">
+          <p className="text-[11px] text-slate-600 font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <Receipt size={13} className="text-blue-700" /> Total Desembolsado
           </p>
-          <p className="font-mono text-lg font-bold text-blue-700" data-testid="card-total-gasto-valor">{BRL(totalGeral)}</p>
+          <p className="font-mono text-xl font-bold text-slate-900 tabular-nums" data-testid="card-total-gasto-valor">
+            {BRL(totalGeral)}
+          </p>
         </div>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4" data-testid="card-num-despesas">
-          <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide mb-1 flex items-center gap-1">
-            <CalendarDays size={12} /> Nº de Despesas
+        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-4" data-testid="card-num-despesas">
+          <p className="text-[11px] text-slate-600 font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <CalendarDays size={13} className="text-indigo-700" /> Notas e Recibos
           </p>
-          <p className="font-mono text-lg font-bold text-slate-700" data-testid="card-num-despesas-valor">
+          <p className="font-mono text-xl font-bold text-slate-900 tabular-nums" data-testid="card-num-despesas-valor">
             {totalDespesas.toLocaleString("pt-BR")}
           </p>
         </div>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 col-span-2 md:col-span-1" data-testid="card-anos-registrados">
-          <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide mb-1 flex items-center gap-1">
-            <TrendingDown size={12} /> Anos Registrados
+        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-4 col-span-2 md:col-span-1" data-testid="card-anos-registrados">
+          <p className="text-[11px] text-slate-600 font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <TrendingDown size={13} className="text-emerald-700" /> Anos Mapeados
           </p>
-          <p className="font-mono text-lg font-bold text-slate-700" data-testid="card-anos-registrados-valor">{anosData.length}</p>
+          <p className="font-mono text-xl font-bold text-slate-900 tabular-nums" data-testid="card-anos-registrados-valor">
+            {anosData.length} anos
+          </p>
         </div>
       </div>
 
-      {/* Gráfico por ano */}
+      {/* Gráfico por ano com linha de média */}
       <div data-testid="grafico-anos">
-        <p className="text-xs text-slate-400 font-medium mb-3 uppercase tracking-wide">
-          Gastos por ano · clique para detalhar
-        </p>
-        <ResponsiveContainer width="100%" height={200}>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
+            Gastos por ano · clique na coluna para detalhar os meses
+          </p>
+          {mediaAnual > 0 && (
+            <span className="text-[11px] font-mono text-slate-500 tabular-nums">
+              Média: {BRL(mediaAnual)}/ano
+            </span>
+          )}
+        </div>
+        <ResponsiveContainer width="100%" height={210}>
           <BarChart
             data={chartData}
-            margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+            margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
             barCategoryGap="30%"
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 11, fill: "#94a3b8" }}
-              axisLine={false}
+              tick={{ fontSize: 11, fill: "#64748b" }}
+              axisLine={{ stroke: "#e2e8f0" }}
               tickLine={false}
             />
             <YAxis
               tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
-              tick={{ fontSize: 10, fill: "#cbd5e1" }}
+              tick={{ fontSize: 10, fill: "#94a3b8" }}
               axisLine={false}
               tickLine={false}
-              width={52}
+              width={56}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f1f5f9", radius: 6 }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f8fafc", radius: 4 }} />
+            {mediaAnual > 0 && (
+              <ReferenceLine
+                y={mediaAnual}
+                stroke="#94a3b8"
+                strokeDasharray="4 4"
+              />
+            )}
             <Bar
               dataKey="total_gasto"
-              radius={[6, 6, 0, 0]}
+              radius={[4, 4, 0, 0]}
               onClick={(d) => onSelectAno(d.ano)}
             >
               {chartData.map((entry) => (
                 <Cell
                   key={entry.ano}
-                  fill="#2563eb"
-                  className="cursor-pointer hover:opacity-75 transition-opacity"
+                  fill="#1d4ed8"
+                  className="cursor-pointer hover:opacity-80 transition-opacity"
                 />
               ))}
             </Bar>
@@ -596,35 +620,45 @@ function PainelAno({
       {/* Gráfico mensal */}
       {mesesDoAno.length > 0 ? (
         <div data-testid="grafico-mensal">
-          <p className="text-xs text-slate-400 font-medium mb-3 uppercase tracking-wide">
-            Mês a mês
-          </p>
-          <ResponsiveContainer width="100%" height={180}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
+              Evolução mês a mês em {ano}
+            </p>
+            <span className="text-[11px] font-mono text-slate-500 tabular-nums">
+              Média mensal: {BRL(totalAno / mesesDoAno.length)}
+            </span>
+          </div>
+          <ResponsiveContainer width="100%" height={190}>
             <BarChart
               data={mesesDoAno}
-              margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+              margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
               barCategoryGap="25%"
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 11, fill: "#94a3b8" }}
-                axisLine={false}
+                tick={{ fontSize: 11, fill: "#64748b" }}
+                axisLine={{ stroke: "#e2e8f0" }}
                 tickLine={false}
               />
               <YAxis
                 tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
-                tick={{ fontSize: 10, fill: "#cbd5e1" }}
+                tick={{ fontSize: 10, fill: "#94a3b8" }}
                 axisLine={false}
                 tickLine={false}
-                width={52}
+                width={56}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f1f5f9", radius: 6 }} />
-              <Bar dataKey="total_gasto" radius={[5, 5, 0, 0]}>
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f8fafc", radius: 4 }} />
+              <ReferenceLine
+                y={totalAno / mesesDoAno.length}
+                stroke="#94a3b8"
+                strokeDasharray="4 4"
+              />
+              <Bar dataKey="total_gasto" radius={[4, 4, 0, 0]}>
                 {mesesDoAno.map((entry) => (
                   <Cell
                     key={entry.mes}
-                    fill={entry.total_gasto === maxMes ? "#2563eb" : "#93c5fd"}
+                    fill={entry.total_gasto === maxMes ? "#1d4ed8" : "#60a5fa"}
                   />
                 ))}
               </Bar>
@@ -736,10 +770,7 @@ export default function LinhaDoTempo({ politicoId }: LinhaDoTempoProps) {
       <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between" data-testid="linha-tempo-header">
         <div className="flex items-center gap-2">
           <CalendarDays size={18} className="text-blue-500" />
-          <h3
-            style={{ fontFamily: "'Fraunces', serif" }}
-            className="text-lg font-bold text-slate-800"
-          >
+          <h3 className="text-lg font-bold tracking-tight text-slate-900">
             Histórico de Gastos
           </h3>
           {anoSelecionado && (

@@ -871,18 +871,15 @@ export default function ProjetosVotacoes() {
   const painelAberto = proposicaoSelecionada !== null || votacaoSelecionada !== null
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif" }} className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-canvas">
       <Header />
       {/* ── Cabeçalho da página ── */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 py-8 pt-24">
-          <p className="text-xs font-semibold tracking-widest uppercase text-blue-600 mb-2">
+          <p className="text-xs font-semibold tracking-wider uppercase text-blue-700 mb-1">
             Legislativo
           </p>
-          <h1
-            style={{ fontFamily: "'Fraunces', serif" }}
-            className="text-3xl font-bold text-slate-900 mb-1"
-          >
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">
             Projetos e Votações
           </h1>
           <p className="text-slate-500 text-sm">

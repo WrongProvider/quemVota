@@ -42,10 +42,7 @@ function Acordeao({
           <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0">
             {icon}
           </div>
-          <span
-            style={{ fontFamily: "'Fraunces', serif" }}
-            className="text-base font-bold text-slate-800"
-          >
+          <span className="text-base font-bold text-slate-900">
             {title}
           </span>
         </div>
@@ -90,23 +87,20 @@ export default function Metodologia() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="min-h-screen bg-canvas pt-16">
 
         {/* ── Header da página ── */}
         <div className="bg-white border-b border-slate-200">
           <div className="max-w-4xl mx-auto px-6 py-12">
-            <p className="text-xs font-semibold tracking-widest uppercase text-blue-600 mb-3">
+            <p className="text-xs font-semibold tracking-wider uppercase text-blue-700 mb-2">
               Institucional & Princípios
             </p>
-            <h1
-              style={{ fontFamily: "'Fraunces', serif" }}
-              className="text-4xl font-bold text-slate-900 mb-4 leading-tight"
-            >
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-4 leading-tight">
               Metodologia e Neutralidade Factual
             </h1>
-            <p className="text-base text-slate-500 leading-relaxed max-w-2xl">
-              O <strong className="text-slate-700">QuemVota</strong> é uma plataforma de transparência pública baseada
-              no princípio da <strong className="text-slate-700">neutralidade descritiva</strong>: apresentamos exclusivamente
+            <p className="text-base text-slate-600 leading-relaxed max-w-2xl">
+              O <strong className="text-slate-800">QuemVota</strong> é uma plataforma de transparência pública baseada
+              no princípio da <strong className="text-slate-800">neutralidade descritiva</strong>: apresentamos exclusivamente
               fatos observáveis e auditáveis, sem atribuir notas, rótulos ou juízos morais de valor aos parlamentares.
             </p>
           </div>

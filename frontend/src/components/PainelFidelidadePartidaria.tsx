@@ -138,28 +138,28 @@ export default function PainelFidelidadePartidaria({
       </div>
 
       {/* ── GRID DE MÉTRICAS (KPIS) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
         {/* KPI 1: Taxa Geral */}
-        <div className="bg-slate-50/70 border border-slate-200/70 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-            <span>Taxa de Alinhamento</span>
-            <span className="font-medium text-slate-400">Geral</span>
+            <span className="font-medium">Taxa de Alinhamento</span>
+            <span className="text-[11px] font-semibold text-slate-400">Geral</span>
           </div>
           <div className="my-1">
             <div className="flex items-baseline gap-1.5">
-              <span className="mono-font text-2xl sm:text-3xl font-bold text-slate-900">
+              <span className="font-mono tabular-nums text-2xl sm:text-3xl font-bold text-slate-900">
                 {taxaAlinhamento.toFixed(1)}%
               </span>
             </div>
-            {/* Barra proporcional de alinhamento */}
-            <div className="w-full bg-slate-200 h-2 rounded-full mt-2 overflow-hidden flex">
+            {/* Barra bipartida proporcional */}
+            <div className="w-full bg-slate-200 h-2.5 rounded-full mt-2 overflow-hidden flex">
               <div
-                className="bg-emerald-500 h-full transition-all duration-500"
+                className="bg-emerald-600 h-full transition-all duration-500"
                 style={{ width: `${taxaAlinhamento}%` }}
                 title={`Alinhamento: ${taxaAlinhamento.toFixed(1)}%`}
               />
               <div
-                className="bg-amber-400 h-full transition-all duration-500"
+                className="bg-red-600 h-full transition-all duration-500"
                 style={{ width: `${100 - taxaAlinhamento}%` }}
                 title={`Divergência: ${(100 - taxaAlinhamento).toFixed(1)}%`}
               />
@@ -171,45 +171,45 @@ export default function PainelFidelidadePartidaria({
         </div>
 
         {/* KPI 2: Votos Alinhados */}
-        <div className="bg-emerald-50/40 border border-emerald-100 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-xs text-emerald-800 mb-1">
-            <span>Votos com a Bancada</span>
-            <CheckCircle2 size={16} className="text-emerald-500" />
+            <span className="font-medium">Votos com a Bancada</span>
+            <CheckCircle2 size={16} className="text-emerald-600" />
           </div>
           <div className="my-1">
-            <span className="mono-font text-2xl sm:text-3xl font-bold text-emerald-950">
+            <span className="font-mono tabular-nums text-2xl sm:text-3xl font-bold text-emerald-800">
               {data.votos_com_bancada.toLocaleString("pt-BR")}
             </span>
           </div>
-          <p className="text-[11px] text-emerald-700/80 mt-2">
+          <p className="text-[11px] text-slate-500 mt-2">
             Votos no mesmo sentido da orientação partidária
           </p>
         </div>
 
         {/* KPI 3: Votos Divergentes */}
-        <div className="bg-amber-50/40 border border-amber-100 rounded-xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-amber-800 mb-1">
-            <span>Votos Divergentes</span>
-            <AlertCircle size={16} className="text-amber-500" />
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-red-800 mb-1">
+            <span className="font-medium">Votos Divergentes</span>
+            <AlertCircle size={16} className="text-red-600" />
           </div>
           <div className="my-1">
-            <span className="mono-font text-2xl sm:text-3xl font-bold text-amber-950">
+            <span className="font-mono tabular-nums text-2xl sm:text-3xl font-bold text-red-800">
               {data.votos_contra_bancada.toLocaleString("pt-BR")}
             </span>
           </div>
-          <p className="text-[11px] text-amber-700/80 mt-2">
-            Votos em sentido distinto da orientação do partido
+          <p className="text-[11px] text-slate-500 mt-2">
+            Votos em sentido oposto à recomendação da bancada
           </p>
         </div>
 
         {/* KPI 4: Total Analisado */}
-        <div className="bg-slate-50/70 border border-slate-200/70 rounded-xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-            <span>Votações Orientadas</span>
-            <Vote size={16} className="text-blue-500" />
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+            <span className="font-medium">Votações Orientadas</span>
+            <Vote size={16} className="text-blue-700" />
           </div>
           <div className="my-1">
-            <span className="mono-font text-2xl sm:text-3xl font-bold text-slate-800">
+            <span className="font-mono tabular-nums text-2xl sm:text-3xl font-bold text-slate-900">
               {data.total_votacoes_orientadas.toLocaleString("pt-BR")}
             </span>
           </div>

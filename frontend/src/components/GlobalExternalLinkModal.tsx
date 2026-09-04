@@ -42,12 +42,12 @@ export default function GlobalExternalLinkModal() {
           <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <ExternalLink size={28} />
           </div>
-          <h3 className="text-xl font-bold text-slate-800 mb-2" style={{ fontFamily: 'Fraunces, serif' }}>
+          <h3 className="text-xl font-bold tracking-tight text-slate-900 mb-2">
             Aviso de Redirecionamento
           </h3> 
           <p className="text-sm text-slate-600 mb-6">
             Você está saindo do <strong>quemvota.com.br</strong> e será redirecionado para:<br />
-            <span className="inline-block mt-2 px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-mono text-slate-500 break-all border border-slate-200">
+            <span className="inline-block mt-2 px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-mono text-slate-600 break-all border border-slate-200">
               {targetUrl}
             </span>
           </p>
@@ -55,7 +55,7 @@ export default function GlobalExternalLinkModal() {
           <div className="flex gap-3">
             <button
               onClick={() => setIsOpen(false)}
-              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-colors cursor-pointer"
+              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors cursor-pointer text-sm"
             >
               Cancelar
             </button>
@@ -63,11 +63,11 @@ export default function GlobalExternalLinkModal() {
               href={targetUrl}
               target="_blank"
               rel="noopener noreferrer"
-              data-ignore-modal="true" /* <-- O botão avisa o script para não interceptar ele */
+              data-ignore-modal="true"
               onClick={() => setIsOpen(false)}
-              className="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 cursor-pointer no-underline"
+              className="flex-1 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer no-underline text-sm shadow-xs"
             >
-              Continuar <ChevronRight size={16} />
+              Continuar <ChevronRight size={15} />
             </a>
           </div>
         </div>

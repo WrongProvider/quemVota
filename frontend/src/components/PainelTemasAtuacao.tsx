@@ -30,14 +30,14 @@ interface PainelTemasAtuacaoProps {
   legislatura?: number
 }
 
-// ── Cores da paleta QuemVota com gradientes graduais por relevância ──
+// ── Cores da paleta cívica com gradientes graduais por relevância ──
 const CORES_RANK = [
-  "#2563eb", // Rank 1: Azul primário
-  "#3b82f6", // Rank 2
-  "#60a5fa", // Rank 3
-  "#818cf8", // Rank 4: Índigo claro
-  "#a78bfa", // Rank 5: Violeta suave
-  "#94a3b8", // Rank 6+: Cinza neutro slate
+  "#1d4ed8", // Rank 1: Azul cívico profundo
+  "#2563eb", // Rank 2
+  "#3b82f6", // Rank 3
+  "#60a5fa", // Rank 4
+  "#93c5fd", // Rank 5
+  "#cbd5e1", // Rank 6+: Neutro slate
 ]
 
 // ── Tooltip customizado do Recharts ──

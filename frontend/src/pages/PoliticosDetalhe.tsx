@@ -43,6 +43,7 @@ import {
   ChevronDown,
   Loader2,
   ArrowLeftRight,
+  AlertCircle,
 } from "lucide-react"
 import { useRegistrarBusca } from "../hooks/useBuscaPopular"
 import { useVotacao } from "../hooks/useProposicoes"
@@ -374,11 +375,9 @@ export default function PoliticoDetalhe() {
       />
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,400&display=swap');
-
         .detail-root { font-family: 'DM Sans', sans-serif; }
-        .display-font { font-family: 'Fraunces', serif; }
-        .mono-font { font-family: 'DM Mono', monospace; }
+        .display-font { font-family: 'DM Sans', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+        .mono-font { font-family: 'DM Mono', monospace; font-variant-numeric: tabular-nums; }
 
         .profile-photo {
           animation: photoReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -620,13 +619,14 @@ export default function PoliticoDetalhe() {
           )}
 
           {anoSelecionado && (
-            <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-              <p className="text-sm text-blue-700 font-medium">
-                📅 Dados filtrados para o ano <strong>{anoSelecionado}</strong>
+            <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+              <p className="text-sm text-slate-800 font-medium flex items-center gap-2">
+                <Calendar size={15} className="text-slate-500" />
+                <span>Dados filtrados para o ano <strong>{anoSelecionado}</strong></span>
               </p>
               <button
                 onClick={() => setAnoSelecionado(null)}
-                className="text-xs text-blue-500 hover:text-blue-700 font-medium underline underline-offset-2 transition-colors"
+                className="text-xs text-slate-600 hover:text-slate-900 font-medium underline underline-offset-2 transition-colors"
               >
                 Ver mandato completo
               </button>
@@ -680,56 +680,6 @@ export default function PoliticoDetalhe() {
                 <h2 className="display-font text-xl font-bold text-slate-800">Atuação e Recursos Parlamentares</h2>
               </div>
               <PoliticoGraficos performance={performance} />
-
-              {/* Breakdown do orçamento — exibido quando há dados de gabinete */}
-              {(performance.info?.gasto_gabinete ?? 0) > 0 && (
-                <div className="mt-4 bg-white border border-slate-200 rounded-2xl overflow-hidden">
-                  <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/60">
-                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
-                      💰 Composição do Orçamento
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100">
-                    {[
-                      {
-                        label: "Cota Parlamentar",
-                        value: `R$ ${(performance.info.total_gasto ?? 0).toLocaleString("pt-BR")}`,
-                        sub: "gastos CEAP",
-                        color: "text-violet-600",
-                      },
-                      {
-                        label: "Verba de Gabinete",
-                        value: `R$ ${(performance.info.gasto_gabinete ?? 0).toLocaleString("pt-BR")}`,
-                        sub: "pessoal / funcionários",
-                        color: "text-orange-500",
-                      },
-                      {
-                        label: "Gasto Total",
-                        value: `R$ ${(performance.info.gasto_total ?? 0).toLocaleString("pt-BR")}`,
-                        sub: "CEAP + gabinete",
-                        color: "text-red-500",
-                      },
-                      {
-                        label: "Orçamento Utilizado",
-                        value: `${(performance.info.orcamento_utilizado_pct ?? performance.info.cota_utilizada_pct ?? 0).toFixed(1)}%`,
-                        sub: "do total disponível",
-                        color:
-                          (performance.info.orcamento_utilizado_pct ?? 0) > 85
-                            ? "text-red-500"
-                            : (performance.info.orcamento_utilizado_pct ?? 0) > 60
-                            ? "text-amber-500"
-                            : "text-emerald-600",
-                      },
-                    ].map((item) => (
-                      <div key={item.label} className="px-5 py-4 text-center">
-                        <p className={`mono-font font-bold text-base ${item.color}`}>{item.value}</p>
-                        <p className="text-[11px] font-semibold text-slate-600 mt-1">{item.label}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">{item.sub}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </section>
           )}
 
@@ -1242,13 +1192,13 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
   )
 }
 
-// ── STAT CARD ──────────────────────────────────────────────────────────────
+// ── STAT CARD CÍVICO ──────────────────────────────────────────────────────────────
 const accentMap: Record<string, string> = {
-  blue:    "bg-blue-50 border-blue-100 hover:border-blue-300",
-  violet:  "bg-violet-50 border-violet-100 hover:border-violet-300",
-  emerald: "bg-emerald-50 border-emerald-100 hover:border-emerald-300",
-  amber:   "bg-amber-50 border-amber-100 hover:border-amber-300",
-  slate:   "bg-white border-slate-200 hover:border-slate-300",
+  blue:    "bg-white border-slate-200/90 hover:border-blue-400 shadow-2xs",
+  violet:  "bg-white border-slate-200/90 hover:border-indigo-400 shadow-2xs",
+  emerald: "bg-white border-slate-200/90 hover:border-emerald-400 shadow-2xs",
+  amber:   "bg-white border-slate-200/90 hover:border-amber-400 shadow-2xs",
+  slate:   "bg-white border-slate-200/90 hover:border-slate-400 shadow-2xs",
 }
 
 function StatCard({
@@ -1261,12 +1211,12 @@ function StatCard({
   "data-testid"?: string
 }) {
   return (
-    <div data-testid={testId} className={`stat-card rounded-xl border p-4 transition-colors duration-200 cursor-default ${accentMap[accent] ?? accentMap.slate}`}>
-      <div className="flex items-center gap-2 mb-2">
+    <div data-testid={testId} className={`stat-card rounded-xl border p-4 transition-all duration-150 cursor-default ${accentMap[accent] ?? accentMap.slate}`}>
+      <div className="flex items-center gap-2 mb-1.5">
         {icon}
-        <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide leading-tight">{titulo}</p>
+        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider leading-tight">{titulo}</p>
       </div>
-      <p className="mono-font text-lg font-semibold text-slate-800 leading-tight truncate">{valor}</p>
+      <p className="font-mono tabular-nums text-lg font-bold text-slate-900 leading-tight truncate">{valor}</p>
     </div>
   )
 }
@@ -1291,18 +1241,18 @@ function ErrorScreen() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center pt-16">
+      <div className="min-h-screen bg-canvas flex items-center justify-center pt-16">
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">⚠️</span>
+            <AlertCircle size={28} className="text-red-500" />
           </div>
-          <h2 className="text-lg font-semibold text-slate-700 mb-1">Erro ao carregar</h2>
-          <p className="text-sm text-slate-400">Não foi possível carregar o perfil deste parlamentar.</p>
+          <h2 className="text-lg font-semibold text-slate-800 mb-1">Erro ao carregar</h2>
+          <p className="text-sm text-slate-500">Não foi possível carregar o perfil deste parlamentar.</p>
           <Link
             to="/politicos"
-            className="inline-flex items-center gap-1.5 mt-5 text-sm text-blue-600 hover:text-blue-800 font-medium"
+            className="inline-flex items-center gap-1.5 mt-5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-xs"
           >
-            <ArrowLeft size={14} />
+            <ArrowLeft size={13} />
             Voltar aos Parlamentares
           </Link>
         </div>

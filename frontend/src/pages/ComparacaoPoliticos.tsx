@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   XCircle,
   Tag,
+  AlertCircle,
 } from "lucide-react"
 import {
   nomeParaSlug,
@@ -205,10 +206,10 @@ function LoadingScreen() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center pt-16">
+      <div className="min-h-screen bg-canvas flex items-center justify-center pt-16">
         <div className="text-center">
-          <div className="w-10 h-10 border-[3px] border-slate-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-slate-400 font-medium">Carregando comparação...</p>
+          <div className="w-10 h-10 border-[3px] border-slate-200 border-t-slate-800 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-slate-500 font-medium">Carregando comparação...</p>
         </div>
       </div>
     </>
@@ -221,24 +222,24 @@ function ErrorScreen() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center pt-16">
+      <div className="min-h-screen bg-canvas flex items-center justify-center pt-16">
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">⚠️</span>
+            <AlertCircle size={28} className="text-red-500" />
           </div>
-          <h2 className="text-lg font-semibold text-slate-700 mb-1">Erro ao carregar</h2>
-          <p className="text-sm text-slate-400">Não foi possível carregar os parlamentares.</p>
+          <h2 className="text-lg font-semibold text-slate-800 mb-1">Erro ao carregar</h2>
+          <p className="text-sm text-slate-500">Não foi possível carregar os dados dos parlamentares.</p>
           <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
             <Link
               to="/comparar"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-xs"
             >
               <ArrowLeft size={13} />
               Escolher outros deputados
             </Link>
             <Link
               to="/politicos"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-800 text-xs font-semibold transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 text-xs font-semibold transition-colors shadow-xs"
             >
               Ver todos parlamentares
             </Link>
@@ -364,12 +365,14 @@ function ColunaPerfil({
   )
 }
 
-// ── LINHA DE COMPARAÇÃO ─────────────────────────────────────────────────────
+// ── LINHA DE COMPARAÇÃO COM BARRAS DIVERGENTES HEAD-TO-HEAD ────────────────
 
 function LinhaComparacao({
   titulo,
   valA,
   valB,
+  numA,
+  numB,
 }: {
   titulo: string
   valA: React.ReactNode
@@ -378,20 +381,43 @@ function LinhaComparacao({
   numB?: number | null
   lowerIsBetter?: boolean
 }) {
-  return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-3.5 border-b border-slate-100 last:border-0">
-      <div className="text-right text-slate-700">
-        <span className="mono-font text-sm">{valA}</span>
-      </div>
+  const safeA = Number(numA) || 0
+  const safeB = Number(numB) || 0
+  const maxVal = Math.max(safeA, safeB, 1)
+  const pctA = Math.min(100, Math.max(0, (safeA / maxVal) * 100))
+  const pctB = Math.min(100, Math.max(0, (safeB / maxVal) * 100))
 
-      <div className="min-w-[100px] px-1 text-center">
-        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide whitespace-nowrap">
+  return (
+    <div className="py-4 border-b border-slate-100 last:border-0">
+      {/* Rótulo central com valores */}
+      <div className="flex items-center justify-between text-xs mb-2">
+        <span className="font-mono font-bold text-sm text-slate-900 tabular-nums">
+          {valA}
+        </span>
+        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-center">
           {titulo}
+        </span>
+        <span className="font-mono font-bold text-sm text-slate-900 tabular-nums">
+          {valB}
         </span>
       </div>
 
-      <div className="text-left text-slate-700">
-        <span className="mono-font text-sm">{valB}</span>
+      {/* Barra bilateral divergente ancorada ao centro */}
+      <div className="grid grid-cols-2 gap-2 items-center">
+        {/* Lado A: barra cresce para a esquerda */}
+        <div className="h-2 bg-slate-100 rounded-full flex justify-end overflow-hidden">
+          <div
+            className="h-full bg-slate-900 rounded-full transition-all duration-500"
+            style={{ width: `${pctA}%` }}
+          />
+        </div>
+        {/* Lado B: barra cresce para a direita */}
+        <div className="h-2 bg-slate-100 rounded-full flex justify-start overflow-hidden">
+          <div
+            className="h-full bg-slate-600 rounded-full transition-all duration-500"
+            style={{ width: `${pctB}%` }}
+          />
+        </div>
       </div>
     </div>
   )
@@ -420,39 +446,39 @@ function BlocoEstatisticas({
   }[] = [
     {
       titulo: "Total de Votações",
-      icon: <BadgeCheck size={16} className="text-blue-500" />,
-      accent: "blue",
+      icon: <BadgeCheck size={16} className="text-slate-600" />,
+      accent: "slate",
       valA: statsA.total_votacoes,
       valB: statsB.total_votacoes,
       fmt: (v) => v.toString(),
     },
     {
       titulo: "Total de Despesas",
-      icon: <Receipt size={16} className="text-violet-500" />,
-      accent: "violet",
+      icon: <Receipt size={16} className="text-slate-600" />,
+      accent: "slate",
       valA: statsA.total_despesas,
       valB: statsB.total_despesas,
       fmt: (v) => v.toString(),
     },
     {
       titulo: "Cota Parlamentar",
-      icon: <TrendingUp size={16} className="text-emerald-500" />,
-      accent: "emerald",
+      icon: <TrendingUp size={16} className="text-slate-600" />,
+      accent: "slate",
       valA: statsA.total_gasto,
       valB: statsB.total_gasto,
       fmt: (v) => `R$ ${v.toLocaleString("pt-BR")}`,
     },
     {
       titulo: "Verba de Gabinete",
-      icon: <Wallet size={16} className="text-orange-500" />,
-      accent: "amber",
+      icon: <Wallet size={16} className="text-slate-600" />,
+      accent: "slate",
       valA: statsA.total_gasto_gabinete ?? 0,
       valB: statsB.total_gasto_gabinete ?? 0,
       fmt: (v) => `R$ ${v.toLocaleString("pt-BR")}`,
     },
     {
       titulo: "Gasto Total",
-      icon: <Receipt size={16} className="text-red-500" />,
+      icon: <Receipt size={16} className="text-slate-600" />,
       accent: "slate",
       valA: statsA.total_gasto_combinado ?? statsA.total_gasto,
       valB: statsB.total_gasto_combinado ?? statsB.total_gasto,
@@ -460,8 +486,8 @@ function BlocoEstatisticas({
     },
     {
       titulo: "Média Mensal",
-      icon: <Receipt size={16} className="text-amber-500" />,
-      accent: "amber",
+      icon: <Receipt size={16} className="text-slate-600" />,
+      accent: "slate",
       valA: statsA.media_mensal,
       valB: statsB.media_mensal,
       fmt: (v) => `R$ ${v.toLocaleString("pt-BR")}`,
@@ -470,20 +496,20 @@ function BlocoEstatisticas({
 
   return (
     <section className="section-fade">
-      <div className="flex items-center gap-2 mb-5">
-        <BarChart2 size={18} className="text-blue-500" />
-        <h2 className="display-font text-xl font-bold text-slate-800">Estatísticas</h2>
+      <div className="flex items-center gap-2 mb-4">
+        <BarChart2 size={18} className="text-slate-700" />
+        <h2 className="text-xl font-bold tracking-tight text-slate-900">Estatísticas Fatuais</h2>
       </div>
 
       {/* Legenda de colunas */}
       <div className="grid grid-cols-2 gap-3 mb-3">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-100">
-          <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
-          <p className="text-xs font-semibold text-slate-600 truncate">{nomeA}</p>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200">
+          <div className="w-2.5 h-2.5 rounded-full bg-slate-900 flex-shrink-0" />
+          <p className="text-xs font-semibold text-slate-800 truncate">{nomeA}</p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-100">
-          <div className="w-2 h-2 rounded-full bg-violet-500 flex-shrink-0" />
-          <p className="text-xs font-semibold text-slate-600 truncate">{nomeB}</p>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200">
+          <div className="w-2.5 h-2.5 rounded-full bg-slate-500 flex-shrink-0" />
+          <p className="text-xs font-semibold text-slate-800 truncate">{nomeB}</p>
         </div>
       </div>
 
@@ -518,9 +544,9 @@ function BlocoEstatisticas({
 
       {/* Aviso de gabinete */}
       {((statsA.total_gasto_gabinete ?? 0) > 0 || (statsB.total_gasto_gabinete ?? 0) > 0) && (
-        <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
-          ℹ️ <strong>Cota Parlamentar</strong> cobre deslocamentos, materiais e serviços de terceiros.{" "}
-          <strong>Verba de Gabinete</strong> cobre salários e encargos dos funcionários do escritório.
+        <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+          <strong>Cota Parlamentar (CEAP)</strong> cobre deslocamentos, materiais e serviços de terceiros.{" "}
+          <strong>Verba de Gabinete</strong> cobre salários e encargos dos secretários parlamentares.
         </p>
       )}
     </section>
@@ -542,23 +568,23 @@ function BlocoPerformance({
 }) {
   return (
     <section className="section-fade">
-      <div className="flex items-center gap-2 mb-5">
-        <TrendingUp size={18} className="text-blue-500" />
-        <h2 className="display-font text-xl font-bold text-slate-800">Indicadores de Mandato</h2>
+      <div className="flex items-center gap-2 mb-4">
+        <TrendingUp size={18} className="text-slate-700" />
+        <h2 className="text-xl font-bold tracking-tight text-slate-900">Indicadores de Mandato (Head-to-Head)</h2>
       </div>
 
-      {/* Indicadores linha a linha */}
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/60">
-          <div className="grid grid-cols-[1fr_auto_1fr] gap-3">
-            <p className="text-right text-xs font-semibold text-blue-600 truncate">{nomeA}</p>
-            <div className="min-w-[100px] text-center text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-              Métricas
+      {/* Indicadores linha a linha com barras bilaterais */}
+      <div className="bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-xs">
+        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50">
+          <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
+            <p className="text-left text-xs font-semibold text-slate-900 truncate">{nomeA}</p>
+            <div className="min-w-[120px] text-center text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              Confronto Direto
             </div>
-            <p className="text-left text-xs font-semibold text-violet-600 truncate">{nomeB}</p>
+            <p className="text-right text-xs font-semibold text-slate-700 truncate">{nomeB}</p>
           </div>
         </div>
-        <div className="px-5">
+        <div className="px-5 py-1">
           <LinhaComparacao
             titulo="Assiduidade Oficial"
             valA={`${perfA.detalhes?.nota_assiduidade?.toFixed(1) ?? 0}%`}
@@ -583,12 +609,12 @@ function BlocoPerformance({
         </div>
       </div>
 
-      {/* Composição do orçamento — mesmo card do PoliticosDetalhe, duplicado para cada político */}
+      {/* Composição do orçamento */}
       {((perfA.info?.gasto_gabinete ?? 0) > 0 || (perfB.info?.gasto_gabinete ?? 0) > 0) && (
-        <div className="mt-4 bg-white border border-slate-200 rounded-2xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/60">
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
-              💰 Composição do Orçamento
+        <div className="mt-4 bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-xs">
+          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              Composição Orçamentária
             </p>
           </div>
 
@@ -598,9 +624,9 @@ function BlocoPerformance({
           ].map(({ info, nome }, i) => {
             const pct = info?.orcamento_utilizado_pct ?? info?.cota_utilizada_pct ?? 0
             return (
-              <div key={i} className={i === 1 ? "border-t border-slate-100" : ""}>
-                <div className="px-5 py-2.5 bg-slate-50/50 border-b border-slate-50">
-                  <p className="text-[11px] font-semibold text-slate-500 truncate">{nome}</p>
+              <div key={i} className={i === 1 ? "border-t border-slate-200/70" : ""}>
+                <div className="px-5 py-2.5 bg-slate-50/30 border-b border-slate-100">
+                  <p className="text-xs font-semibold text-slate-700 truncate">{nome}</p>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100">
                   {[
@@ -608,19 +634,19 @@ function BlocoPerformance({
                       label: "Cota Parlamentar",
                       value: `R$ ${(info?.total_gasto ?? 0).toLocaleString("pt-BR")}`,
                       sub: "gastos CEAP",
-                      color: "text-violet-600",
+                      color: "text-slate-900",
                     },
                     {
                       label: "Verba de Gabinete",
                       value: `R$ ${(info?.gasto_gabinete ?? 0).toLocaleString("pt-BR")}`,
                       sub: "pessoal / funcionários",
-                      color: "text-orange-500",
+                      color: "text-slate-900",
                     },
                     {
                       label: "Gasto Total",
                       value: `R$ ${(info?.gasto_total ?? 0).toLocaleString("pt-BR")}`,
                       sub: "CEAP + gabinete",
-                      color: "text-red-500",
+                      color: "text-slate-900",
                     },
                     {
                       label: "Orçamento Utilizado",
@@ -630,7 +656,7 @@ function BlocoPerformance({
                     },
                   ].map((item) => (
                     <div key={item.label} className="px-5 py-4 text-center">
-                      <p className={`mono-font font-bold text-base ${item.color}`}>{item.value}</p>
+                      <p className={`font-mono tabular-nums font-bold text-base ${item.color}`}>{item.value}</p>
                       <p className="text-[11px] font-semibold text-slate-600 mt-1">{item.label}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">{item.sub}</p>
                     </div>
@@ -1019,11 +1045,9 @@ export default function ComparacaoPoliticos() {
       <SeoHead nomeA={dataA.nome} nomeB={dataB.nome} />
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,400&display=swap');
-
         .detail-root  { font-family: 'DM Sans', sans-serif; }
-        .display-font { font-family: 'Fraunces', serif; }
-        .mono-font    { font-family: 'DM Mono', monospace; }
+        .display-font { font-family: 'DM Sans', sans-serif; }
+        .mono-font    { font-family: 'DM Mono', monospace; font-variant-numeric: tabular-nums; }
 
         .profile-photo { animation: photoReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
         @keyframes photoReveal {
@@ -1056,7 +1080,7 @@ export default function ComparacaoPoliticos() {
         }
 
         .pill-badge {
-          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+          background: #f1f5f9;
         }
 
         .section-fade { animation: sectionFade 0.3s ease both; }
@@ -1066,7 +1090,7 @@ export default function ComparacaoPoliticos() {
         }
       `}</style>
 
-      <div className="detail-root min-h-screen bg-[#f8f9fb]">
+      <div className="detail-root min-h-screen bg-canvas">
         <Header />
 
         {/* ── HERO ── */}

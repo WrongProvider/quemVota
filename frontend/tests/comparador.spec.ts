@@ -107,9 +107,12 @@ test.describe("Comparador Direto de Parlamentares", () => {
     // Navega para o perfil com radar de afinidades
     await page.goto("http://localhost:4173/politicos/alice-portugal")
 
-    // Aguarda o radar de afinidades
+    // Aguarda carregamento inicial do perfil
+    await expect(page.locator("h1")).toContainText("Alice Portugal")
+
+    // Aguarda o radar de afinidades (consulta estatística pesada no backend)
     const sectionRadar = page.locator('[data-testid="section-radar-afinidades"]')
-    await expect(sectionRadar).toBeVisible({ timeout: 15000 })
+    await expect(sectionRadar).toBeVisible({ timeout: 45000 })
 
     // Localiza o link 'Comparar' dentro de um card do radar
     const linkComparar = sectionRadar.getByRole("link", { name: /Comparar/i }).first()

@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import Header from "../components/Header"
-import { ChevronDown, Search, ArrowRight } from "lucide-react"
+import { ChevronDown, Search, ArrowRight, HelpCircle, BarChart3, Scale, Terminal } from "lucide-react"
 import { useSeo } from "../hooks/useSeo"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -16,7 +16,7 @@ interface FaqItem {
 interface FaqCategoria {
   id: string
   label: string
-  emoji: string
+  icon: React.ReactNode
   items: FaqItem[]
 }
 
@@ -24,7 +24,7 @@ const CATEGORIAS: FaqCategoria[] = [
   {
     id: "plataforma",
     label: "Plataforma",
-    emoji: "💡",
+    icon: <HelpCircle size={15} className="text-slate-500" />,
     items: [
       {
         q: "O que é o quemvota?",
@@ -71,7 +71,7 @@ const CATEGORIAS: FaqCategoria[] = [
   {
     id: "dados",
     label: "Dados",
-    emoji: "📊",
+    icon: <BarChart3 size={15} className="text-slate-500" />,
     items: [
       {
         q: "De onde vêm os dados?",
@@ -144,7 +144,7 @@ const CATEGORIAS: FaqCategoria[] = [
   {
     id: "neutralidade",
     label: "Neutralidade e Indicadores",
-    emoji: "⚖️",
+    icon: <Scale size={15} className="text-slate-500" />,
     items: [
       {
         q: "Por que o QuemVota não atribui notas ou scores aos parlamentares?",
@@ -187,7 +187,7 @@ const CATEGORIAS: FaqCategoria[] = [
   {
     id: "tecnico",
     label: "Técnico e legal",
-    emoji: "⚙️",
+    icon: <Terminal size={15} className="text-slate-500" />,
     items: [
       {
         q: "O código-fonte do projeto é aberto?",
@@ -289,23 +289,20 @@ export default function FAQ() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="min-h-screen bg-canvas pt-16">
 
         {/* Header da página */}
         <div className="bg-white border-b border-slate-200">
           <div className="max-w-4xl mx-auto px-6 py-12">
-            <p className="text-xs font-semibold tracking-widest uppercase text-blue-600 mb-3">
+            <p className="text-xs font-semibold tracking-wider uppercase text-blue-700 mb-2">
               Institucional
             </p>
-            <h1
-              style={{ fontFamily: "'Fraunces', serif" }}
-              className="text-4xl font-bold text-slate-900 mb-4"
-            >
-              Perguntas frequentes
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-3">
+              Perguntas Frequentes
             </h1>
-            <p className="text-slate-500 text-base leading-relaxed max-w-xl">
+            <p className="text-slate-600 text-base leading-relaxed max-w-xl">
               {totalPerguntas} perguntas organizadas por tema. Não encontrou o que procura?{" "}
-              <a href="https://github.com/WrongProvider/quemVota" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+              <a href="https://github.com/WrongProvider/quemVota" target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline">
                 Abra uma issue no GitHub
               </a>
               .
@@ -328,7 +325,7 @@ export default function FAQ() {
                   setBusca(e.target.value)
                   if (e.target.value) setCategoriaAtiva(null)
                 }}
-                className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all text-slate-800"
               />
             </div>
 
@@ -336,10 +333,10 @@ export default function FAQ() {
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => { setCategoriaAtiva(null); setBusca("") }}
-                className={`px-3 py-2 rounded-xl text-xs font-medium transition-all border cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border cursor-pointer ${
                   !categoriaAtiva && !busca
-                    ? "bg-[#1a1a1a] text-white border-[#1a1a1a]"
-                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                    ? "bg-slate-900 text-white border-slate-900 font-semibold"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                 }`}
               >
                 Todas
@@ -348,13 +345,14 @@ export default function FAQ() {
                 <button
                   key={cat.id}
                   onClick={() => { setCategoriaAtiva(cat.id); setBusca("") }}
-                  className={`px-3 py-2 rounded-xl text-xs font-medium transition-all border cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border cursor-pointer ${
                     categoriaAtiva === cat.id
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                      ? "bg-slate-900 text-white border-slate-900 font-semibold"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                   }`}
                 >
-                  {cat.emoji} {cat.label}
+                  {cat.icon}
+                  <span>{cat.label}</span>
                 </button>
               ))}
             </div>
@@ -362,11 +360,11 @@ export default function FAQ() {
 
           {/* Lista de perguntas */}
           {filtrado.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm py-16 text-center">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-xs py-16 text-center">
               <p className="text-slate-400 text-sm">Nenhuma pergunta encontrada para "{busca}".</p>
               <button
                 onClick={() => setBusca("")}
-                className="mt-3 text-xs text-blue-600 hover:underline cursor-pointer border-0 bg-transparent"
+                className="mt-3 text-xs text-blue-700 hover:underline cursor-pointer border-0 bg-transparent font-medium"
               >
                 Limpar busca
               </button>
@@ -374,14 +372,11 @@ export default function FAQ() {
           ) : (
             <div className="space-y-4">
               {filtrado.map((cat) => (
-                <div key={cat.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div key={cat.id} className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
                   {/* Header da categoria */}
-                  <div className="flex items-center gap-2.5 px-6 py-4 border-b border-slate-100 bg-slate-50/60">
-                    <span className="text-base">{cat.emoji}</span>
-                    <span
-                      style={{ fontFamily: "'Fraunces', serif" }}
-                      className="text-sm font-semibold text-slate-700"
-                    >
+                  <div className="flex items-center gap-2.5 px-6 py-3.5 border-b border-slate-100 bg-slate-50/50">
+                    <span className="text-slate-600">{cat.icon}</span>
+                    <span className="text-sm font-semibold text-slate-900">
                       {cat.label}
                     </span>
                     <span className="ml-auto text-xs text-slate-400 font-medium">

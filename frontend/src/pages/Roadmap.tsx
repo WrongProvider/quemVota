@@ -268,7 +268,6 @@ function FaseCard({ item, index }: { item: RoadmapItem; index: number }) {
                   )}
                 </div>
                 <h3
-                  style={{ fontFamily: "'Fraunces', serif" }}
                   className={`text-base font-bold leading-snug ${
                     item.status === "future" ? "text-slate-500" : "text-slate-800"
                   }`}
@@ -346,10 +345,7 @@ function ProgressoGeral() {
             {done} fases concluídas · {inprogress} em andamento · {total - done - inprogress} planejadas
           </p>
         </div>
-        <span
-          style={{ fontFamily: "'Fraunces', serif" }}
-          className="text-3xl font-bold text-slate-800"
-        >
+        <span className="font-mono tabular-nums text-3xl font-bold text-slate-900">
           {pct}%
         </span>
       </div>
@@ -401,21 +397,18 @@ export default function Roadmap() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="min-h-screen bg-canvas pt-16">
 
         {/* Header da página */}
         <div className="bg-white border-b border-slate-200">
           <div className="max-w-3xl mx-auto px-6 py-12">
-            <p className="text-xs font-semibold tracking-widest uppercase text-blue-600 mb-3">
+            <p className="text-xs font-semibold tracking-wider uppercase text-blue-700 mb-2">
               Institucional
             </p>
-            <h1
-              style={{ fontFamily: "'Fraunces', serif" }}
-              className="text-4xl font-bold text-slate-900 mb-4 leading-tight"
-            >
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-4 leading-tight">
               Roadmap do projeto
             </h1>
-            <p className="text-base text-slate-500 leading-relaxed max-w-xl">
+            <p className="text-base text-slate-600 leading-relaxed max-w-xl">
               Onde estamos, para onde vamos e o que estamos construindo.
               Transparência sobre o futuro do quemvota — porque democracia começa pela honestidade.
             </p>
@@ -428,18 +421,18 @@ export default function Roadmap() {
           <ProgressoGeral />
 
           {/* Aviso de contribuição */}
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 mb-10">
-            <Sparkles size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 mb-10">
+            <Sparkles size={16} className="text-slate-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-amber-800">Roadmap público e colaborativo</p>
-              <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+              <p className="text-sm font-medium text-slate-800">Roadmap público e colaborativo</p>
+              <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
                 Este é um projeto open source. Qualquer pessoa pode sugerir funcionalidades, reportar
                 bugs ou contribuir com código. Discuta prioridades no{" "}
                 <a
                   href="https://github.com/WrongProvider/quemVota"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium underline hover:text-amber-900"
+                  className="font-medium underline hover:text-slate-900 text-blue-700"
                 >
                   GitHub
                 </a>
@@ -456,7 +449,7 @@ export default function Roadmap() {
           </div>
 
           {/* CTA final */}
-          <div className="mt-4 bg-[#1a1a1a] rounded-2xl p-8">
+          <div className="mt-4 bg-slate-900 rounded-2xl p-8">
             <div className="flex items-start gap-4 flex-col sm:flex-row">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
@@ -465,10 +458,7 @@ export default function Roadmap() {
                     Código aberto
                   </span>
                 </div>
-                <h3
-                  style={{ fontFamily: "'Fraunces', serif" }}
-                  className="text-xl font-bold text-white mb-2"
-                >
+                <h3 className="text-xl font-bold tracking-tight text-white mb-2">
                   Quer acelerar alguma dessas fases?
                 </h3>
                 <p className="text-slate-400 text-sm leading-relaxed">

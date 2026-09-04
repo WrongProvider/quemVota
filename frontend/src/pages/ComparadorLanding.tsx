@@ -138,19 +138,19 @@ export default function ComparadorLanding() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fb] flex flex-col">
+    <div className="min-h-screen bg-canvas flex flex-col">
       <Header />
 
       <main className="flex-1 pt-24 pb-16 px-4 md:px-6">
         <div className="max-w-5xl mx-auto space-y-10">
           {/* ── HERO HEADER ── */}
-          <div className="text-center space-y-4 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold shadow-xs">
-              <Scale size={14} className="text-blue-600" />
+          <div className="text-center space-y-3 max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold">
+              <Scale size={13} className="text-slate-600" />
               <span>Grafo de Votações Nominais</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 tracking-tight font-serif">
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
               Comparador de Parlamentares
             </h1>
 
@@ -464,7 +464,7 @@ export default function ComparadorLanding() {
                 data-testid="btn-executar-comparacao"
                 disabled={!politico1 || !politico2}
                 onClick={executarComparacao}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow-sm hover:shadow transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span>Comparar Votações e Desempenho</span>
                 <ChevronRight size={16} />
@@ -475,7 +475,7 @@ export default function ComparadorLanding() {
           {/* ── SUGESTÕES RÁPIDAS DE COMPARAÇÃO ── */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Sparkles size={16} className="text-amber-500" />
+              <Scale size={16} className="text-slate-600" />
               <h2 className="text-base font-bold text-slate-800">
                 Sugestões de Comparações Frequentes
               </h2>
