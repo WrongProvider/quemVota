@@ -33,8 +33,15 @@ with DAG(
 
     task_update_ano_atual = BashOperator(
         task_id="update_etl_camara_corrente",
-        bash_command="uv run python etl_camara.py --update",
+        bash_command="uv run python etl_camara.py --update --reconcile-orfas",
         cwd="/opt/airflow/injest_banco",
+    )
+
+    # Sincroniza dados relacionais do PostgreSQL para o grafo Apache AGE (SPEC / comparador / redes)
+    task_sync_graph = BashOperator(
+        task_id="sync_graph_age",
+        bash_command="uv run python /opt/airflow/tasks/sync_graph.py --legislatura 57",
+        cwd="/opt/airflow",
     )
 
     task_trigger_enriquecimento = TriggerDagRunOperator(
@@ -43,4 +50,9 @@ with DAG(
         wait_for_completion=False,
     )
 
-    task_alembic_upgrade >> task_update_ano_atual >> task_trigger_enriquecimento
+    (
+        task_alembic_upgrade
+        >> task_update_ano_atual
+        >> task_sync_graph
+        >> task_trigger_enriquecimento
+    )

@@ -28,6 +28,7 @@ x-airflow-common:
     - ../airflow/config:/opt/airflow/config
     - ../injest_banco/:/opt/airflow/injest_banco
     - ../embeddings/:/opt/airflow/embeddings
+    - ../tasks/:/opt/airflow/tasks
     - ../shared/:/opt/airflow/shared
     - airflow_hf_cache:/opt/airflow/.cache/huggingface
   networks:
@@ -215,7 +216,7 @@ services:
         - -c
         - |
           # Garante que as pastas básicas existam no volume
-          mkdir -v -p /opt/airflow/{logs,dags,plugins,config,embeddings}
+          mkdir -v -p /opt/airflow/{logs,dags,plugins,config,embeddings,tasks}
 
           # Alinha as permissões de tudo dentro de /opt/airflow para o UID correto e Grupo 0
           echo "Corrigindo permissões de arquivos para ${AIRFLOW_UID:-50000}:0..."

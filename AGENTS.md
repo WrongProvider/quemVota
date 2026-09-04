@@ -86,7 +86,16 @@ O especialista em ETL da Câmara deve atuar ativamente na modernização, qualid
   2. **Interação Real via MCP:** Empregar as ferramentas do MCP do Playwright (`navigate`, `click`, `fill`, etc.) para simular a navegação e o fluxo completo do usuário nas telas modificadas.
   3. **Verificação de Integridade:** Checar logs de console (ausência de erros de JavaScript e chamadas HTTP com status de erro) e validar visualmente/estruturalmente os elementos e respostas da interface.
 
+### Orquestração Mandatória no Apache Airflow:
+**Regra Obrigatória de Automação e Recorrência:**
+Toda vez que for criado ou alterado um script de ETL (`injest_banco/`), enriquecimento, vetorização semântica (`embeddings/`), cálculo de temas/scores/grafos (`tasks/`) ou qualquer rotina batch que precise ser executada periodicamente ou mais de uma vez em produção, é **estritamente obrigatório** orquestrá-lo em uma DAG no Apache Airflow (`airflow/dags/`).
+- **Idempotência Obrigatória:** O script deve poder rodar repetidas vezes sem duplicar dados ou causar falhas (`ON CONFLICT`, detecção de pendências).
+- **Alinhamento de Ambiente:** O script deve ser compatível com execução via `uv run python ...` ou `BashOperator` dentro do container do Airflow (`airflow-common`), garantindo que diretórios necessários estejam devidamente montados como volumes no `deploy/docker-compose.yml`.
+- **Validação:** Qualquer inclusão ou alteração de DAG deve ter a sintaxe validada (`python -m py_compile airflow/dags/*.py`) e ser testada no scheduler do Airflow.
+
 ---
+
+
 
 ## 4. Como Executar Tarefas a partir de Specs (`specs/`)
 

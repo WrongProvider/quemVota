@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 from airflow.operators.bash import BashOperator
-from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 from airflow import DAG
 
@@ -37,4 +36,23 @@ with DAG(
         cwd="/opt/airflow/embeddings",
     )
 
-    task_alembic_upgrade >> task_update_embeddings
+    # Garante que a taxonomia canônica de 20 temas de atuação esteja semeada e vetorizada
+    task_seed_temas = BashOperator(
+        task_id="seed_temas_atuacao",
+        bash_command="uv run python /opt/airflow/tasks/seed_temas_atuacao.py",
+        cwd="/opt/airflow",
+    )
+
+    # Classifica proposições e agrega o perfil temático dos parlamentares da legislatura (SPEC-001)
+    task_classificar_temas = BashOperator(
+        task_id="classificar_temas_deputados",
+        bash_command="uv run python /opt/airflow/tasks/classificar_temas.py --legislatura 57",
+        cwd="/opt/airflow",
+    )
+
+    (
+        task_alembic_upgrade
+        >> task_update_embeddings
+        >> task_seed_temas
+        >> task_classificar_temas
+    )
