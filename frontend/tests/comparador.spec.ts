@@ -12,7 +12,7 @@ test.describe("Comparador Direto de Parlamentares", () => {
     })
 
     // 1. Acessa a rota /comparar
-    await page.goto("http://localhost:4173/comparar")
+    await page.goto("/comparar")
 
     // Valida título e elementos do landing
     await expect(page.locator("h1")).toContainText("Comparador de Parlamentares")
@@ -73,7 +73,7 @@ test.describe("Comparador Direto de Parlamentares", () => {
     })
 
     // Acessa diretamente a comparação
-    await page.goto("http://localhost:4173/comparar/alice-portugal/arthur-lira")
+    await page.goto("/comparar/alice-portugal/arthur-lira")
 
     // Valida título da página com os dois parlamentares
     await expect(page.locator("h1")).toContainText("Alice")
@@ -105,7 +105,7 @@ test.describe("Comparador Direto de Parlamentares", () => {
     page,
   }) => {
     // Navega para o perfil com radar de afinidades
-    await page.goto("http://localhost:4173/politicos/alice-portugal")
+    await page.goto("/politicos/alice-portugal")
 
     // Aguarda carregamento inicial do perfil
     await expect(page.locator("h1")).toContainText("Alice Portugal")

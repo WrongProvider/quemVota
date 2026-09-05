@@ -10,7 +10,7 @@ test.describe("Radar de Afinidades e Divergências de Voto", () => {
     })
 
     // Navega para o perfil do parlamentar com histórico amplo de votações
-    await page.goto("http://localhost:4173/politicos/alice-portugal")
+    await page.goto("/politicos/alice-portugal")
 
     // Aguarda o carregamento do perfil
     await expect(page.locator("h1")).toContainText("Alice Portugal")

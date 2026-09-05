@@ -10,7 +10,7 @@ test.describe("Fidelidade Partidária nas Votações Nominais", () => {
     })
 
     // Navega para o perfil de parlamentar com histórico de votações orientadas
-    await page.goto("http://localhost:4173/politicos/alice-portugal")
+    await page.goto("/politicos/alice-portugal")
 
     // Aguarda o carregamento do perfil
     await expect(page.locator("h1")).toContainText("Alice Portugal")

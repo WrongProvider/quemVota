@@ -10,7 +10,7 @@ test.describe("Rede de Coautoria e Parcerias Legislativas", () => {
     })
 
     // Navega para o perfil do parlamentar com histórico de coautoria
-    await page.goto("http://localhost:4173/politicos/alice-portugal")
+    await page.goto("/politicos/alice-portugal")
 
     // Aguarda o carregamento do perfil
     await expect(page.locator("h1")).toContainText("Alice Portugal")

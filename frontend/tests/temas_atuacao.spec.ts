@@ -19,7 +19,7 @@ test.describe("Temas de Atuação Parlamentar (SPEC-001)", () => {
     })
 
     // Navega para o perfil do deputado com temas calculados
-    await page.goto("http://localhost:4173/politicos/lucas-abrahao")
+    await page.goto("/politicos/lucas-abrahao")
 
     // Aguarda o carregamento do perfil
     await expect(page.locator("h1")).toContainText("Lucas Abrahao")
