@@ -613,6 +613,8 @@ class ProposicaoResumida(BaseModel):
     tipo_autoria: Optional[str] = None
 
     temas: List[str] = []
+    ultimo_status_situacao: Optional[str] = None
+    ultimo_status_orgao: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -628,11 +630,12 @@ class AtividadeLegislativaResponse(BaseModel):
 
     total_votacoes: int
     total_proposicoes: int
+    total_proponente: int = 0
+    total_coautor: int = 0
     limit_votacoes: int
     limit_proposicoes: int
     offset_votacoes: int
     offset_proposicoes: int
-
     ano: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)

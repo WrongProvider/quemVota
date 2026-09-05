@@ -9,6 +9,7 @@ Segurança (OWASP):
     defesa em profundidade.
 """
 
+from datetime import date
 import logging
 
 from shared.models import (
@@ -23,7 +24,7 @@ from shared.models import (
     Voto,
     proposicoesTemas,
 )
-from sqlalchemy import case, desc, func, select
+from sqlalchemy import String, case, cast, desc, func, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
@@ -601,26 +602,39 @@ class PoliticoRepository:
         limit: int = 20,
         offset: int = 0,
         q: str | None = None,
-    ) -> tuple[list, int]:
+        voto: str | None = None,
+        data_inicio: date | None = None,
+        data_fim: date | None = None,
+    ) -> tuple[list[VotacaoResumida], int]:
         safe_limit = min(abs(limit), 100)
         safe_offset = max(offset, 0)
 
         base_filter = [Voto.idDeputado == politico_id]
         if ano is not None:
             base_filter.append(func.extract("year", Votacao.data) == ano)
+        if voto and voto.strip():
+            base_filter.append(Voto.voto.ilike(voto.strip()))
+        if data_inicio is not None:
+            base_filter.append(Votacao.data >= data_inicio)
+        if data_fim is not None:
+            base_filter.append(Votacao.data <= data_fim)
+        if q and q.strip():
+            termo = f"%{q.strip()}%"
+            base_filter.append(
+                or_(
+                    Proposicao.ementa.ilike(termo),
+                    Proposicao.siglaTipo.ilike(termo),
+                    cast(Proposicao.numero, String).ilike(termo),
+                    Votacao.descricao.ilike(termo),
+                    Votacao.tipoVotacao.ilike(termo),
+                )
+            )
 
-        # if q:
-        #     termo = f"%{q}%"
-        #     stmt = stmt.where(
-        #         or_(
-        #             Votacao.ementa.ilike(termo),
-        #             Votacao.proposicao_sigla.ilike(termo) # Se houver campos em comum
-        #         )
-        #     )
         stmt_count = (
             select(func.count())
             .select_from(Voto)
             .join(Votacao, Votacao.id == Voto.idVotacao)
+            .outerjoin(Proposicao, Proposicao.id == Votacao.idProposicao)
             .where(*base_filter)
         )
 
@@ -642,7 +656,7 @@ class PoliticoRepository:
             .join(Votacao, Votacao.id == Voto.idVotacao)
             .outerjoin(Proposicao, Proposicao.id == Votacao.idProposicao)
             .where(*base_filter)
-            .order_by(desc(Votacao.data))
+            .order_by(desc(Votacao.data), desc(Votacao.id))
             .limit(safe_limit)
             .offset(safe_offset)
         )
@@ -690,29 +704,62 @@ class PoliticoRepository:
         limit: int = 20,
         offset: int = 0,
         q: str | None = None,
-    ) -> tuple[list, int]:
-
+        proponente: bool | None = None,
+        sigla_tipo: str | None = None,
+        data_inicio: date | None = None,
+        data_fim: date | None = None,
+    ) -> tuple[list[ProposicaoResumida], int, int, int]:
         safe_limit = min(abs(limit), 100)
         safe_offset = max(offset, 0)
 
-        base_filter = [ProposicaoAutor.idDeputadoAutor == politico_id]
+        base_filter_common = [ProposicaoAutor.idDeputadoAutor == politico_id]
         if ano is not None:
-            base_filter.append(Proposicao.ano == ano)
+            base_filter_common.append(Proposicao.ano == ano)
+        if sigla_tipo and sigla_tipo.strip():
+            base_filter_common.append(Proposicao.siglaTipo.ilike(sigla_tipo.strip()))
+        if data_inicio is not None:
+            base_filter_common.append(func.date(Proposicao.dataApresentacao) >= data_inicio)
+        if data_fim is not None:
+            base_filter_common.append(func.date(Proposicao.dataApresentacao) <= data_fim)
+        if q and q.strip():
+            termo = f"%{q.strip()}%"
+            base_filter_common.append(
+                or_(
+                    Proposicao.ementa.ilike(termo),
+                    Proposicao.siglaTipo.ilike(termo),
+                    cast(Proposicao.numero, String).ilike(termo),
+                    Proposicao.keywords.ilike(termo),
+                )
+            )
 
-        # if q:
-        #     termo = f"%{q}%"
-        #     stmt = stmt.where(
-        #         or_(
-        #             Votacao.ementa.ilike(termo),
-        #             Votacao.proposicao_sigla.ilike(termo) # Se houver campos em comum
-        #         )
-        #     )
-        stmt_count = (
-            select(func.count(func.distinct(ProposicaoAutor.idProposicao)))
+        stmt_counts = (
+            select(
+                func.count(func.distinct(ProposicaoAutor.idProposicao)).label("total"),
+                func.count(
+                    func.distinct(
+                        case(
+                            (ProposicaoAutor.proponente.is_(True), ProposicaoAutor.idProposicao),
+                            else_=None,
+                        )
+                    )
+                ).label("total_proponente"),
+                func.count(
+                    func.distinct(
+                        case(
+                            (ProposicaoAutor.proponente.is_(False), ProposicaoAutor.idProposicao),
+                            else_=None,
+                        )
+                    )
+                ).label("total_coautor"),
+            )
             .select_from(ProposicaoAutor)
             .join(Proposicao, Proposicao.id == ProposicaoAutor.idProposicao)
-            .where(*base_filter)
+            .where(*base_filter_common)
         )
+
+        base_filter_data = list(base_filter_common)
+        if proponente is not None:
+            base_filter_data.append(ProposicaoAutor.proponente.is_(proponente))
 
         stmt_ids = (
             select(
@@ -721,14 +768,14 @@ class PoliticoRepository:
                 ProposicaoAutor.tipoAutor.label("tipo_autoria"),
             )
             .join(Proposicao, Proposicao.id == ProposicaoAutor.idProposicao)
-            .where(*base_filter)
-            .order_by(desc(Proposicao.dataApresentacao))
+            .where(*base_filter_data)
+            .order_by(desc(Proposicao.dataApresentacao), desc(Proposicao.id))
             .limit(safe_limit)
             .offset(safe_offset)
         )
 
         try:
-            res_count = await self.db.execute(stmt_count)
+            res_counts = await self.db.execute(stmt_counts)
             res_ids = await self.db.execute(stmt_ids)
         except SQLAlchemyError:
             logger.exception(
@@ -736,11 +783,19 @@ class PoliticoRepository:
             )
             raise
 
-        total = res_count.scalar() or 0
-        autoria_rows = res_ids.mappings().all()
+        row_counts = res_counts.mappings().one()
+        total_proponente = row_counts["total_proponente"] or 0
+        total_coautor = row_counts["total_coautor"] or 0
+        if proponente is True:
+            total = total_proponente
+        elif proponente is False:
+            total = total_coautor
+        else:
+            total = row_counts["total"] or 0
 
+        autoria_rows = res_ids.mappings().all()
         if not autoria_rows:
-            return [], total
+            return [], total, total_proponente, total_coautor
 
         autoria_map: dict[int, dict] = {
             row["idProposicao"]: {
@@ -755,7 +810,6 @@ class PoliticoRepository:
             select(Proposicao)
             .where(Proposicao.id.in_(ids_paginados))
             .options(selectinload(Proposicao.temas))
-            .order_by(desc(Proposicao.dataApresentacao))
         )
 
         try:
@@ -767,6 +821,7 @@ class PoliticoRepository:
             raise
 
         proposicoes_orm = res_props.scalars().all()
+        proposicoes_by_id = {p.id: p for p in proposicoes_orm}
 
         proposicoes = [
             ProposicaoResumida(
@@ -782,12 +837,15 @@ class PoliticoRepository:
                 url_inteiro_teor=p.urlInteiroTeor,
                 proponente=autoria_map[p.id]["proponente"],
                 tipo_autoria=autoria_map[p.id]["tipo_autoria"],
-                temas=[t.tema for t in p.temas],
+                temas=[t.tema for t in p.temas] if p.temas else [],
+                ultimo_status_situacao=p.ultimoStatus_descricaoSituacao,
+                ultimo_status_orgao=p.ultimoStatus_siglaOrgao,
             )
-            for p in proposicoes_orm
+            for pid in ids_paginados
+            if (p := proposicoes_by_id.get(pid)) is not None
         ]
 
-        return proposicoes, total
+        return proposicoes, total, total_proponente, total_coautor
 
     # ------------------------------------------------------------------
     # Comparação de Votações (Relacional)

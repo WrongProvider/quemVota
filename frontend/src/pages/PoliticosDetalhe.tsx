@@ -14,6 +14,7 @@ import PainelTemasAtuacao from "../components/PainelTemasAtuacao"
 import PainelFidelidadePartidaria from "../components/PainelFidelidadePartidaria"
 import PainelRadarAfinidades from "../components/PainelRadarAfinidades"
 import PainelRedeCoautoria from "../components/PainelRedeCoautoria"
+import HistoricoProjetos from "../components/HistoricoProjetos"
 import InfoBotao from "../components/InfoDicaBotao"
 import ToolDica from "../components/InfoDica"
 import Header from "../components/Header"
@@ -45,9 +46,13 @@ import {
   ArrowLeftRight,
   AlertCircle,
   Clock,
+  FileText,
+  Search,
+  X,
 } from "lucide-react"
 import { useRegistrarBusca } from "../hooks/useBuscaPopular"
 import { useVotacao } from "../hooks/useProposicoes"
+import { useDebounce } from "../hooks/useDebounce"
 import { type VotacaoResumida, nomeParaSlug } from "../api/politicos.api"
 import ModalSelecionarPolitico from "../components/ModalSelecionarPolitico"
 import { formatarMoedaBRL, formatarNumero } from "../utils/formatters"
@@ -321,11 +326,11 @@ export default function PoliticoDetalhe() {
   const isNumerico = /^\d+$/.test(idOuSlug ?? "")
 
   const [anoSelecionado, setAnoSelecionado] = useState<number | null>(null)
-  const [abaAtiva, setAbaAtiva] = useState<"visao-geral" | "votacoes" | "gastos" | "atuacao">("visao-geral")
+  const [abaAtiva, setAbaAtiva] = useState<"visao-geral" | "votacoes" | "projetos" | "gastos" | "atuacao">("visao-geral")
   const [avisoSaidaAberto, setAvisoSaidaAberto] = useState(false)
   const [modalCompararAberto, setModalCompararAberto] = useState(false)
 
-  const scrollParaSecao = (id: string, aba: "visao-geral" | "votacoes" | "gastos" | "atuacao") => {
+  const scrollParaSecao = (id: string, aba: "visao-geral" | "votacoes" | "projetos" | "gastos" | "atuacao") => {
     setAbaAtiva(aba)
     const el = document.querySelector(`[data-testid="${id}"]`) || document.getElementById(id)
     if (el) {
@@ -341,9 +346,10 @@ export default function PoliticoDetalhe() {
   useEffect(() => {
     const secoes = [
       { id: "section-stats", aba: "visao-geral" as const },
-      { id: "section-atuacao", aba: "atuacao" as const },
-      { id: "section-historico-de-gastos", aba: "gastos" as const },
       { id: "section-votacoes", aba: "votacoes" as const },
+      { id: "section-projetos", aba: "projetos" as const },
+      { id: "section-historico-de-gastos", aba: "gastos" as const },
+      { id: "section-atuacao", aba: "atuacao" as const },
     ]
 
     const handleScroll = () => {
@@ -677,6 +683,18 @@ export default function PoliticoDetalhe() {
                 <span>Votações</span>
               </button>
               <button
+                data-testid="tab-projetos"
+                onClick={() => scrollParaSecao("section-projetos", "projetos")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
+                  abaAtiva === "projetos"
+                    ? "bg-slate-900 text-white font-semibold shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+              >
+                <FileText size={14} />
+                <span>Projetos</span>
+              </button>
+              <button
                 data-testid="tab-gastos"
                 onClick={() => scrollParaSecao("section-historico-de-gastos", "gastos")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
@@ -917,6 +935,11 @@ export default function PoliticoDetalhe() {
               <HistoricoVotacoes politicoId={data.id} anoSelecionado={anoSelecionado} />
             </section>
           </div>
+
+          {/* ── PROJETOS E PROPOSIÇÕES DO PARLAMENTAR ── */}
+          <section id="section-projetos" data-testid="section-projetos">
+            <HistoricoProjetos politicoId={data.id} anoSelecionado={anoSelecionado} />
+          </section>
         </div>
       </div>
 
@@ -1202,16 +1225,29 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
   const PAGE_SIZE = 15
   const [offset, setOffset] = useState(0)
   const [filtroVoto, setFiltroVoto] = useState<string>("")
+  const [busca, setBusca] = useState<string>("")
+  const [dataInicio, setDataInicio] = useState<string>("")
+  const [dataFim, setDataFim] = useState<string>("")
   const [votacaoAberta, setVotacaoAberta] = useState<{ id: number; voto: string } | null>(null)
 
+  const buscaDebounced = useDebounce(busca.trim(), 400)
+
   // Reseta página ao trocar filtros ou ano
-  useEffect(() => { setOffset(0) }, [anoSelecionado, filtroVoto])
+  useEffect(() => {
+    setOffset(0)
+  }, [anoSelecionado, filtroVoto, buscaDebounced, dataInicio, dataFim])
 
   // Fecha painel ao trocar de página
-  useEffect(() => { setVotacaoAberta(null) }, [offset])
+  useEffect(() => {
+    setVotacaoAberta(null)
+  }, [offset])
 
   const { data: atividade, isLoading } = usePoliticoAtividade(politicoId, {
     ano: anoSelecionado ?? undefined,
+    q_votacao: buscaDebounced || undefined,
+    voto: filtroVoto || undefined,
+    data_inicio_votacao: dataInicio || undefined,
+    data_fim_votacao: dataFim || undefined,
     limit_votacoes: PAGE_SIZE,
     offset_votacoes: offset,
   })
@@ -1235,13 +1271,20 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
   const votacoes: VotacaoResumida[] = (atividade?.votacoes ?? []).map(normalizarVotacao)
   const total = atividade?.total_votacoes ?? 0
 
-  const votacoesFiltradas = filtroVoto
-    ? votacoes.filter((v) => v.voto === filtroVoto)
-    : votacoes
-
   const pagina = Math.floor(offset / PAGE_SIZE) + 1
+  const totalPaginas = Math.ceil(total / PAGE_SIZE)
   const temAnterior = offset > 0
-  const temProxima = votacoes.length === PAGE_SIZE
+  const temProxima = offset + PAGE_SIZE < total
+
+  const temFiltroAtivo = Boolean(busca || filtroVoto || dataInicio || dataFim)
+
+  const limparFiltros = () => {
+    setBusca("")
+    setFiltroVoto("")
+    setDataInicio("")
+    setDataFim("")
+    setOffset(0)
+  }
 
   const formatarData = (iso: string | null | undefined) => {
     if (!iso) return "—"
@@ -1258,32 +1301,96 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
         }
       `}</style>
 
-      <section className="section-fade">
-        <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+      <section className="section-fade space-y-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <Vote size={18} className="text-blue-500" />
             <h2 className="display-font text-xl font-bold text-slate-800">Histórico de Votações</h2>
             {total > 0 && (
-              <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+              <span data-testid="votacoes-total-badge" className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
                 {total.toLocaleString("pt-BR")} registros
               </span>
             )}
           </div>
+        </div>
 
-          <div className="relative">
-            <select
-              data-testid="filter-voto-select"
-              value={filtroVoto}
-              onChange={(e) => setFiltroVoto(e.target.value)}
-              className="appearance-none text-sm border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all cursor-pointer"
-            >
-              <option value="">Todos os votos</option>
-              <option value="Sim">Sim</option>
-              <option value="Não">Não</option>
-              <option value="Obstrução">Obstrução</option>
-              <option value="Abstenção">Abstenção</option>
-            </select>
-            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        {/* ── BARRA DE FILTROS CÍVICA DE VOTAÇÕES ── */}
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+            {/* Campo de Busca Textual */}
+            <div className="relative flex-1">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                data-testid="input-busca-votacoes"
+                type="text"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar por nº, sigla ou ementa (ex: PL 74, tributário)..."
+                className="w-full text-sm pl-9 pr-8 py-1.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+              />
+              {busca && (
+                <button
+                  onClick={() => setBusca("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  aria-label="Limpar busca"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            {/* Dropdown de Voto */}
+            <div className="relative">
+              <select
+                data-testid="filter-voto-select"
+                value={filtroVoto}
+                onChange={(e) => setFiltroVoto(e.target.value)}
+                className="appearance-none text-xs border border-slate-200 rounded-xl pl-3 pr-8 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 cursor-pointer"
+              >
+                <option value="">Todos os votos</option>
+                <option value="Sim">Sim</option>
+                <option value="Não">Não</option>
+                <option value="Obstrução">Obstrução</option>
+                <option value="Abstenção">Abstenção</option>
+              </select>
+              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Filtro por Datas e Botão Limpar */}
+          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100 text-xs">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-slate-500 font-medium flex items-center gap-1">
+                <Calendar size={13} className="text-slate-400" /> Período:
+              </span>
+              <input
+                data-testid="input-data-inicio-votacao"
+                type="date"
+                value={dataInicio}
+                onChange={(e) => setDataInicio(e.target.value)}
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                aria-label="Data inicial da votação"
+              />
+              <span className="text-slate-400">até</span>
+              <input
+                data-testid="input-data-fim-votacao"
+                type="date"
+                value={dataFim}
+                onChange={(e) => setDataFim(e.target.value)}
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                aria-label="Data final da votação"
+              />
+            </div>
+
+            {temFiltroAtivo && (
+              <button
+                data-testid="btn-limpar-filtros-votacoes"
+                onClick={limparFiltros}
+                className="ml-auto inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium py-0.5 px-1"
+              >
+                <X size={12} /> Limpar filtros
+              </button>
+            )}
           </div>
         </div>
 
@@ -1293,14 +1400,20 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
               <Loader2 size={20} className="animate-spin" />
               <span className="text-sm">Carregando votações...</span>
             </div>
-          ) : votacoesFiltradas.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+          ) : votacoes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-slate-400 px-4 text-center">
               <Vote size={32} className="mb-3 opacity-30" />
-              <p className="text-sm">
-                {filtroVoto
-                  ? `Nenhum voto "${filtroVoto}" encontrado${anoSelecionado ? ` em ${anoSelecionado}` : ""}.`
-                  : `Sem votações registradas${anoSelecionado ? ` em ${anoSelecionado}` : ""}.`}
+              <p className="text-sm font-medium text-slate-600">
+                Nenhuma votação encontrada para os critérios selecionados.
               </p>
+              {temFiltroAtivo && (
+                <button
+                  onClick={limparFiltros}
+                  className="mt-3 text-xs text-blue-600 hover:underline font-semibold"
+                >
+                  Limpar filtros
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -1314,7 +1427,7 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
               </div>
 
               <div data-testid="votacoes-list" className="divide-y divide-slate-100">
-                {votacoesFiltradas.map((v, i) => {
+                {votacoes.map((v, i) => {
                   const ativo = votacaoAberta?.id === v.id_votacao
                   const anoVoto = v.data ? new Date(v.data).getFullYear() : null
                   const gapAnos = anoVoto && v.proposicao_ano ? anoVoto - v.proposicao_ano : 0
@@ -1412,7 +1525,9 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
                   >
                     <ArrowLeft size={12} /> Anterior
                   </button>
-                  <span className="text-xs text-slate-400">Página {pagina}</span>
+                  <span className="text-xs text-slate-500 font-medium">
+                    Página {pagina} de {Math.max(1, totalPaginas)} ({total.toLocaleString("pt-BR")} registros)
+                  </span>
                   <button
                     disabled={!temProxima}
                     onClick={() => setOffset(offset + PAGE_SIZE)}

@@ -11,6 +11,7 @@ Segurança (OWASP):
     negócio isolada do transporte HTTP.
 """
 
+from datetime import date
 import logging
 
 from fastapi import HTTPException, status
@@ -363,12 +364,22 @@ class PoliticoService:
         limit_votacoes: int = 20,
         limit_proposicoes: int = 20,
         q: str | None = None,
+        q_votacao: str | None = None,
+        voto: str | None = None,
+        data_inicio_votacao: date | None = None,
+        data_fim_votacao: date | None = None,
+        q_proposicao: str | None = None,
+        sigla_tipo_proposicao: str | None = None,
+        proponente: bool | None = None,
+        data_inicio_proposicao: date | None = None,
+        data_fim_proposicao: date | None = None,
         offset_votacoes: int = 0,
         offset_proposicoes: int = 0,
     ) -> "AtividadeLegislativaResponse":
         """
         Retorna em uma única chamada as votações nominais e as proposições
-        em que o parlamentar é autor ou coautor.
+        em que o parlamentar é autor ou coautor, aplicando filtros específicos
+        ou compartilhados com paginação independente.
 
         As duas queries ao banco são disparadas em sequência na mesma sessão:
         o asyncpg não suporta operações concorrentes numa única conexão, e
@@ -390,19 +401,29 @@ class PoliticoService:
         safe_ov = max(offset_votacoes, 0)
         safe_op = max(offset_proposicoes, 0)
 
+        term_votacao = q_votacao or q
+        term_proposicao = q_proposicao or q
+
         # Queries sequenciais na mesma sessão — evita concorrência na mesma
         # conexão asyncpg (InterfaceError: "another operation is in progress")
         votacoes, total_v = await self._repo.get_atividade_votacoes_repo(
             deputado_id,
-            q=q,
+            q=term_votacao,
+            voto=voto,
+            data_inicio=data_inicio_votacao,
+            data_fim=data_fim_votacao,
             ano=ano,
             limit=safe_lv,
             offset=safe_ov,
         )
-        proposicoes, total_p = await self._repo.get_atividade_proposicoes_repo(
+        proposicoes, total_p, total_prop, total_coaut = await self._repo.get_atividade_proposicoes_repo(
             deputado_id,
             ano=ano,
-            q=q,
+            q=term_proposicao,
+            proponente=proponente,
+            sigla_tipo=sigla_tipo_proposicao,
+            data_inicio=data_inicio_proposicao,
+            data_fim=data_fim_proposicao,
             limit=safe_lp,
             offset=safe_op,
         )
@@ -412,6 +433,8 @@ class PoliticoService:
             proposicoes=proposicoes,
             total_votacoes=total_v,
             total_proposicoes=total_p,
+            total_proponente=total_prop,
+            total_coautor=total_coaut,
             limit_votacoes=safe_lv,
             limit_proposicoes=safe_lp,
             offset_votacoes=safe_ov,

@@ -15,6 +15,7 @@ Segurança (OWASP):
     pessoais); nenhum stack trace chega ao cliente.
 """
 
+from datetime import date
 import logging
 from typing import Annotated, Optional
 
@@ -515,8 +516,47 @@ async def atividade_legislativa(
     ano: AnoQuery = None,
     q: Annotated[
         Optional[str],
-        Query(max_length=150, description="Busca por termo na ementa ou sigla"),
+        Query(max_length=150, description="Busca textual genérica"),
     ] = None,
+    # Filtros de Votações
+    q_votacao: Annotated[
+        Optional[str],
+        Query(max_length=150, description="Busca textual em votações"),
+    ] = None,
+    voto: Annotated[
+        Optional[str],
+        Query(max_length=50, description="Filtrar por voto (ex: Sim, Não, Abstenção, Obstrução)"),
+    ] = None,
+    data_inicio_votacao: Annotated[
+        Optional[date],
+        Query(description="Data de início das votações (AAAA-MM-DD)"),
+    ] = None,
+    data_fim_votacao: Annotated[
+        Optional[date],
+        Query(description="Data de fim das votações (AAAA-MM-DD)"),
+    ] = None,
+    # Filtros de Proposições
+    q_proposicao: Annotated[
+        Optional[str],
+        Query(max_length=150, description="Busca textual em proposições"),
+    ] = None,
+    sigla_tipo_proposicao: Annotated[
+        Optional[str],
+        Query(max_length=20, description="Sigla do tipo de proposição (ex: PL, PEC, REQ)"),
+    ] = None,
+    proponente: Annotated[
+        Optional[bool],
+        Query(description="true para autor principal, false para coautor"),
+    ] = None,
+    data_inicio_proposicao: Annotated[
+        Optional[date],
+        Query(description="Data de início da apresentação (AAAA-MM-DD)"),
+    ] = None,
+    data_fim_proposicao: Annotated[
+        Optional[date],
+        Query(description="Data de fim da apresentação (AAAA-MM-DD)"),
+    ] = None,
+    # Paginação
     limit_votacoes: Annotated[int, Query(ge=1, le=100)] = 20,
     limit_proposicoes: Annotated[int, Query(ge=1, le=100)] = 20,
     offset_votacoes: Annotated[int, Query(ge=0)] = 0,
@@ -524,21 +564,33 @@ async def atividade_legislativa(
     service: PoliticoService = Depends(_politico_service),
 ):
     logger.info(
-        "Atividade legislativa | deputado id=%s ano=%s q=%s lv=%s lp=%s ov=%s op=%s",
+        "Atividade legislativa | deputado id=%s ano=%s q=%s q_v=%s voto=%s q_p=%s prop=%s lv=%s lp=%s ov=%s op=%s",
         politico_id,
         ano,
         q,
+        q_votacao,
+        voto,
+        q_proposicao,
+        proponente,
         limit_votacoes,
         limit_proposicoes,
         offset_votacoes,
         offset_proposicoes,
     )
 
-    # Repassar 'q' para o serviço
     return await service.get_politico_atividade_legislativa_service(
         deputado_id=politico_id,
         ano=ano,
-        q=q,  # <- NOVO
+        q=q,
+        q_votacao=q_votacao,
+        voto=voto,
+        data_inicio_votacao=data_inicio_votacao,
+        data_fim_votacao=data_fim_votacao,
+        q_proposicao=q_proposicao,
+        sigla_tipo_proposicao=sigla_tipo_proposicao,
+        proponente=proponente,
+        data_inicio_proposicao=data_inicio_proposicao,
+        data_fim_proposicao=data_fim_proposicao,
         limit_votacoes=limit_votacoes,
         limit_proposicoes=limit_proposicoes,
         offset_votacoes=offset_votacoes,

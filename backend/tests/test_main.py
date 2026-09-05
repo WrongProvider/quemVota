@@ -99,3 +99,21 @@ async def test_proposicoes_filtro_ano_votacao(client):
     assert isinstance(data, list)
 
 
+async def test_politico_atividade_legislativa_filtros(client):
+    # Testa filtros específicos de votação e proposições
+    response = await client.get(
+        "/politicos/213/atividade-legislativa?q_votacao=PL&voto=Sim&limit_votacoes=5&limit_proposicoes=5&proponente=true"
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "total_proponente" in data
+    assert "total_coautor" in data
+    assert isinstance(data["proposicoes"], list)
+    # Todas as proposições retornadas devem ser proponente=True
+    for p in data["proposicoes"]:
+        assert p["proponente"] is True
+        assert "ultimo_status_situacao" in p
+        assert "ultimo_status_orgao" in p
+
+
+

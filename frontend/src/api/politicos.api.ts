@@ -370,6 +370,19 @@ export async function fetchPoliticoTimeline(
 /** Parâmetros opcionais para o endpoint de atividade legislativa */
 export interface AtividadeLegislativaParams {
   ano?: number                // filtra por ano (respeita o seletor da página)
+  q?: string                  // busca textual genérica
+  // Filtros de Votações
+  q_votacao?: string          // busca textual em votações
+  voto?: string               // "Sim", "Não", "Abstenção", "Obstrução"...
+  data_inicio_votacao?: string // AAAA-MM-DD
+  data_fim_votacao?: string   // AAAA-MM-DD
+  // Filtros de Proposições
+  q_proposicao?: string       // busca textual em proposições
+  sigla_tipo_proposicao?: string // "PL", "PEC", "REQ", etc.
+  proponente?: boolean        // true para autor principal, false para coautor
+  data_inicio_proposicao?: string // AAAA-MM-DD
+  data_fim_proposicao?: string    // AAAA-MM-DD
+  // Paginação
   limit_votacoes?: number     // padrão: 20, máx: 100
   offset_votacoes?: number
   limit_proposicoes?: number  // padrão: 20, máx: 100
@@ -406,6 +419,8 @@ export interface ProposicaoResumida {
   readonly proponente: boolean
   readonly tipo_autoria: string | null
   readonly temas: string[]
+  readonly ultimo_status_situacao?: string | null
+  readonly ultimo_status_orgao?: string | null
 }
 
 /** Resposta consolidada de GET /politicos/{id}/atividade-legislativa */
@@ -414,6 +429,8 @@ export interface AtividadeLegislativaResponse {
   readonly proposicoes: ProposicaoResumida[]
   readonly total_votacoes: number
   readonly total_proposicoes: number
+  readonly total_proponente: number
+  readonly total_coautor: number
   readonly limit_votacoes: number
   readonly limit_proposicoes: number
   readonly offset_votacoes: number
