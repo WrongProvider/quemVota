@@ -78,6 +78,9 @@ O especialista em ETL da Câmara deve atuar ativamente na modernização, qualid
 - **Segurança SQL:** NUNCA concatene strings em queries brutas. Use sempre queries parametrizadas (`%s`, `:param`) ou queries via SQLAlchemy ORM / Core.
 - **Idempotência em Upserts:** Ao utilizar `insert(...).on_conflict_do_update(...)`, informe explicitamente os `index_elements` correspondentes às chaves de unicidade (ex: `index_elements=["tipoEntidade", "idEntidade", "modelo"]`).
 - **Modelo de Embeddings:** O modelo padrão obrigatório é `BAAI/bge-m3` com dimensão fixa de **1024**, normalizado para distância por cosseno (`vector_cosine_ops`).
+- **Persistência Estrutural Obrigatória (Slugs e Metadados):**
+  - Campos estruturais essenciais para a API e rotas do frontend (como `deputados.slug`, constraints e índices únicos) NUNCA devem depender de comandos ad-hoc manuais no terminal.
+  - Devem ser formalizados via migrations do Alembic (`alembic revision -m "..."`) ou em rotinas idempotentes de seed/bootstrap do ETL com execução garantida.
 
 ### Frontend & Testes End-to-End Obrigatórios (Playwright MCP):
 - **Stack:** React + TypeScript + Vite.
@@ -86,6 +89,12 @@ O especialista em ETL da Câmara deve atuar ativamente na modernização, qualid
   1. **Disponibilidade do Ambiente:** Assegurar que a aplicação frontend (e APIs dependentes, se necessário) esteja em execução no ambiente local (`npm run dev` ou build de preview).
   2. **Interação Real via MCP:** Empregar as ferramentas do MCP do Playwright (`navigate`, `click`, `fill`, etc.) para simular a navegação e o fluxo completo do usuário nas telas modificadas.
   3. **Verificação de Integridade:** Checar logs de console (ausência de erros de JavaScript e chamadas HTTP com status de erro) e validar visualmente/estruturalmente os elementos e respostas da interface.
+- **Suíte de Regressão Global no Definition of Done:**
+  - Além de testar a nova tela, é estritamente obrigatório rodar a suíte de regressão automatizada do frontend antes de declarar conclusão:
+    ```bash
+    BASE_URL=http://localhost npx playwright test tests/dinamica_site.spec.ts --project=chromium
+    ```
+  - Nenhuma alteração é considerada pronta se quebrar telas, abas ou painéis cívicos adjacentes já consolidados.
 
 ### Orquestração Mandatória no Apache Airflow:
 **Regra Obrigatória de Automação e Recorrência:**
@@ -133,7 +142,15 @@ O uso de **Git Worktrees é obrigatório** para todo e qualquer agente autônomo
 3. **Commit Padronizado:**
    - Seguir Conventional Commits (`feat:`, `fix:`, `test:`).
    - Proibido commitar arquivos temporários, logs (`*.log`), caches (`.ruff_cache`, `.pytest_cache`) ou `.env`.
-4. **Limpeza e Descarte Seguro:**
+4. **Sincronização Pré-Merge e Regra Anti-Clobber (ESTRITAMENTE OBRIGATÓRIA):**
+   - **Proibição Absoluta de Cópia Manual entre Pastas:** É terminantemente proibido usar comandos como `cp`, scripts de cópia ou substituição direta de arquivos de uma pasta de worktree desatualizada por cima do repositório raiz ou branch `main`. Essa prática destrói o histórico de merge e sobrescreve silenciosamente o trabalho concorrente de outros agentes.
+   - **Rebase Obrigatório antes de Integrar:** Antes de realizar merge ou abrir PR para a `main`, o agente DEVE atualizar a branch da worktree em relação à `main` mais recente:
+     ```bash
+     git fetch origin main  # ou git fetch local
+     git rebase main
+     ```
+   - **Resolução Granular de Conflitos:** Conflitos de merge devem ser resolvidos linha a linha. Se uma página (ex: `PoliticosDetalhe.tsx`) tiver recebido novos painéis ou redesign no `main`, a nova funcionalidade deve ser incorporada dentro da estrutura moderna, jamais revertendo o arquivo para o formato antigo da branch.
+5. **Limpeza e Descarte Seguro:**
    - Nunca deixe worktrees órfãs. Após validação e merge/PR, execute:
      ```bash
      git worktree remove --force .worktrees/<id-da-tarefa>
