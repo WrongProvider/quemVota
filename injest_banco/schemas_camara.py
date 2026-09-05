@@ -485,3 +485,162 @@ class EventoCamaraSchema(BaseCamaraSchema):
     @classmethod
     def clean_datetimes(cls, v: Any) -> Optional[datetime]:
         return parse_flexible_datetime(v)
+
+
+class PartidoCamaraSchema(BaseCamaraSchema):
+    """Validação estrita de dados cadastrais de Partidos Políticos."""
+
+    idCamara: int
+    sigla: str
+    nome: str
+    uri: Optional[str] = None
+    numeroEleitoral: Optional[int] = None
+    situacao: Optional[str] = None
+    totalMembros: Optional[int] = None
+    totalPosse: Optional[int] = None
+    urlLogo: Optional[str] = None
+    urlWebsite: Optional[str] = None
+    urlFacebook: Optional[str] = None
+
+    @field_validator(
+        "sigla",
+        "nome",
+        "uri",
+        "situacao",
+        "urlLogo",
+        "urlWebsite",
+        "urlFacebook",
+        mode="before",
+    )
+    @classmethod
+    def clean_strings(cls, v: Any) -> Optional[str]:
+        return sanitize_text(v)
+
+    @field_validator(
+        "idCamara", "numeroEleitoral", "totalMembros", "totalPosse", mode="before"
+    )
+    @classmethod
+    def clean_ints(cls, v: Any) -> Optional[int]:
+        return parse_flexible_int(v)
+
+
+class TramitacaoCamaraSchema(BaseCamaraSchema):
+    """Validação de passos de tramitação legislativa de proposições."""
+
+    idProposicaoCamara: int
+    sequencia: int
+    dataHora: datetime
+    siglaOrgao: Optional[str] = None
+    uriOrgao: Optional[str] = None
+    uriUltimoRelator: Optional[str] = None
+    regime: Optional[str] = None
+    descricaoTramitacao: Optional[str] = None
+    codTipoTramitacao: Optional[int] = None
+    descricaoSituacao: Optional[str] = None
+    codSituacao: Optional[int] = None
+    despacho: Optional[str] = None
+    url: Optional[str] = None
+    ambito: Optional[str] = None
+    apreciacao: Optional[str] = None
+
+    @field_validator(
+        "siglaOrgao",
+        "uriOrgao",
+        "uriUltimoRelator",
+        "regime",
+        "descricaoTramitacao",
+        "descricaoSituacao",
+        "despacho",
+        "url",
+        "ambito",
+        "apreciacao",
+        mode="before",
+    )
+    @classmethod
+    def clean_strings(cls, v: Any) -> Optional[str]:
+        return sanitize_text(v)
+
+    @field_validator(
+        "idProposicaoCamara",
+        "sequencia",
+        "codTipoTramitacao",
+        "codSituacao",
+        mode="before",
+    )
+    @classmethod
+    def clean_ints(cls, v: Any) -> Optional[int]:
+        return parse_flexible_int(v)
+
+    @field_validator("dataHora", mode="before")
+    @classmethod
+    def clean_datetimes(cls, v: Any) -> Optional[datetime]:
+        return parse_flexible_datetime(v)
+
+
+class DeputadoHistoricoSchema(BaseCamaraSchema):
+    """Validação de histórico de mandatos, suplências e licenças de deputados."""
+
+    idDeputadoCamara: int
+    idLegislatura: Optional[int] = None
+    dataInicio: datetime
+    dataFim: Optional[datetime] = None
+    nome: Optional[str] = None
+    siglaPartido: Optional[str] = None
+    siglaUF: Optional[str] = None
+    idPartido: Optional[int] = None
+    condicao: Optional[str] = None
+    situacao: Optional[str] = None
+    descricao: Optional[str] = None
+
+    @field_validator(
+        "nome",
+        "siglaPartido",
+        "siglaUF",
+        "condicao",
+        "situacao",
+        "descricao",
+        mode="before",
+    )
+    @classmethod
+    def clean_strings(cls, v: Any) -> Optional[str]:
+        return sanitize_text(v)
+
+    @field_validator("idDeputadoCamara", "idLegislatura", "idPartido", mode="before")
+    @classmethod
+    def clean_ints(cls, v: Any) -> Optional[int]:
+        return parse_flexible_int(v)
+
+    @field_validator("dataInicio", "dataFim", mode="before")
+    @classmethod
+    def clean_datetimes(cls, v: Any) -> Optional[datetime]:
+        return parse_flexible_datetime(v)
+
+
+class DeputadoMandatoExternoSchema(BaseCamaraSchema):
+    """Validação de mandatos externos (cargos anteriores fora da Câmara)."""
+
+    idDeputadoCamara: int
+    cargo: str
+    siglaUF: Optional[str] = None
+    municipio: Optional[str] = None
+    anoInicio: Optional[int] = None
+    anoFim: Optional[int] = None
+    siglaPartidoEleicao: Optional[str] = None
+    uriPartidoEleicao: Optional[str] = None
+
+    @field_validator(
+        "cargo",
+        "siglaUF",
+        "municipio",
+        "siglaPartidoEleicao",
+        "uriPartidoEleicao",
+        mode="before",
+    )
+    @classmethod
+    def clean_strings(cls, v: Any) -> Optional[str]:
+        return sanitize_text(v)
+
+    @field_validator("idDeputadoCamara", "anoInicio", "anoFim", mode="before")
+    @classmethod
+    def clean_ints(cls, v: Any) -> Optional[int]:
+        return parse_flexible_int(v)

@@ -9,10 +9,14 @@ from datetime import date, datetime
 
 from injest_banco.schemas_camara import (
     DeputadoCamaraSchema,
+    DeputadoHistoricoSchema,
+    DeputadoMandatoExternoSchema,
     DespesaCamaraSchema,
     EventoCamaraSchema,
     OrgaoCamaraSchema,
+    PartidoCamaraSchema,
     ProposicaoCamaraSchema,
+    TramitacaoCamaraSchema,
     VotacaoCamaraSchema,
     VotacaoVotoSchema,
     parse_flexible_date,
@@ -188,3 +192,68 @@ class TestSchemasValidation:
         assert ev.idCamara == 70000
         assert ev.situacao == "Encerrada"
         assert ev.dataHoraInicio == datetime(2026, 3, 20, 14, 0)
+
+    def test_partido_schema(self):
+        data = {
+            "idCamara": "36829",
+            "sigla": " PRTB ",
+            "nome": " Partido Renovador Trabalhista Brasileiro \x00",
+            "uri": "https://dadosabertos.camara.leg.br/api/v2/partidos/36829",
+            "numeroEleitoral": "28",
+            "situacao": "Ativo",
+        }
+        p = PartidoCamaraSchema.model_validate(data)
+        assert p.idCamara == 36829
+        assert p.sigla == "PRTB"
+        assert p.nome == "Partido Renovador Trabalhista Brasileiro"
+        assert p.numeroEleitoral == 28
+
+    def test_tramitacao_schema(self):
+        data = {
+            "idProposicaoCamara": "2485383",
+            "sequencia": "15",
+            "dataHora": "2026-03-12T10:30:00",
+            "siglaOrgao": "CCJC",
+            "regime": "Ordinária",
+            "descricaoTramitacao": "Aprovação de Parecer",
+            "codSituacao": "923",
+        }
+        tram = TramitacaoCamaraSchema.model_validate(data)
+        assert tram.idProposicaoCamara == 2485383
+        assert tram.sequencia == 15
+        assert tram.dataHora == datetime(2026, 3, 12, 10, 30)
+        assert tram.siglaOrgao == "CCJC"
+        assert tram.codSituacao == 923
+
+    def test_deputado_historico_schema(self):
+        data = {
+            "idDeputadoCamara": "178387",
+            "idLegislatura": "57",
+            "dataInicio": "2023-02-01T00:00:00",
+            "siglaPartido": "PT",
+            "siglaUF": "SC",
+            "condicao": "Titular",
+            "situacao": "Exercício",
+            "descricao": "Posse no mandato",
+        }
+        hist = DeputadoHistoricoSchema.model_validate(data)
+        assert hist.idDeputadoCamara == 178387
+        assert hist.idLegislatura == 57
+        assert hist.siglaPartido == "PT"
+        assert hist.condicao == "Titular"
+
+    def test_deputado_mandato_externo_schema(self):
+        data = {
+            "idDeputadoCamara": "73827",
+            "cargo": "Prefeito(a)",
+            "siglaUF": "TO",
+            "municipio": "Araguaína",
+            "anoInicio": "1983",
+            "anoFim": "1987",
+            "siglaPartidoEleicao": "PMDB",
+        }
+        mand = DeputadoMandatoExternoSchema.model_validate(data)
+        assert mand.idDeputadoCamara == 73827
+        assert mand.cargo == "Prefeito(a)"
+        assert mand.anoInicio == 1983
+        assert mand.siglaPartidoEleicao == "PMDB"

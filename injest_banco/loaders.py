@@ -687,4 +687,102 @@ def bulk_resolve_and_insert(
                 conn.execute(stmt)
                 inserted_count += len(chunk)
 
+        # ── tramitacoes ─────────────────────────────────────────────────────
+        elif raw_table == "_raw_tramitacoes":
+            prop_camara_ids = {r.get("idProposicaoCamara") for r in records}
+            prop_map = _fetch_id_map(conn, "proposicoes", "idCamara", prop_camara_ids)
+
+            rows_to_insert = []
+            for r in records:
+                prop_id = prop_map.get(r.get("idProposicaoCamara"))
+                if not prop_id:
+                    continue
+                row = {k: v for k, v in r.items() if k != "idProposicaoCamara"}
+                row["idProposicao"] = prop_id
+                rows_to_insert.append(sanitize_row(row))
+
+            # Deduplicação determinística em lote por (idProposicao, sequencia, dataHora)
+            dedup_tram = {
+                (r["idProposicao"], r.get("sequencia"), r.get("dataHora")): r
+                for r in rows_to_insert
+            }
+            rows_to_insert = list(dedup_tram.values())
+
+            meta = MetaData()
+            meta.reflect(bind=engine, only=["tramitacoes"])
+            tbl = meta.tables["tramitacoes"]
+            for i in range(0, len(rows_to_insert), chunk_size):
+                chunk = rows_to_insert[i : i + chunk_size]
+                stmt = pg_insert(tbl).values(chunk).on_conflict_do_nothing()
+                conn.execute(stmt)
+                inserted_count += len(chunk)
+
+        # ── deputadosHistorico ──────────────────────────────────────────────
+        elif raw_table == "_raw_deputadosHistorico":
+            dep_camara_ids = {r.get("idDeputadoCamara") for r in records}
+            dep_map = _fetch_id_map(conn, "deputados", "idCamara", dep_camara_ids)
+
+            rows_to_insert = []
+            for r in records:
+                dep_id = dep_map.get(r.get("idDeputadoCamara"))
+                if not dep_id:
+                    continue
+                row = {k: v for k, v in r.items() if k != "idDeputadoCamara"}
+                row["idDeputado"] = dep_id
+                rows_to_insert.append(sanitize_row(row))
+
+            dedup_hist = {
+                (
+                    r["idDeputado"],
+                    r.get("idLegislatura"),
+                    r.get("dataInicio"),
+                    r.get("descricao"),
+                ): r
+                for r in rows_to_insert
+            }
+            rows_to_insert = list(dedup_hist.values())
+
+            meta = MetaData()
+            meta.reflect(bind=engine, only=["deputadosHistorico"])
+            tbl = meta.tables["deputadosHistorico"]
+            for i in range(0, len(rows_to_insert), chunk_size):
+                chunk = rows_to_insert[i : i + chunk_size]
+                stmt = pg_insert(tbl).values(chunk).on_conflict_do_nothing()
+                conn.execute(stmt)
+                inserted_count += len(chunk)
+
+        # ── deputadosMandatosExternos ───────────────────────────────────────
+        elif raw_table == "_raw_deputadosMandatosExternos":
+            dep_camara_ids = {r.get("idDeputadoCamara") for r in records}
+            dep_map = _fetch_id_map(conn, "deputados", "idCamara", dep_camara_ids)
+
+            rows_to_insert = []
+            for r in records:
+                dep_id = dep_map.get(r.get("idDeputadoCamara"))
+                if not dep_id:
+                    continue
+                row = {k: v for k, v in r.items() if k != "idDeputadoCamara"}
+                row["idDeputado"] = dep_id
+                rows_to_insert.append(sanitize_row(row))
+
+            dedup_mand = {
+                (
+                    r["idDeputado"],
+                    r.get("cargo"),
+                    r.get("siglaUF"),
+                    r.get("anoInicio"),
+                ): r
+                for r in rows_to_insert
+            }
+            rows_to_insert = list(dedup_mand.values())
+
+            meta = MetaData()
+            meta.reflect(bind=engine, only=["deputadosMandatosExternos"])
+            tbl = meta.tables["deputadosMandatosExternos"]
+            for i in range(0, len(rows_to_insert), chunk_size):
+                chunk = rows_to_insert[i : i + chunk_size]
+                stmt = pg_insert(tbl).values(chunk).on_conflict_do_nothing()
+                conn.execute(stmt)
+                inserted_count += len(chunk)
+
     return inserted_count

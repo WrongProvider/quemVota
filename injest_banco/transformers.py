@@ -1095,3 +1095,153 @@ def t_cotas(df: pd.DataFrame) -> list[dict[str, Any]]:
             "txTrecho",
         ],
     )
+
+
+def t_partidos(df: pd.DataFrame) -> list[dict[str, Any]]:
+    """Transformação e validação de partidos políticos (partidos.csv)."""
+    df = clean_dataframe(df).rename(columns={"id": "idCamara"})
+    df["idCamara"] = pd.to_numeric(df["idCamara"], errors="coerce")
+    for c in ["numeroEleitoral", "totalMembros", "totalPosse"]:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    df = df.dropna(subset=["idCamara", "sigla"])
+    df["idCamara"] = df["idCamara"].astype(int)
+    df = df.drop_duplicates(subset=["idCamara"], keep="last")
+
+    return keep_columns(
+        df,
+        [
+            "idCamara",
+            "sigla",
+            "nome",
+            "uri",
+            "numeroEleitoral",
+            "situacao",
+            "totalMembros",
+            "totalPosse",
+            "urlLogo",
+            "urlWebsite",
+            "urlFacebook",
+        ],
+    )
+
+
+def t_proposicoes_tramitacoes(df: pd.DataFrame) -> list[dict[str, Any]]:
+    """Transformação de passos de tramitação legislativa (proposicoesTramitacoes-{ano}.csv)."""
+    df = clean_dataframe(df)
+    # Extrai idProposicaoCamara da uriProposicao se coluna direta não existir
+    if "idProposicaoCamara" not in df.columns:
+        uri_col = df["uriProposicao"].fillna("").astype(str)
+        extracted = uri_col.str.extract(r"/proposicoes/(\d+)")
+        df["idProposicaoCamara"] = pd.to_numeric(extracted[0], errors="coerce")
+    else:
+        df["idProposicaoCamara"] = pd.to_numeric(
+            df["idProposicaoCamara"], errors="coerce"
+        )
+
+    df["sequencia"] = pd.to_numeric(df.get("sequencia"), errors="coerce")
+    df["dataHora"] = to_datetime_series(df.get("dataHora"))
+    df["codTipoTramitacao"] = pd.to_numeric(
+        df.get("codTipoTramitacao"), errors="coerce"
+    )
+    df["codSituacao"] = pd.to_numeric(df.get("codSituacao"), errors="coerce")
+
+    df = df.dropna(subset=["idProposicaoCamara", "sequencia", "dataHora"])
+    df["idProposicaoCamara"] = df["idProposicaoCamara"].astype(int)
+    df["sequencia"] = df["sequencia"].astype(int)
+
+    # Deduplicação determinística em memória
+    df = df.drop_duplicates(
+        subset=["idProposicaoCamara", "sequencia", "dataHora"], keep="last"
+    )
+
+    return keep_columns(
+        df,
+        [
+            "idProposicaoCamara",
+            "sequencia",
+            "dataHora",
+            "siglaOrgao",
+            "uriOrgao",
+            "uriUltimoRelator",
+            "regime",
+            "descricaoTramitacao",
+            "codTipoTramitacao",
+            "descricaoSituacao",
+            "codSituacao",
+            "despacho",
+            "url",
+            "ambito",
+            "apreciacao",
+        ],
+    )
+
+
+def t_deputados_historico(df: pd.DataFrame) -> list[dict[str, Any]]:
+    """Transformação de histórico parlamentar, suplências e licenças (deputadosHistorico.csv)."""
+    df = clean_dataframe(df).rename(
+        columns={"id": "idDeputadoCamara", "siglaUf": "siglaUF"}
+    )
+    df["idDeputadoCamara"] = pd.to_numeric(df["idDeputadoCamara"], errors="coerce")
+    df["idLegislatura"] = pd.to_numeric(df.get("idLegislatura"), errors="coerce")
+    df["idPartido"] = pd.to_numeric(df.get("idPartido"), errors="coerce")
+    df["dataInicio"] = to_datetime_series(df.get("dataInicio"))
+    df["dataFim"] = to_datetime_series(df.get("dataFim"))
+
+    df = df.dropna(subset=["idDeputadoCamara", "dataInicio"])
+    df["idDeputadoCamara"] = df["idDeputadoCamara"].astype(int)
+
+    df = df.drop_duplicates(
+        subset=["idDeputadoCamara", "idLegislatura", "dataInicio", "descricao"],
+        keep="last",
+    )
+
+    return keep_columns(
+        df,
+        [
+            "idDeputadoCamara",
+            "idLegislatura",
+            "dataInicio",
+            "dataFim",
+            "nome",
+            "siglaPartido",
+            "siglaUF",
+            "idPartido",
+            "condicao",
+            "situacao",
+            "descricao",
+        ],
+    )
+
+
+def t_deputados_mandatos_externos(df: pd.DataFrame) -> list[dict[str, Any]]:
+    """Transformação de cargos eletivos anteriores fora da Câmara (deputadosMandatosExternos.csv)."""
+    df = clean_dataframe(df).rename(
+        columns={"id": "idDeputadoCamara", "siglaUf": "siglaUF"}
+    )
+    df["idDeputadoCamara"] = pd.to_numeric(df["idDeputadoCamara"], errors="coerce")
+    df["anoInicio"] = pd.to_numeric(df.get("anoInicio"), errors="coerce")
+    df["anoFim"] = pd.to_numeric(df.get("anoFim"), errors="coerce")
+
+    df = df.dropna(subset=["idDeputadoCamara", "cargo"])
+    df["idDeputadoCamara"] = df["idDeputadoCamara"].astype(int)
+
+    df = df.drop_duplicates(
+        subset=["idDeputadoCamara", "cargo", "siglaUF", "anoInicio"],
+        keep="last",
+    )
+
+    return keep_columns(
+        df,
+        [
+            "idDeputadoCamara",
+            "cargo",
+            "siglaUF",
+            "municipio",
+            "anoInicio",
+            "anoFim",
+            "siglaPartidoEleicao",
+            "uriPartidoEleicao",
+        ],
+    )

@@ -320,6 +320,14 @@ class Deputado(Base):
     presencas = relationship(
         "PresencaDeputado", back_populates="deputado", cascade="all, delete-orphan"
     )
+    historico = relationship(
+        "DeputadoHistorico", back_populates="deputado", cascade="all, delete-orphan"
+    )
+    mandatosExternos = relationship(
+        "DeputadoMandatoExterno",
+        back_populates="deputado",
+        cascade="all, delete-orphan",
+    )
     frentes = relationship("FrenteDeputado", back_populates="deputado")
     gruposMembros = relationship("GrupoMembro", back_populates="deputado")
     buscaPopular = relationship(
@@ -394,6 +402,99 @@ class DeputadoProfissao(Base):
     titulo = Column(String(200))
 
     deputado = relationship("Deputado", back_populates="profissoes")
+
+
+# ===========================================================================
+# DEPUTADOS — HISTÓRICO PARLAMENTAR (Suplências, Licenças e Mudanças)
+# ===========================================================================
+class DeputadoHistorico(Base):
+    """
+    /deputados/{id}/historico  e  deputadosHistorico.csv
+    Histórico oficial de mudanças na situação parlamentar, suplências,
+    licenças para cargos no Executivo e trocas partidárias.
+    """
+
+    __tablename__ = "deputadosHistorico"
+
+    id = Column(Integer, primary_key=True)
+    idDeputado = Column(
+        Integer,
+        ForeignKey("deputados.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    idLegislatura = Column(
+        Integer,
+        ForeignKey("legislaturas.idLegislatura", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    dataInicio = Column(DateTime, nullable=False, index=True)
+    dataFim = Column(DateTime, nullable=True)
+
+    nome = Column(String(200))
+    siglaPartido = Column(String(50), index=True)
+    siglaUF = Column(CHAR(2), index=True)
+    idPartido = Column(Integer, nullable=True)
+
+    condicao = Column(String(100))  # Titular, Suplente
+    situacao = Column(String(100))  # Exercício, Afastado, Convocado
+    descricao = Column(Text)
+
+    deputado = relationship("Deputado", back_populates="historico")
+    legislatura = relationship("Legislatura")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "idDeputado",
+            "idLegislatura",
+            "dataInicio",
+            "descricao",
+            name="uq_deputado_historico",
+        ),
+    )
+
+
+# ===========================================================================
+# DEPUTADOS — MANDATOS EXTERNOS
+# ===========================================================================
+class DeputadoMandatoExterno(Base):
+    """
+    /deputados/{id}/mandatosExternos  e  deputadosMandatosExternos.csv
+    Histórico oficial de outros cargos eletivos exercidos pelo parlamentar
+    em sua carreira pública (Prefeito, Vereador, Deputado Estadual, Senador, etc.).
+    """
+
+    __tablename__ = "deputadosMandatosExternos"
+
+    id = Column(Integer, primary_key=True)
+    idDeputado = Column(
+        Integer,
+        ForeignKey("deputados.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    cargo = Column(String(100), nullable=False)
+    siglaUF = Column(CHAR(2), nullable=True)
+    municipio = Column(String(150), nullable=True)
+    anoInicio = Column(Integer, nullable=True)
+    anoFim = Column(Integer, nullable=True)
+    siglaPartidoEleicao = Column(String(50), nullable=True)
+    uriPartidoEleicao = Column(Text, nullable=True)
+
+    deputado = relationship("Deputado", back_populates="mandatosExternos")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "idDeputado",
+            "cargo",
+            "siglaUF",
+            "anoInicio",
+            name="uq_deputado_mandato_externo",
+        ),
+    )
 
 
 # ===========================================================================
@@ -769,6 +870,15 @@ class Tramitacao(Base):
     apreciacao = Column(String(200))
 
     proposicao = relationship("Proposicao", back_populates="tramitacoes")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "idProposicao",
+            "sequencia",
+            "dataHora",
+            name="uq_tramitacao_prop_seq_data",
+        ),
+    )
 
 
 # ===========================================================================

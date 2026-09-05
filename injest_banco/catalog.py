@@ -15,6 +15,8 @@ from injest_banco.client import BASE_ARQUIVOS_URL, COTAS_BASE_URL
 from injest_banco.transformers import (
     t_cotas,
     t_deputados,
+    t_deputados_historico,
+    t_deputados_mandatos_externos,
     t_deputados_ocupacoes,
     t_deputados_profissoes,
     t_eventos,
@@ -35,10 +37,12 @@ from injest_banco.transformers import (
     t_licitacoes_propostas,
     t_orgaos,
     t_orgaos_deputados,
+    t_partidos,
     t_presenca,
     t_proposicoes,
     t_proposicoes_autores,
     t_proposicoes_temas,
+    t_proposicoes_tramitacoes,
     t_tecad_categorias,
     t_tecad_termos,
     t_votacoes,
@@ -146,7 +150,32 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
             ["ponto"],
             dep_group=0,
         ),
+        Dataset(
+            "partidos",
+            lambda: url_simples("partidos"),
+            t_partidos,
+            "partidos",
+            ["idCamara"],
+            preserve_cols=["urlLogo", "urlWebsite", "urlFacebook"],
+            dep_group=0,
+        ),
         # Grupo 1: dependem de deputados / orgaos / legislaturas
+        Dataset(
+            "deputadosHistorico",
+            lambda: url_simples("deputadosHistorico"),
+            t_deputados_historico,
+            "_raw_deputadosHistorico",
+            [],
+            dep_group=1,
+        ),
+        Dataset(
+            "deputadosMandatosExternos",
+            lambda: url_simples("deputadosMandatosExternos"),
+            t_deputados_mandatos_externos,
+            "_raw_deputadosMandatosExternos",
+            [],
+            dep_group=1,
+        ),
         Dataset(
             "deputadosOcupacoes",
             lambda: url_simples("deputadosOcupacoes"),
@@ -301,6 +330,20 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
                 ano_ref=a,
                 dep_group=1,
             ),
+        ]
+        if a >= 2019:
+            anual.append(
+                Dataset(
+                    f"proposicoesTramitacoes_{a}",
+                    lambda ano=a: url_anual("proposicoesTramitacoes", ano),
+                    t_proposicoes_tramitacoes,
+                    "_raw_tramitacoes",
+                    [],
+                    ano_ref=a,
+                    dep_group=1,
+                )
+            )
+        anual += [
             Dataset(
                 f"licitacoesPedidos_{a}",
                 lambda ano=a: url_anual("licitacoesPedidos", ano),

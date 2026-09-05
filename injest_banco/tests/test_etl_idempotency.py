@@ -209,3 +209,143 @@ class TestCotasTransformDeduplication:
         dup = [r for r in res if r["codDocumento"] == "99999"]
         assert len(dup) == 1
         assert dup[0]["valorLiquido"] == 0.0
+
+
+class TestNovosETLsTransformersAndLoaders:
+    def test_t_partidos(self):
+        from injest_banco.transformers import t_partidos
+
+        raw = pd.DataFrame(
+            [
+                {"id": "36829", "sigla": "PRTB", "nome": "Partido A", "uri": "uri1"},
+                {
+                    "id": "36829",
+                    "sigla": "PRTB",
+                    "nome": "Partido A Atualizado",
+                    "uri": "uri1",
+                },  # Duplicata
+                {"id": "36783", "sigla": "PDC", "nome": "Partido B", "uri": "uri2"},
+            ]
+        )
+        res = t_partidos(raw)
+        assert len(res) == 2
+        assert res[0]["idCamara"] == 36829
+        assert res[0]["nome"] == "Partido A Atualizado"
+        assert res[1]["idCamara"] == 36783
+
+    def test_t_proposicoes_tramitacoes(self):
+        from injest_banco.transformers import t_proposicoes_tramitacoes
+
+        raw = pd.DataFrame(
+            [
+                {
+                    "uriProposicao": "https://dadosabertos.camara.leg.br/api/v2/proposicoes/14666",
+                    "sequencia": "1",
+                    "dataHora": "2026-03-01T10:00:00",
+                    "siglaOrgao": "MESA",
+                    "regime": "Ordinária",
+                    "descricaoTramitacao": "Apresentação",
+                    "codSituacao": "100",
+                },
+                {
+                    "uriProposicao": "https://dadosabertos.camara.leg.br/api/v2/proposicoes/14666",
+                    "sequencia": "1",
+                    "dataHora": "2026-03-01T10:00:00",  # Duplicata
+                    "siglaOrgao": "MESA",
+                    "regime": "Ordinária",
+                    "descricaoTramitacao": "Apresentação Duplicada",
+                    "codSituacao": "100",
+                },
+                {
+                    "uriProposicao": "https://dadosabertos.camara.leg.br/api/v2/proposicoes/14666",
+                    "sequencia": "2",
+                    "dataHora": "2026-03-02T14:00:00",
+                    "siglaOrgao": "CCJC",
+                    "regime": "Ordinária",
+                    "descricaoTramitacao": "Distribuição",
+                    "codSituacao": "101",
+                },
+            ]
+        )
+        res = t_proposicoes_tramitacoes(raw)
+        assert len(res) == 2
+        assert res[0]["idProposicaoCamara"] == 14666
+        assert res[0]["sequencia"] == 1
+        assert res[0]["descricaoTramitacao"] == "Apresentação Duplicada"
+        assert res[1]["sequencia"] == 2
+
+    def test_t_deputados_historico(self):
+        from injest_banco.transformers import t_deputados_historico
+
+        raw = pd.DataFrame(
+            [
+                {
+                    "id": "178387",
+                    "idLegislatura": "57",
+                    "dataInicio": "2023-02-01T00:00:00",
+                    "dataFim": None,
+                    "nome": "FRANCISCO DE ASSIS",
+                    "siglaPartido": "PT",
+                    "siglaUf": "SC",
+                    "condicao": "Titular",
+                    "situacao": "Exercício",
+                    "descricao": "Posse",
+                },
+                {
+                    "id": "178387",
+                    "idLegislatura": "57",
+                    "dataInicio": "2023-02-01T00:00:00",
+                    "dataFim": None,
+                    "nome": "FRANCISCO DE ASSIS",
+                    "siglaPartido": "PT",
+                    "siglaUf": "SC",
+                    "condicao": "Titular",
+                    "situacao": "Exercício",
+                    "descricao": "Posse",  # Duplicata
+                },
+            ]
+        )
+        res = t_deputados_historico(raw)
+        assert len(res) == 1
+        assert res[0]["idDeputadoCamara"] == 178387
+        assert res[0]["siglaUF"] == "SC"
+
+    def test_t_deputados_mandatos_externos(self):
+        from injest_banco.transformers import t_deputados_mandatos_externos
+
+        raw = pd.DataFrame(
+            [
+                {
+                    "id": "73827",
+                    "cargo": "Vereador(a)",
+                    "siglaUf": "TO",
+                    "municipio": "Araguaína",
+                    "anoInicio": "1983",
+                    "anoFim": "1987",
+                    "siglaPartidoEleicao": "PMDB",
+                },
+                {
+                    "id": "73827",
+                    "cargo": "Vereador(a)",
+                    "siglaUf": "TO",
+                    "municipio": "Araguaína",
+                    "anoInicio": "1983",
+                    "anoFim": "1987",
+                    "siglaPartidoEleicao": "PMDB",  # Duplicata
+                },
+                {
+                    "id": "73827",
+                    "cargo": "Deputado(a) Estadual",
+                    "siglaUf": "GO",
+                    "municipio": None,
+                    "anoInicio": "1987",
+                    "anoFim": "1988",
+                    "siglaPartidoEleicao": "PMDB",
+                },
+            ]
+        )
+        res = t_deputados_mandatos_externos(raw)
+        assert len(res) == 2
+        assert res[0]["idDeputadoCamara"] == 73827
+        assert res[0]["cargo"] == "Vereador(a)"
+        assert res[1]["cargo"] == "Deputado(a) Estadual"
