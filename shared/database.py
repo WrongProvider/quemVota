@@ -20,7 +20,15 @@ class Base(DeclarativeBase):
 
 
 # --- CONFIGURAÇÃO ASYNC (Para o FastAPI) ---
-async_engine = create_async_engine(ASYNC_URL, echo=False)
+async_engine = create_async_engine(
+    ASYNC_URL,
+    echo=False,
+    pool_size=15,
+    max_overflow=25,
+    pool_timeout=15,
+    pool_recycle=1800,
+    pool_pre_ping=True,
+)
 AsyncSessionLocal = async_sessionmaker(async_engine, expire_on_commit=False)
 
 
