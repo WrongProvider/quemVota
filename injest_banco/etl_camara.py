@@ -266,7 +266,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="ETL Modular — Dados Abertos da Câmara dos Deputados"
     )
-    mode = parser.add_mutually_exclusive_group(required=True)
+    mode = parser.add_mutually_exclusive_group(required=False)
     mode.add_argument(
         "--full", action="store_true", help="Carga histórica completa (2008–hoje)"
     )
@@ -278,7 +278,8 @@ def main():
     mode.add_argument(
         "--dataset", type=str, help="Prefixo do dataset (ex: votacoes, eventos)"
     )
-    mode.add_argument(
+
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Executa download e validação sem gravar no banco de dados",
@@ -345,6 +346,21 @@ def main():
 
     args = parser.parse_args()
 
+    has_mode = any([args.full, args.update, args.dataset, args.dry_run])
+    has_standalone_action = any(
+        [
+            args.reconcile_orfas,
+            args.backfill_deputados,
+            args.backfill_force,
+            args.backfill_slug_only,
+        ]
+    )
+    if not has_mode and not has_standalone_action:
+        parser.error(
+            "Informe um modo de execução (--full, --update, --dataset, --dry-run) "
+            "ou uma ação autônoma (--reconcile-orfas, --backfill-deputados, --backfill-slug-only)."
+        )
+
     cache_file = Path(args.cache_file) if args.cache_file else None
     cache = ETagCache(cache_file) if cache_file else ETagCache()
     if args.force:
@@ -361,6 +377,28 @@ def main():
             max_overflow=4,
         )
         log.info("Banco: conectado")
+
+    # Ação autônoma: executa diretamente sem baixar todos os datasets
+    if not has_mode:
+        if args.backfill_deputados or args.backfill_force or args.backfill_slug_only:
+            if engine is None:
+                log.error("Banco de dados não disponível para backfill.")
+                sys.exit(1)
+            run_backfill_deputados(
+                engine,
+                force=args.backfill_force,
+                slug_only=args.backfill_slug_only,
+                workers=args.backfill_workers,
+                client=client,
+            )
+
+        if args.reconcile_orfas:
+            if engine is None:
+                log.error("Banco de dados não disponível para reconciliação.")
+                sys.exit(1)
+            reconcile_orphan_votacoes(engine, client=client)
+
+        sys.exit(0)
 
     if args.full:
         anos = ANOS_HISTORICO

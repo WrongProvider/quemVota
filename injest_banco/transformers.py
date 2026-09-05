@@ -1014,6 +1014,61 @@ def t_cotas(df: pd.DataFrame) -> list[dict[str, Any]]:
     df["codDocumento"] = df["codDocumento"].astype(str).str.strip()
     df = df[df["codDocumento"].str.len() > 0]
 
+    # Despesas oficiais (ex: telefonia direta) possuem ideDocumento == '0' no open data.
+    # Sintetiza uma chave única e determinística para evitar colisão e CardinalityViolation.
+    mask_zero = df["codDocumento"].isin(["0", "0.0"])
+    if mask_zero.any():
+        num_doc = df.loc[mask_zero, "numDocumento"].fillna("").astype(str).str.strip()
+        sub_cota = (
+            df.loc[mask_zero, "numSubCota"]
+            .fillna("0")
+            .astype(int, errors="ignore")
+            .astype(str)
+        )
+        dep_id = (
+            df.loc[mask_zero, "idDeputadoCamara"]
+            .astype(int, errors="ignore")
+            .astype(str)
+        )
+        mes_val = (
+            df.loc[mask_zero, "mes"]
+            .fillna("0")
+            .astype(int, errors="ignore")
+            .astype(str)
+        )
+        ano_val = (
+            df.loc[mask_zero, "ano"]
+            .fillna("0")
+            .astype(int, errors="ignore")
+            .astype(str)
+        )
+        parc = (
+            df.loc[mask_zero, "parcela"]
+            .fillna("0")
+            .astype(int, errors="ignore")
+            .astype(str)
+        )
+        vlr = df.loc[mask_zero, "valorLiquido"].fillna("0").astype(str)
+        df.loc[mask_zero, "codDocumento"] = (
+            "0-"
+            + dep_id
+            + "-"
+            + ano_val
+            + "-"
+            + mes_val
+            + "-"
+            + sub_cota
+            + "-"
+            + num_doc
+            + "-"
+            + parc
+            + "-"
+            + vlr
+        ).str[:90]
+
+    # Deduplicação determinística em memória mantendo o último registro (restituições/correções)
+    df = df.drop_duplicates(subset=["codDocumento"], keep="last")
+
     return keep_columns(
         df,
         [

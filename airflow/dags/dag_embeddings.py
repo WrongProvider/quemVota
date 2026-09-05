@@ -32,8 +32,9 @@ with DAG(
 
     task_update_embeddings = BashOperator(
         task_id="update_embeddings",
-        bash_command="uv run python gerar_embeddings.py",
+        bash_command="uv run python gerar_embeddings.py --legislatura 57 --limit 2000",
         cwd="/opt/airflow/embeddings",
+        execution_timeout=timedelta(hours=2),
     )
 
     # Garante que a taxonomia canônica de 20 temas de atuação esteja semeada e vetorizada

@@ -15,6 +15,12 @@ class MaisPesquisadoSchema(BaseModel):
     partido_sigla: str | None = None
     url_foto: str | None = None
     count: int
+    slug: str | None = None
+    condicao_eleitoral: str | None = None
+    id_legislatura_inicial: int | None = None
+    id_legislatura_final: int | None = None
+    ano_inicio: int | None = None
+    ano_fim: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -55,6 +55,36 @@ function FichasSkeleton() {
   )
 }
 
+/** Formata com fidelidade factual a legislatura e condição do parlamentar */
+function formatarLegislaturaCard(politico: MaisPesquisado): string {
+  const legIni = politico.id_legislatura_inicial
+  const legFim = politico.id_legislatura_final
+  const anoIni = politico.ano_inicio
+  const anoFim = politico.ano_fim
+  const isSuplente = politico.condicao_eleitoral?.toLowerCase() === "suplente"
+  const suplenteSuffix = isSuplente ? " · Suplente" : ""
+
+  if (!legFim) {
+    return `Deputado(a) Federal${suplenteSuffix}`
+  }
+
+  const anosStr = anoIni && anoFim ? ` (${anoIni}–${anoFim})` : ""
+
+  // Ativo na 57ª Legislatura (atual)
+  if (legFim === 57) {
+    if (!legIni || legIni === 57) {
+      return `57ª Legislatura${anosStr || " (2023–2027)"}${suplenteSuffix}`
+    }
+    return `${legIni}ª a 57ª Legislatura${anosStr}${suplenteSuffix}`
+  }
+
+  // Mandato histórico / anterior à 57ª
+  if (!legIni || legIni === legFim) {
+    return `${legFim}ª Legislatura${anosStr} · Mandato Histórico${suplenteSuffix}`
+  }
+  return `${legIni}ª a ${legFim}ª Legislatura${anosStr} · Mandato Histórico${suplenteSuffix}`
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Card Individual de Ficha Rápida (Variação 1C)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -70,10 +100,11 @@ function FichaDeputadoCard({
 
   const siglaPartido = politico.partido_sigla?.trim() || null
   const siglaUf = politico.uf?.trim() || null
+  const isHistorico = politico.id_legislatura_final != null && politico.id_legislatura_final < 57
   const partidoUfTexto =
     siglaPartido && siglaUf
       ? `${siglaPartido} · ${siglaUf}`
-      : siglaPartido || siglaUf || "Deputado(a) Federal"
+      : siglaPartido || siglaUf || (isHistorico ? "Mandato Histórico" : "Deputado(a) Federal")
 
   return (
     <motion.article
@@ -129,7 +160,7 @@ function FichaDeputadoCard({
           </h3>
 
           <p className="text-xs text-slate-500 mt-0.5 mb-3">
-            57ª Legislatura (2023–2027)
+            {formatarLegislaturaCard(politico)}
           </p>
         </div>
 

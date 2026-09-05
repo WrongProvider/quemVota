@@ -110,6 +110,12 @@ def _buscar_deputados(
     """Retorna IDs dos deputados a processar."""
     stmt = select(Deputado.id).order_by(Deputado.id)
 
+    if id_legislatura:
+        stmt = stmt.where(
+            Deputado.idLegislaturaInicial <= id_legislatura,
+            Deputado.idLegislaturaFinal >= id_legislatura,
+        )
+
     if deputado_id:
         stmt = stmt.where(Deputado.id == deputado_id)
 

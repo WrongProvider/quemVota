@@ -58,6 +58,13 @@ def bulk_upsert(
     _preserve = set(preserve_cols or [])
     total = 0
 
+    if conflict_cols:
+        dedup_dict: dict[tuple[Any, ...], dict[str, Any]] = {}
+        for r in records:
+            k = tuple(r.get(c) for c in conflict_cols)
+            dedup_dict[k] = r
+        records = list(dedup_dict.values())
+
     for i in range(0, len(records), chunk_size):
         chunk = [sanitize_row(r) for r in records[i : i + chunk_size]]
         if not chunk:
@@ -658,6 +665,10 @@ def bulk_resolve_and_insert(
                 row = {k: v for k, v in r.items() if k != "idDeputadoCamara"}
                 row["idDeputado"] = dep_id
                 rows_to_insert.append(sanitize_row(row))
+
+            # Deduplicação determinística em lote para evitar CardinalityViolation no Postgres
+            dedup_cotas = {r["codDocumento"]: r for r in rows_to_insert}
+            rows_to_insert = list(dedup_cotas.values())
 
             meta = MetaData()
             meta.reflect(bind=engine, only=["despesas"])

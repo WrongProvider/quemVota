@@ -151,11 +151,13 @@ def run_backfill_deputados(
             slug = resolve_unique_slug(slug_base, dep["idCamara"], slugs_em_uso)
             updates.append({"id": dep["id"], "slug": slug})
 
-        with engine.begin() as conn:
-            for u in updates:
+        chunk_size = 500
+        for i in range(0, len(updates), chunk_size):
+            chunk = updates[i : i + chunk_size]
+            with engine.begin() as conn:
                 conn.execute(
                     text("UPDATE deputados SET slug = :slug WHERE id = :id"),
-                    u,
+                    chunk,
                 )
         log.info("✔ %d slugs atualizados com sucesso.", len(updates))
         return
