@@ -273,15 +273,15 @@ function RankingGastos({ searchTerm, selectedUF }: { searchTerm: string; selecte
 
   return (
     <>
-      <div className="grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200 bg-slate-50/50">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 border-b border-slate-200 bg-slate-50/50">
         {[
           { label: "Maior gasto individual", value: FormatService.formatarMoeda(stats.maior), color: "text-slate-900" },
           { label: "Média do grupo",          value: FormatService.formatarMoeda(stats.media), color: "text-slate-700" },
           { label: "Total acumulado",        value: FormatService.formatarMoeda(stats.total), color: "text-slate-900" },
         ].map((s) => (
-          <div key={s.label} className="px-2 sm:px-5 py-2.5 sm:py-3.5 text-center">
+          <div key={s.label} className="px-4 sm:px-5 py-2.5 sm:py-3.5 flex sm:block items-center justify-between sm:text-center">
+            <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider sm:mt-0.5">{s.label}</p>
             <p className={`font-mono font-bold text-xs sm:text-sm tabular-nums ${s.color}`}>{s.value}</p>
-            <p className="text-[9px] sm:text-[11px] font-medium text-slate-500 uppercase tracking-wider mt-0.5 leading-tight">{s.label}</p>
           </div>
         ))}
       </div>
