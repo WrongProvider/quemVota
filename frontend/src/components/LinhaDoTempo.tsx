@@ -329,12 +329,22 @@ interface AnoPilula {
   total_gasto: number
 }
 
+function formatarGastoPill(valor: number): string {
+  if (valor >= 1_000_000) {
+    return `R$ ${(valor / 1_000_000).toFixed(1).replace(".", ",")}M`
+  }
+  if (valor >= 1_000) {
+    return `R$ ${(valor / 1_000).toFixed(0)}k`
+  }
+  return BRL(valor)
+}
+
 function LinhaTempoNav({
   anos,
   anoSelecionado,
   onSelect,
 }: {
-  anos: AnoPilula[]
+  anos: { ano: number | null; label: string; total_gasto: number }[]
   anoSelecionado: number | null
   onSelect: (ano: number | null) => void
 }) {
@@ -372,7 +382,7 @@ function LinhaTempoNav({
                 ${isActive ? "text-slate-900 font-semibold" : "text-slate-400"}
               `}
             >
-              {item.ano ? `${BRL(item.total_gasto).slice(0, 7)}...` : "geral"}
+              {item.ano ? formatarGastoPill(item.total_gasto) : "geral"}
             </span>
             {idx < anos.length - 1 && (
               <div className="absolute top-[16px] left-[52px] w-4 h-px bg-slate-200" />
@@ -416,27 +426,27 @@ function PainelTodos({
     <div className="space-y-5">
       {/* Cards de totais cívicos */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3" data-testid="resumo-cards">
-        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-4" data-testid="card-total-gasto">
+        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-3.5 sm:p-4 col-span-2 md:col-span-1 overflow-hidden" data-testid="card-total-gasto">
           <p className="text-[11px] text-slate-600 font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <Receipt size={13} className="text-blue-700" /> Total Desembolsado
+            <Receipt size={13} className="text-blue-700 flex-shrink-0" /> Total Desembolsado
           </p>
-          <p className="font-mono text-xl font-bold text-slate-900 tabular-nums" data-testid="card-total-gasto-valor">
+          <p className="font-mono text-xl sm:text-2xl font-bold text-slate-900 tabular-nums break-words" data-testid="card-total-gasto-valor">
             {BRL(totalGeral)}
           </p>
         </div>
-        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-4" data-testid="card-num-despesas">
+        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-3.5 sm:p-4 col-span-1 overflow-hidden" data-testid="card-num-despesas">
           <p className="text-[11px] text-slate-600 font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <CalendarDays size={13} className="text-indigo-700" /> Notas e Recibos
+            <CalendarDays size={13} className="text-indigo-700 flex-shrink-0" /> Notas e Recibos
           </p>
-          <p className="font-mono text-xl font-bold text-slate-900 tabular-nums" data-testid="card-num-despesas-valor">
+          <p className="font-mono text-xl sm:text-2xl font-bold text-slate-900 tabular-nums truncate" data-testid="card-num-despesas-valor">
             {totalDespesas.toLocaleString("pt-BR")}
           </p>
         </div>
-        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-4 col-span-2 md:col-span-1" data-testid="card-anos-registrados">
+        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-3.5 sm:p-4 col-span-1 overflow-hidden" data-testid="card-anos-registrados">
           <p className="text-[11px] text-slate-600 font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <TrendingDown size={13} className="text-emerald-700" /> Anos Mapeados
+            <TrendingDown size={13} className="text-emerald-700 flex-shrink-0" /> Anos Mapeados
           </p>
-          <p className="font-mono text-xl font-bold text-slate-900 tabular-nums" data-testid="card-anos-registrados-valor">
+          <p className="font-mono text-xl sm:text-2xl font-bold text-slate-900 tabular-nums truncate" data-testid="card-anos-registrados-valor">
             {anosData.length} anos
           </p>
         </div>
@@ -602,14 +612,14 @@ function PainelAno({
   return (
     <div className="space-y-5">
       {/* Header do ano */}
-      <div className="flex items-center justify-between" data-testid={`painel-ano-header-${ano}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2" data-testid={`painel-ano-header-${ano}`}>
         <div>
           <p className="text-xs text-slate-400 uppercase tracking-wide mb-0.5">
             Total em {ano}
           </p>
-          <p className="font-mono text-2xl font-bold text-blue-700" data-testid="painel-ano-total">{BRL(totalAno)}</p>
+          <p className="font-mono text-2xl font-bold text-blue-700 break-words" data-testid="painel-ano-total">{BRL(totalAno)}</p>
         </div>
-        <div className="text-right">
+        <div className="text-left sm:text-right">
           <p className="text-xs text-slate-400" data-testid="painel-ano-meses-count">{mesesDoAno.length} meses</p>
           <p className="text-sm text-slate-500 font-medium" data-testid="painel-ano-media-mensal">
             {BRL(totalAno / (mesesDoAno.length || 1))}/mês

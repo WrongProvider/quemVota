@@ -567,9 +567,9 @@ export default function PoliticoDetalhe() {
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
-                {/* PHOTO + SCORE (mobile: side by side) */}
-                <div className="flex flex-row md:flex-col md:items-start gap-5 items-center">
+              <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start text-center md:text-left">
+                {/* PHOTO + SCORE (mobile: centered) */}
+                <div className="flex flex-row md:flex-col md:items-start gap-4 sm:gap-5 items-center justify-center w-full md:w-auto">
                   <div className="profile-photo relative flex-shrink-0">
                     <div className="w-28 h-28 md:w-40 md:h-40 rounded-2xl overflow-hidden ring-4 ring-white shadow-xl">
                       <img
@@ -603,8 +603,8 @@ export default function PoliticoDetalhe() {
                 </div>
 
                 {/* INFO */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                <div className="flex-1 min-w-0 w-full flex flex-col items-center md:items-start">
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
                     <span className="mono-font text-xs text-slate-400 uppercase tracking-widest">
                       Parlamentar Federal
                     </span>
@@ -618,12 +618,12 @@ export default function PoliticoDetalhe() {
                     </span>
                   </div>
 
-                  <h1 data-testid="politician-name" className="display-font text-3xl md:text-4xl font-bold text-slate-900 mb-2.5 leading-tight">
+                  <h1 data-testid="politician-name" className="display-font text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-2.5 leading-tight text-center md:text-left">
                     {data.nome}
                   </h1>
 
                   {/* IDENTIFICAÇÃO CÍVICA: PARTIDO, ESTADO E ESCOLARIDADE */}
-                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-3">
                     {data.sigla_partido && (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200/90 text-amber-900 font-bold text-xs shadow-2xs">
                         <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
@@ -645,7 +645,7 @@ export default function PoliticoDetalhe() {
                   </div>
 
                   {/* Contacts */}
-                  <div className="flex flex-wrap gap-2 sm:gap-3 mt-3">
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3 mt-3">
                     {data.email_gabinete && (
                       <a
                         href={`mailto:${data.email_gabinete}`}
