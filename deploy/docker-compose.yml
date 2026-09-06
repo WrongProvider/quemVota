@@ -1,4 +1,11 @@
 
+# ── Política Padrão de Rotação de Logs (Prevenção de Esgotamento de Disco) ──
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "15m"
+    max-file: "3"
+
 # ── Configurações Comuns do Airflow ──────────────────────────────────────────
 x-airflow-common:
   &airflow-common # Substituímos 'image' por 'build' apontando para o seu novo Dockerfile
@@ -21,6 +28,13 @@ x-airflow-common:
     UV_CACHE_DIR: /tmp/.uv-cache
     HF_HOME: "/opt/airflow/.cache/huggingface"
     UV_NO_SYNC: "1"
+    # Confinamento de threads matemáticas (PyTorch/BLAS/OpenMP) para servidor 4 vCPUs
+    OMP_NUM_THREADS: "1"
+    MKL_NUM_THREADS: "1"
+    OPENBLAS_NUM_THREADS: "1"
+    VECLIB_MAXIMUM_THREADS: "1"
+    NUMEXPR_NUM_THREADS: "1"
+    TORCH_NUM_THREADS: "1"
   user: "${AIRFLOW_UID:-50000}:0"
   volumes:
     - ../airflow/dags:/opt/airflow/dags
@@ -54,6 +68,9 @@ services:
     networks:
       - backend
     restart: unless-stopped
+    cpus: "0.2"
+    mem_limit: 64m
+    logging: *default-logging
 
   # ── Banco de Dados (Produção - QuemVota) ───────────────────────────────────
   postgres:
@@ -63,6 +80,22 @@ services:
     image: quemvota_postgres:age-pgvector
     container_name: quemvota_postgres
     restart: unless-stopped
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=1536MB"
+      - "-c"
+      - "effective_cache_size=4096MB"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "maintenance_work_mem=256MB"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "max_connections=100"
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -76,6 +109,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    cpus: "2.5"
+    mem_limit: 2500m
+    logging: *default-logging
 
   # ── Banco de Dados (Metadados do Airflow) ──────────────────────────────────
   postgres-airflow:
@@ -95,13 +131,16 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    cpus: "0.5"
+    mem_limit: 512m
+    logging: *default-logging
 
   # ── Cache (Valkey) ──────────────────────────────────────────────────────────
   valkey:
     image: valkey/valkey:7-alpine
     container_name: quemvota_valkey
     restart: unless-stopped
-    command: valkey-server --save 60 1 --loglevel warning
+    command: valkey-server --save 60 1 --loglevel warning --maxmemory 384mb --maxmemory-policy allkeys-lru
     volumes:
       - valkey_data:/data
     networks:
@@ -111,6 +150,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    cpus: "0.5"
+    mem_limit: 384m
+    logging: *default-logging
 
   # ── API (FastAPI) ───────────────────────────────────────────────────────────
   api:
@@ -137,6 +179,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    cpus: "2.0"
+    mem_limit: 1024m
+    logging: *default-logging
 
   # ── Frontend ────────────────────────────────────────────────────────────────
   frontend:
@@ -152,6 +197,9 @@ services:
     restart: unless-stopped
     networks:
       - frontend
+    cpus: "0.5"
+    mem_limit: 256m
+    logging: *default-logging
 
   # ── Proxy Reverso (Nginx) ───────────────────────────────────────────────────
   nginx:
@@ -170,6 +218,9 @@ services:
       - frontend
     networks:
       - frontend
+    cpus: "0.5"
+    mem_limit: 256m
+    logging: *default-logging
 
   # ── Cloudflare Tunnel ───────────────────────────────────────────────────────
   tunnel:
@@ -177,6 +228,9 @@ services:
     command: tunnel run --token ${CLOUD_TUNNEL}
     networks:
       - frontend
+    cpus: "0.3"
+    mem_limit: 128m
+    logging: *default-logging
 
   # ── Componentes do Apache Airflow ──────────────────────────────────────────
   airflow-webserver:
@@ -191,6 +245,9 @@ services:
       timeout: 10s
       retries: 5
     restart: unless-stopped
+    cpus: "0.8"
+    mem_limit: 1200m
+    logging: *default-logging
     depends_on:
       postgres-airflow:
         condition: service_healthy
@@ -202,6 +259,9 @@ services:
     container_name: quemvota_airflow_scheduler
     command: scheduler
     restart: unless-stopped
+    cpus: "1.5"
+    mem_limit: 1800m
+    logging: *default-logging
     depends_on:
       postgres-airflow:
         condition: service_healthy
@@ -213,6 +273,7 @@ services:
       container_name: quemvota_airflow_init
       user: "0:0" # 👈 Roda como root para poder aplicar o chown
       entrypoint: /bin/bash
+      logging: *default-logging
       command:
         - -c
         - |

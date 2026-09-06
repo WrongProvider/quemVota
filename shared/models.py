@@ -757,6 +757,15 @@ class Proposicao(Base):
     )
     votacoes = relationship("Votacao", back_populates="proposicao")
 
+    __table_args__ = (
+        Index(
+            "ix_proposicoes_ementa_trgm",
+            "ementa",
+            postgresql_using="gin",
+            postgresql_ops={"ementa": "gin_trgm_ops"},
+        ),
+    )
+
 
 # ===========================================================================
 # PROPOSIÇÕES — AUTORES

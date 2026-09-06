@@ -25,6 +25,7 @@ Flags:
 import argparse
 import hashlib
 import logging
+import os
 import sys
 import time
 from typing import Optional
@@ -33,6 +34,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert
+import torch
 
 from shared.database import SessionLocal
 from shared.models import Deputado, Proposicao, ProposicaoAutor
@@ -44,6 +46,20 @@ from shared.models_vetorial import (
     TipoEntidadeDocumento,
     TipoParticipacao,
 )
+
+# Limitar concorrência de threads matemáticas (PyTorch/BLAS/OpenMP) para não estrangular vCPUs
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+
+torch.set_num_threads(1)
+if hasattr(torch, "set_num_interop_threads"):
+    try:
+        torch.set_num_interop_threads(1)
+    except RuntimeError:
+        pass
 
 logging.basicConfig(
     level=logging.INFO,
