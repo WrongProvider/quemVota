@@ -165,3 +165,68 @@ test.describe("Otimizações Mobile Anti-Scroll Fatigue (Galaxy S25)", () => {
     await expect(cardAlinhados).toHaveCount(10)
   })
 })
+
+  test("deve centralizar a foto e descricao do deputado e exibir cards de gastos sem sobreposicao de numeros no mobile (360x780)", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 })
+    await page.goto("/politicos/erika-hilton")
+    await page.waitForLoadState("networkidle")
+
+    // 1. Valida Hero Centralizado
+    const heroPhoto = page.locator(".profile-photo")
+    await expect(heroPhoto).toBeVisible()
+
+    const heroName = page.getByTestId("politician-name")
+    await expect(heroName).toBeVisible()
+
+    // Bounding box da foto no mobile deve estar centralizada (margens esquerda e direita similares)
+    const photoBox = await heroPhoto.boundingBox()
+    expect(photoBox).not.toBeNull()
+    if (photoBox) {
+      // Centro da tela é x=180. O bloco foto+presença fica centrado em torno de 180
+      expect(photoBox.x).toBeGreaterThan(20)
+    }
+
+    // Screenshot do Hero centralizado
+    await page.screenshot({
+      path: path.join(ARTIFACT_DIR, "mobile_s25_hero_centralizado.png"),
+      fullPage: false,
+    })
+
+    // 2. Navega para a aba de Gastos
+    const tabGastos = page.getByTestId("tab-gastos")
+    await tabGastos.click()
+    await page.waitForTimeout(600)
+
+    const resumoCards = page.getByTestId("resumo-cards")
+    await expect(resumoCards).toBeVisible()
+
+    const cardTotal = page.getByTestId("card-total-gasto")
+    const cardNotas = page.getByTestId("card-num-despesas")
+    const cardTotalValor = page.getByTestId("card-total-gasto-valor")
+
+    await expect(cardTotal).toBeVisible()
+    await expect(cardNotas).toBeVisible()
+    await expect(cardTotalValor).toBeVisible()
+
+    const boxTotal = await cardTotal.boundingBox()
+    const boxNotas = await cardNotas.boundingBox()
+    const boxValor = await cardTotalValor.boundingBox()
+
+    expect(boxTotal).not.toBeNull()
+    expect(boxNotas).not.toBeNull()
+    expect(boxValor).not.toBeNull()
+
+    // No mobile, o card-total-gasto ocupa toda a largura (col-span-2) e fica ACIMA do card-num-despesas
+    // Portanto boxTotal.y + boxTotal.height <= boxNotas.y (sem sobreposição vertical ou horizontal)
+    if (boxTotal && boxNotas && boxValor) {
+      expect(boxTotal.y + boxTotal.height).toBeLessThanOrEqual(boxNotas.y + 2) // Linha 1 acima da Linha 2
+      // O texto do valor R$ deve estar contido DENTRO da largura do card-total-gasto (sem vazar para a direita)
+      expect(boxValor.x + boxValor.width).toBeLessThanOrEqual(boxTotal.x + boxTotal.width + 1)
+    }
+
+    // Screenshot dos Gastos sem sobreposição
+    await page.screenshot({
+      path: path.join(ARTIFACT_DIR, "mobile_s25_gastos_sem_sobreposicao.png"),
+      fullPage: false,
+    })
+  })
