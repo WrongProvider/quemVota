@@ -224,6 +224,10 @@ test.describe("Otimizações Mobile Anti-Scroll Fatigue (Galaxy S25)", () => {
       expect(boxValor.x + boxValor.width).toBeLessThanOrEqual(boxTotal.x + boxTotal.width + 1)
     }
 
+    // Scroll para os cards de resumo de gastos
+    await resumoCards.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(400)
+
     // Screenshot dos Gastos sem sobreposição
     await page.screenshot({
       path: path.join(ARTIFACT_DIR, "mobile_s25_gastos_sem_sobreposicao.png"),
