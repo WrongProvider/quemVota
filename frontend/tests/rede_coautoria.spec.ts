@@ -15,6 +15,12 @@ test.describe("Rede de Coautoria e Parcerias Legislativas", () => {
     // Aguarda o carregamento do perfil
     await expect(page.locator("h1")).toContainText("Alice Portugal")
 
+    // Ativa a aba de coautoria se o painel estiver em abas
+    const tabSubCoautoria = page.locator('[data-testid="tab-sub-coautoria"]')
+    if (await tabSubCoautoria.isVisible()) {
+      await tabSubCoautoria.click()
+    }
+
     // Localiza a seção de rede de coautoria
     const sectionCoautoria = page.locator('[data-testid="section-rede-coautoria"]')
     await expect(sectionCoautoria).toBeVisible({ timeout: 10000 })

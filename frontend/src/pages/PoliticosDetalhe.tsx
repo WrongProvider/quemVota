@@ -53,6 +53,10 @@ import {
   Building2,
   Tag,
   Flame,
+  ArrowUp,
+  Compass,
+  GitFork,
+  Scale,
 } from "lucide-react"
 import { useRegistrarBusca } from "../hooks/useBuscaPopular"
 import { useVotacao } from "../hooks/useProposicoes"
@@ -330,12 +334,21 @@ export default function PoliticoDetalhe() {
   const isNumerico = /^\d+$/.test(idOuSlug ?? "")
 
   const [anoSelecionado, setAnoSelecionado] = useState<number | null>(null)
-  const [abaAtiva, setAbaAtiva] = useState<"visao-geral" | "votacoes" | "projetos" | "gastos" | "atuacao">("visao-geral")
+  const [abaAtiva, setAbaAtiva] = useState<"visao-geral" | "votacoes" | "projetos" | "conexoes" | "gastos" | "atuacao">("visao-geral")
   const [subAbaLegislativa, setSubAbaLegislativa] = useState<"votacoes" | "projetos">("votacoes")
+  const [subAbaConexoes, setSubAbaConexoes] = useState<"afinidades" | "coautoria" | "fidelidade">(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.toLowerCase()
+      if (hash.includes("coautoria")) return "coautoria"
+      if (hash.includes("fidelidade")) return "fidelidade"
+    }
+    return "afinidades"
+  })
+  const [mostrarVoltarAoTopo, setMostrarVoltarAoTopo] = useState(false)
   const [avisoSaidaAberto, setAvisoSaidaAberto] = useState(false)
   const [modalCompararAberto, setModalCompararAberto] = useState(false)
 
-  const scrollParaSecao = (id: string, aba: "visao-geral" | "votacoes" | "projetos" | "gastos" | "atuacao") => {
+  const scrollParaSecao = (id: string, aba: "visao-geral" | "votacoes" | "projetos" | "conexoes" | "gastos" | "atuacao") => {
     setAbaAtiva(aba)
     if (aba === "votacoes") {
       setSubAbaLegislativa("votacoes")
@@ -343,8 +356,15 @@ export default function PoliticoDetalhe() {
       setSubAbaLegislativa("projetos")
     }
 
-    const targetId = (aba === "votacoes" || aba === "projetos") ? "section-atividade-legislativa" : id
-    const el = document.querySelector(`[data-testid="${targetId}"]`) || document.getElementById(targetId) || document.querySelector(`[data-testid="${id}"]`) || document.getElementById(id)
+    let targetId = id
+    if (aba === "votacoes" || aba === "projetos") targetId = "section-atividade-legislativa"
+    if (aba === "conexoes") targetId = "section-conexoes"
+
+    const el =
+      document.querySelector(`[data-testid="${targetId}"]`) ||
+      document.getElementById(targetId) ||
+      document.querySelector(`[data-testid="${id}"]`) ||
+      document.getElementById(id)
     if (el) {
       const topOffset = 130
       const elementPosition = el.getBoundingClientRect().top + window.pageYOffset
@@ -358,12 +378,14 @@ export default function PoliticoDetalhe() {
   useEffect(() => {
     const secoes = [
       { id: "section-stats", aba: "visao-geral" as const },
+      { id: "section-atividade-legislativa", aba: (subAbaLegislativa === "projetos" ? "projetos" : "votacoes") as const },
+      { id: "section-conexoes", aba: "conexoes" as const },
       { id: "section-historico-de-gastos", aba: "gastos" as const },
       { id: "section-atuacao", aba: "atuacao" as const },
-      { id: "section-atividade-legislativa", aba: (subAbaLegislativa === "projetos" ? "projetos" : "votacoes") as const },
     ]
 
     const handleScroll = () => {
+      setMostrarVoltarAoTopo(window.scrollY > 400)
       const scrollPos = window.scrollY + 200
       for (const sec of secoes.slice().reverse()) {
         const el = document.querySelector(`[data-testid="${sec.id}"]`) || document.getElementById(sec.id)
@@ -706,6 +728,18 @@ export default function PoliticoDetalhe() {
                 <span>Projetos</span>
               </button>
               <button
+                data-testid="tab-conexoes"
+                onClick={() => scrollParaSecao("section-conexoes", "conexoes")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
+                  abaAtiva === "conexoes"
+                    ? "bg-slate-900 text-white font-semibold shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+              >
+                <Users size={14} />
+                <span>Conexões & Parcerias</span>
+              </button>
+              <button
                 data-testid="tab-gastos"
                 onClick={() => scrollParaSecao("section-historico-de-gastos", "gastos")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
@@ -727,7 +761,7 @@ export default function PoliticoDetalhe() {
                 }`}
               >
                 <TrendingUp size={14} />
-                <span>Atuação & Parcerias</span>
+                <span>Atuação & Temas</span>
               </button>
             </nav>
           </div>
@@ -904,45 +938,7 @@ export default function PoliticoDetalhe() {
             </section>
           )}
 
-          {/* ── SEÇÃO DE ATUAÇÃO E PARCERIAS ── */}
-          <div id="section-atuacao" data-testid="section-atuacao" className="space-y-10">
-            {/* ── ATUAÇÃO E RECURSOS PARLAMENTARES ── */}
-            {performance && (
-              <section key={`perf-${anoSelecionado}`} className="section-fade">
-                <div className="flex items-center gap-2 mb-5">
-                  <TrendingUp size={18} className="text-blue-500" />
-                  <h2 className="display-font text-xl font-bold text-slate-800">Atuação e Recursos Parlamentares</h2>
-                </div>
-                <PoliticoGraficos performance={performance} />
-              </section>
-            )}
-
-            {/* ── FOCO TEMÁTICO DA ATUAÇÃO (SPEC-001) ── */}
-            <PainelTemasAtuacao politicoId={data.slug || data.id} />
-
-            {/* ── REDE DE COAUTORIA E PARCERIAS LEGISLATIVAS ── */}
-            <PainelRedeCoautoria politicoId={data.slug || data.id} />
-          </div>
-
-          {/* ── HISTÓRICO DE GASTOS ── */}
-          <section id="section-historico-de-gastos" className="mt-10" data-testid="section-historico-de-gastos">
-            <div className="flex items-center gap-2 mb-5">
-              <Receipt size={18} className="text-blue-500" />
-              <h2 className="display-font text-xl font-bold text-slate-800">Histórico de Gastos</h2>
-            </div>
-            <LinhaDoTempo politicoId={data.id} />
-          </section>
-
-          {/* ── POSICIONAMENTO E ALINHAMENTO POLÍTICO ── */}
-          <div id="section-posicionamento-container" className="space-y-10">
-            {/* ── FIDELIDADE PARTIDÁRIA NAS VOTAÇÕES ── */}
-            <PainelFidelidadePartidaria politicoId={data.slug || data.id} />
-
-            {/* ── RADAR DE AFINIDADES E DIVERGÊNCIAS DE VOTO ── */}
-            <PainelRadarAfinidades politicoId={data.slug || data.id} />
-          </div>
-
-          {/* ── ATIVIDADE LEGISLATIVA (VOTAÇÕES & PROPOSIÇÕES EM ABAS) ── */}
+          {/* ── 1. ATIVIDADE LEGISLATIVA (VOTAÇÕES & PROPOSIÇÕES EM ABAS) ── */}
           <section
             id="section-atividade-legislativa"
             data-testid="section-atividade-legislativa"
@@ -1026,8 +1022,143 @@ export default function PoliticoDetalhe() {
               <HistoricoProjetos politicoId={data.id} anoSelecionado={anoSelecionado} />
             </div>
           </section>
+
+          {/* ── 2. CONEXÕES & ALINHAMENTOS POLÍTICOS (EM ABAS) ── */}
+          <section
+            id="section-conexoes"
+            data-testid="section-conexoes"
+            className="space-y-6 pt-2"
+          >
+            {/* Alias de retrocompatibilidade para testes legados */}
+            <div id="section-posicionamento-container" data-testid="section-posicionamento-container" className="hidden" />
+
+            {/* Cabeçalho Unificado com Segmented Control */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Users size={20} className="text-blue-500" />
+                  <h2 className="display-font text-xl font-bold text-slate-800">
+                    Conexões & Alinhamentos Políticos
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Mapeamento factual de afinidades nominais em plenário, parcerias na autoria de proposições e fidelidade à bancada.
+                </p>
+              </div>
+
+              {/* Seletor de Abas de Conexões (Segmented Control touch-friendly) */}
+              <div
+                className="inline-flex p-1 bg-slate-100 rounded-2xl border border-slate-200 self-start sm:self-auto w-full sm:w-auto overflow-x-auto scrollbar-none"
+                role="tablist"
+                aria-label="Alternar entre afinidades, coautoria e fidelidade partidária"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={subAbaConexoes === "afinidades"}
+                  data-testid="tab-sub-afinidades"
+                  onClick={() => setSubAbaConexoes("afinidades")}
+                  className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all min-h-[44px] cursor-pointer whitespace-nowrap ${
+                    subAbaConexoes === "afinidades"
+                      ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                  }`}
+                >
+                  <Compass size={15} className={subAbaConexoes === "afinidades" ? "text-blue-600" : "text-slate-400"} />
+                  <span>Afinidades de Voto</span>
+                </button>
+
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={subAbaConexoes === "coautoria"}
+                  data-testid="tab-sub-coautoria"
+                  onClick={() => setSubAbaConexoes("coautoria")}
+                  className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all min-h-[44px] cursor-pointer whitespace-nowrap ${
+                    subAbaConexoes === "coautoria"
+                      ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                  }`}
+                >
+                  <GitFork size={15} className={subAbaConexoes === "coautoria" ? "text-blue-600" : "text-slate-400"} />
+                  <span>Coautoria & Parcerias</span>
+                </button>
+
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={subAbaConexoes === "fidelidade"}
+                  data-testid="tab-sub-fidelidade"
+                  onClick={() => setSubAbaConexoes("fidelidade")}
+                  className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all min-h-[44px] cursor-pointer whitespace-nowrap ${
+                    subAbaConexoes === "fidelidade"
+                      ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                  }`}
+                >
+                  <Scale size={15} className={subAbaConexoes === "fidelidade" ? "text-blue-600" : "text-slate-400"} />
+                  <span>Fidelidade Partidária</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Painel 1: Radar de Afinidades e Divergências de Voto */}
+            <div className={subAbaConexoes === "afinidades" ? "block" : "hidden"}>
+              <PainelRadarAfinidades politicoId={data.slug || data.id} />
+            </div>
+
+            {/* Painel 2: Rede de Coautoria e Parcerias Legislativas */}
+            <div className={subAbaConexoes === "coautoria" ? "block" : "hidden"}>
+              <PainelRedeCoautoria politicoId={data.slug || data.id} />
+            </div>
+
+            {/* Painel 3: Fidelidade Partidária */}
+            <div className={subAbaConexoes === "fidelidade" ? "block" : "hidden"}>
+              <PainelFidelidadePartidaria politicoId={data.slug || data.id} />
+            </div>
+          </section>
+
+          {/* ── 3. HISTÓRICO DE GASTOS ── */}
+          <section id="section-historico-de-gastos" className="mt-10" data-testid="section-historico-de-gastos">
+            <div className="flex items-center gap-2 mb-5">
+              <Receipt size={18} className="text-blue-500" />
+              <h2 className="display-font text-xl font-bold text-slate-800">Histórico de Gastos</h2>
+            </div>
+            <LinhaDoTempo politicoId={data.id} />
+          </section>
+
+          {/* ── 4. ATUAÇÃO E TEMAS ── */}
+          <div id="section-atuacao" data-testid="section-atuacao" className="space-y-10">
+            {/* ── ATUAÇÃO E RECURSOS PARLAMENTARES ── */}
+            {performance && (
+              <section key={`perf-${anoSelecionado}`} className="section-fade">
+                <div className="flex items-center gap-2 mb-5">
+                  <TrendingUp size={18} className="text-blue-500" />
+                  <h2 className="display-font text-xl font-bold text-slate-800">Atuação e Recursos Parlamentares</h2>
+                </div>
+                <PoliticoGraficos performance={performance} />
+              </section>
+            )}
+
+            {/* ── FOCO TEMÁTICO DA ATUAÇÃO (SPEC-001) ── */}
+            <PainelTemasAtuacao politicoId={data.slug || data.id} />
+          </div>
         </div>
       </div>
+
+      {/* ── BOTÃO FLUTUANTE VOLTAR AO TOPO (ANTI-SCROLL FATIGUE) ── */}
+      {mostrarVoltarAoTopo && (
+        <button
+          type="button"
+          data-testid="btn-voltar-ao-topo"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-6 right-6 z-40 p-3 bg-slate-900 text-white rounded-full shadow-lg hover:bg-blue-600 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center min-w-[44px] min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+          aria-label="Voltar ao topo da página"
+          title="Voltar ao topo"
+        >
+          <ArrowUp size={20} />
+        </button>
+      )}
 
       {/* ── MODAL COMPARAR ── */}
       {modalCompararAberto && (

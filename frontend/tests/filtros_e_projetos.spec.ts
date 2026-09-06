@@ -154,4 +154,54 @@ test.describe("Filtros de Votações e Seção de Projetos do Parlamentar", () =
     await expect(selectTipo).toHaveValue("")
     await expect(selectTema).toHaveValue("")
   })
+
+  test("deve alternar entre as abas de Conexões e acionar o botão Voltar ao Topo contra scroll fatigue", async ({ page }) => {
+    // 1. Navega para o perfil de Alice Portugal
+    await page.goto("/politicos/alice-portugal")
+    await expect(page.locator("h1")).toContainText("Alice Portugal")
+
+    // 2. Rola a página para acionar o botão Voltar ao Topo
+    const btnTopoAntes = page.getByTestId("btn-voltar-ao-topo")
+    await expect(btnTopoAntes).toBeHidden()
+
+    await page.evaluate(() => window.scrollTo(0, 800))
+    await page.waitForTimeout(300)
+
+    const btnTopoDepois = page.getByTestId("btn-voltar-ao-topo")
+    await expect(btnTopoDepois).toBeVisible({ timeout: 5000 })
+
+    // 3. Testa clique no botão Voltar ao Topo
+    await btnTopoDepois.click()
+    await page.waitForTimeout(600)
+    const scrollY = await page.evaluate(() => window.scrollY)
+    expect(scrollY).toBeLessThanOrEqual(100)
+
+    // 4. Navega até a seção de conexões e testa as 3 abas
+    const tabConexoes = page.getByTestId("tab-conexoes")
+    await expect(tabConexoes).toBeVisible()
+    await tabConexoes.click()
+
+    const sectionConexoes = page.getByTestId("section-conexoes")
+    await expect(sectionConexoes).toBeVisible({ timeout: 5000 })
+
+    const tabSubAfinidades = page.getByTestId("tab-sub-afinidades")
+    const tabSubCoautoria = page.getByTestId("tab-sub-coautoria")
+    const tabSubFidelidade = page.getByTestId("tab-sub-fidelidade")
+
+    await expect(tabSubAfinidades).toBeVisible()
+    await expect(tabSubCoautoria).toBeVisible()
+    await expect(tabSubFidelidade).toBeVisible()
+
+    // Valida aba Afinidades (ativa por padrão)
+    await expect(page.getByTestId("section-radar-afinidades")).toBeVisible()
+
+    // Alterna para Coautoria
+    await tabSubCoautoria.click()
+    await expect(page.getByTestId("section-rede-coautoria")).toBeVisible()
+
+    // Alterna para Fidelidade
+    await tabSubFidelidade.click()
+    await expect(page.getByTestId("section-fidelidade-partidaria")).toBeVisible()
+  })
 })
+

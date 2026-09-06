@@ -15,6 +15,12 @@ test.describe("Fidelidade Partidária nas Votações Nominais", () => {
     // Aguarda o carregamento do perfil
     await expect(page.locator("h1")).toContainText("Alice Portugal")
 
+    // Ativa a aba de fidelidade se o painel estiver em abas
+    const tabSubFidelidade = page.locator('[data-testid="tab-sub-fidelidade"]')
+    if (await tabSubFidelidade.isVisible()) {
+      await tabSubFidelidade.click()
+    }
+
     // Localiza a seção de fidelidade partidária
     const sectionFidelidade = page.locator('[data-testid="section-fidelidade-partidaria"]')
     await expect(sectionFidelidade).toBeVisible({ timeout: 10000 })
