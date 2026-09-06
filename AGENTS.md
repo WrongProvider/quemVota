@@ -34,7 +34,7 @@ quemVota/
 
 ### Regras de Fronteira por Especialidade:
 - **Agente de Backend (`agent/backend`):** Modifica exclusivamente `backend/`. Consome modelos de `shared/`. NÃO edita tabelas em `shared/models.py` diretamente sem validação de migração.
-- **Agente de Frontend (`agent/frontend`):** Modifica exclusivamente `frontend/`. Respeita estritamente os contratos OpenAPI/Pydantic fornecidos pelo backend. É obrigatório validar qualquer implementação ou alteração com testes end-to-end (E2E) utilizando o MCP do Playwright.
+- **Agente de Frontend (`agent/frontend`):** Modifica exclusivamente `frontend/`. Respeita estritamente os contratos OpenAPI/Pydantic fornecidos pelo backend. Garante arquitetura responsiva (mobile-first), usabilidade touch e conformidade estrita com SEO e compartilhamento social. É obrigatório validar qualquer implementação ou alteração com testes end-to-end (E2E) utilizando o MCP do Playwright.
 - **Agente de ETL (`agent/etl`):** Especialista em Engenharia de Dados Legislativos. Modifica `injest_banco/` e `tasks/`. Responsável pela refatoração modular de scripts de ingestão (`etl_camara.py`), validação estrita de dados com Pydantic V2, resiliência HTTP (backoff, rate-limits), tratamento de registros órfãos e garantia de idempotência total (`ON CONFLICT`) em todas as inserções no PostgreSQL.
 - **Agente de IA/Vetorial (`agent/ai`):** Modifica `embeddings/`, `shared/models_vetorial.py` e `shared/vector_search.py`.
 - **Agente de QA/Gatekeeper (`agent/qa-validation`):** Valida a integração de ponta a ponta, roda testes unitários e linting. Não introduz novas features.
@@ -82,13 +82,23 @@ O especialista em ETL da Câmara deve atuar ativamente na modernização, qualid
   - Campos estruturais essenciais para a API e rotas do frontend (como `deputados.slug`, constraints e índices únicos) NUNCA devem depender de comandos ad-hoc manuais no terminal.
   - Devem ser formalizados via migrations do Alembic (`alembic revision -m "..."`) ou em rotinas idempotentes de seed/bootstrap do ETL com execução garantida.
 
-### Frontend & Testes End-to-End Obrigatórios (Playwright MCP):
-- **Stack:** React + TypeScript + Vite.
-- **Validação E2E Mandatória:** Qualquer implementação, refatoração ou nova funcionalidade no frontend (`frontend/`) **DEVE** obrigatoriamente passar por validação com testes end-to-end (E2E) utilizando o MCP do Playwright antes de ser concluída.
-- **Protocolo de Validação:**
-  1. **Disponibilidade do Ambiente:** Assegurar que a aplicação frontend (e APIs dependentes, se necessário) esteja em execução no ambiente local (`npm run dev` ou build de preview).
-  2. **Interação Real via MCP:** Empregar as ferramentas do MCP do Playwright (`navigate`, `click`, `fill`, etc.) para simular a navegação e o fluxo completo do usuário nas telas modificadas.
-  3. **Verificação de Integridade:** Checar logs de console (ausência de erros de JavaScript e chamadas HTTP com status de erro) e validar visualmente/estruturalmente os elementos e respostas da interface.
+### Frontend, Mobile-First, SEO & Testes End-to-End Obrigatórios (Playwright MCP):
+- **Stack & Estilização:** React + TypeScript + Vite + Tailwind CSS.
+- **Diretrizes de Apresentação Mobile e Responsividade (Mobile-First):**
+  - **Abordagem Mobile-First Obrigatória:** Todo layout, tela e componente deve ser projetado e estilizado prioritariamente para telas menores (smartphones), expandindo progressivamente via breakpoints Tailwind (`sm:`, `md:`, `lg:`, `xl:`).
+  - **Prevenção de Quebras de Layout e Overflow:** Proibido overflow horizontal indesejado (`document.body.scrollWidth > window.innerWidth`). Elementos analíticos complexos (tabelas de votações, comparadores, gráficos Recharts e grafos de relacionamento) devem implementar fallbacks mobile adequados (ex.: contêiner com rolagem horizontal delimitada, transposição para cards empilhados ou tabs adaptadas).
+  - **Ergonomia e Usabilidade Touch:** Elementos interativos (botões, filtros, chips e links) devem possuir área de toque mínima confortável (alvos recomendados de pelo menos 44x44px) e espaçamento adequado para evitar toques acidentais em dispositivos móveis.
+- **Diretrizes de SEO, Metadados e Compartilhamento Social:**
+  - **Uso Mandatório do Hook `useSeo`:** Toda rota/página pública deve invocar obrigatoriamente o hook `useSeo` (`src/hooks/useSeo.ts`), declarando dinamicamente `title`, `description`, URL canônica, Open Graph (`og:title`, `og:description`, `og:image`, `og:url`) e Twitter Cards (`twitter:card`, `twitter:image`).
+  - **Neutralidade Factual em Metadados:** Títulos e descrições para crawlers e prévias sociais devem respeitar estritamente o Princípio da Neutralidade Factual (dados descritivos, sem adjetivos avaliativos ou juízos de valor).
+  - **HTML Semântico e Acessibilidade:** Emprego obrigatório de tags semânticas estruturantes (`<main>`, `<header>`, `<nav>`, `<article>`, `<section>`, hierarquia única de `<h1>`) para garantir indexabilidade adequada por motores de busca e conformidade com leitores de tela.
+  - **Sitemap e Indexação:** Novas rotas públicas canônicas (ex: novos painéis ou perfis de entidades) devem ser mapeadas no gerador de sitemap (`generate-sitemap.mjs`) e contemplar dados estruturados JSON-LD quando aplicável.
+- **Validação E2E Mandatória (Playwright MCP):**
+  - Qualquer implementação, refatoração ou nova funcionalidade no frontend (`frontend/`) **DEVE** obrigatoriamente passar por validação com testes end-to-end (E2E) utilizando o MCP do Playwright antes de ser concluída.
+  - **Protocolo de Validação:**
+    1. **Disponibilidade do Ambiente:** Assegurar que a aplicação frontend (e APIs dependentes, se necessário) esteja em execução no ambiente local (`npm run dev` ou build de preview).
+    2. **Interação Real via MCP (Desktop & Mobile):** Empregar as ferramentas do MCP do Playwright (`navigate`, `click`, `fill`, `browser_resize`, etc.) para simular a navegação e o fluxo completo do usuário nas telas modificadas — testando explicitamente a usabilidade tanto em desktop quanto em resolução mobile (ex.: 390x844).
+    3. **Verificação de Integridade:** Checar logs de console (ausência de erros de JavaScript e chamadas HTTP com status de erro), validar visualmente/estruturalmente os elementos e confirmar ausência de overflow horizontal indesejado.
 - **Suíte de Regressão Global no Definition of Done:**
   - Além de testar a nova tela, é estritamente obrigatório rodar a suíte de regressão automatizada do frontend antes de declarar conclusão:
     ```bash
