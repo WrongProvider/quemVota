@@ -164,7 +164,6 @@ test.describe("Otimizações Mobile Anti-Scroll Fatigue (Galaxy S25)", () => {
     const cardAlinhados = page.getByTestId("card-afinidade-item")
     await expect(cardAlinhados).toHaveCount(10)
   })
-})
 
   test("deve centralizar a foto e descricao do deputado e exibir cards de gastos sem sobreposicao de numeros no mobile (360x780)", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 780 })
@@ -234,3 +233,53 @@ test.describe("Otimizações Mobile Anti-Scroll Fatigue (Galaxy S25)", () => {
       fullPage: false,
     })
   })
+
+  test("deve validar ausência de sobreposição no botão de consulta da Home, diretório e rankings no mobile (360x780)", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 })
+
+    // 1. Home
+    await page.goto("/")
+    await page.waitForLoadState("networkidle")
+
+    const formBusca = page.locator("form").first()
+    const inputBusca = page.getByTestId("input-busca-home")
+    const btnBusca = page.getByTestId("btn-consultar-home")
+
+    await expect(formBusca).toBeVisible()
+    await expect(inputBusca).toBeVisible()
+    await expect(btnBusca).toBeVisible()
+
+    // No mobile (360px), o botão exibe o texto conciso 'Buscar'
+    await expect(btnBusca).toContainText("Buscar")
+
+    // Verificar se o botão não é cortado e está totalmente contido no form
+    const formBox = await formBusca.boundingBox()
+    const btnBox = await btnBusca.boundingBox()
+    expect(formBox).not.toBeNull()
+    expect(btnBox).not.toBeNull()
+
+    if (formBox && btnBox) {
+      expect(btnBox.x + btnBox.width).toBeLessThanOrEqual(formBox.x + formBox.width + 1)
+      expect(btnBox.x).toBeGreaterThan(formBox.x)
+      expect(btnBox.width).toBeGreaterThan(60) // largura confortável do botão
+    }
+
+    // Zero overflow horizontal na Home
+    const overflowHome = await page.evaluate(() => document.body.scrollWidth > window.innerWidth)
+    expect(overflowHome).toBeFalsy()
+
+    // 2. Diretório de Parlamentares (/politicos)
+    await page.goto("/politicos")
+    await page.waitForLoadState("networkidle")
+
+    const overflowPoliticos = await page.evaluate(() => document.body.scrollWidth > window.innerWidth)
+    expect(overflowPoliticos).toBeFalsy()
+
+    // 3. Rankings (/rankings)
+    await page.goto("/rankings")
+    await page.waitForLoadState("networkidle")
+
+    const overflowRankings = await page.evaluate(() => document.body.scrollWidth > window.innerWidth)
+    expect(overflowRankings).toBeFalsy()
+  })
+})
