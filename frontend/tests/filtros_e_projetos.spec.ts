@@ -92,4 +92,66 @@ test.describe("Filtros de Votações e Seção de Projetos do Parlamentar", () =
     // Após limpar, volta para o total de votações
     await expect(badgeVotacoes).toContainText("1.098 registros")
   })
+
+  test("deve buscar tema do momento (escala 6x1), exibir link oficial da câmara e filtrar por tipo e tema em votações", async ({ page }) => {
+    // 1. Navega para o perfil de Erika Hilton
+    await page.goto("/politicos/erika-hilton")
+    await expect(page.locator("h1")).toContainText("Erika Hilton")
+
+    // 2. Acessa a seção de votações
+    const tabVotacoes = page.getByTestId("tab-votacoes")
+    await tabVotacoes.click()
+
+    const sectionVotacoes = page.getByTestId("section-votacoes")
+    await expect(sectionVotacoes).toBeVisible()
+
+    // 3. Valida KPIs de votações
+    const kpiTotal = page.getByTestId("kpi-total-votacoes")
+    await expect(kpiTotal).toBeVisible()
+    const kpiSim = page.getByTestId("kpi-votos-sim")
+    await expect(kpiSim).toBeVisible()
+    const kpiNao = page.getByTestId("kpi-votos-nao")
+    await expect(kpiNao).toBeVisible()
+
+    // 4. Clica no chip do tema do momento "Escala 6x1 (PEC 221)"
+    const chip6x1 = page.locator("button", { hasText: "Escala 6x1 (PEC 221)" })
+    await expect(chip6x1).toBeVisible()
+    await chip6x1.click()
+    await page.waitForTimeout(600)
+
+    // Valida que o input de busca foi preenchido e lista filtrou para a PEC 221
+    const inputBusca = page.getByTestId("input-busca-votacoes")
+    await expect(inputBusca).toHaveValue("escala 6x1")
+
+    const listaVotacoes = page.getByTestId("votacoes-list")
+    await expect(listaVotacoes).toContainText("PEC 221/2019")
+
+    // 5. Valida a presença do link oficial para a Câmara dos Deputados
+    const linkCamara = listaVotacoes.locator("a[title*='Câmara']").first()
+    await expect(linkCamara).toBeVisible()
+    await expect(linkCamara).toHaveAttribute("target", "_blank")
+    const href = await linkCamara.getAttribute("href")
+    expect(href).toMatch(/^https:\/\/(www\.)?camara\.leg\.br/)
+
+    // 6. Testa filtro por Tipo (PEC) e Tema (Trabalho)
+    const selectTipo = page.getByTestId("select-tipo-votacao")
+    await selectTipo.selectOption("PEC")
+    await page.waitForTimeout(400)
+
+    const selectTema = page.getByTestId("select-tema-votacao")
+    await selectTema.selectOption("Trabalho")
+    await page.waitForTimeout(400)
+
+    await expect(listaVotacoes).toContainText("PEC 221/2019")
+
+    // 7. Limpa filtros e verifica restauração
+    const btnLimpar = page.getByTestId("btn-limpar-filtros-votacoes")
+    await expect(btnLimpar).toBeVisible()
+    await btnLimpar.click()
+    await page.waitForTimeout(400)
+
+    await expect(inputBusca).toHaveValue("")
+    await expect(selectTipo).toHaveValue("")
+    await expect(selectTema).toHaveValue("")
+  })
 })
