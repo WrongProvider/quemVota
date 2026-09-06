@@ -63,11 +63,6 @@ const PRINCIPAIS_VOTACOES_DESTAQUE = [
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-
-function getOrcamentoColor(_pct: number) {
-  return "text-slate-800"
-}
-
 // ── COMPARTILHAMENTO ── idêntico ao PoliticosDetalhe ───────────────────────
 
 function BotoesCompartilhamento({ texto, url }: { texto: string; url: string }) {
@@ -386,12 +381,14 @@ function ColunaPerfil({
 
 function LinhaComparacao({
   titulo,
+  subtitulo,
   valA,
   valB,
   numA,
   numB,
 }: {
   titulo: string
+  subtitulo?: string
   valA: React.ReactNode
   valB: React.ReactNode
   numA?: number | null
@@ -405,18 +402,43 @@ function LinhaComparacao({
   const pctB = Math.min(100, Math.max(0, (safeB / maxVal) * 100))
 
   return (
-    <div className="py-4 border-b border-slate-100 last:border-0">
-      {/* Rótulo central com valores */}
-      <div className="flex items-center justify-between text-xs mb-2">
-        <span className="font-mono font-bold text-sm text-slate-900 tabular-nums">
-          {valA}
-        </span>
-        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-center">
-          {titulo}
-        </span>
-        <span className="font-mono font-bold text-sm text-slate-900 tabular-nums">
-          {valB}
-        </span>
+    <div className="py-3.5 border-b border-slate-100 last:border-0">
+      {/* Rótulo com valores: empilhado no mobile para não espremer valores monetários, lado a lado no desktop */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 mb-2">
+        {/* No mobile: Título centralizado no topo com subtítulo */}
+        <div className="text-center sm:hidden order-1">
+          <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider block">
+            {titulo}
+          </span>
+          {subtitulo && (
+            <span className="text-[10px] text-slate-400 block normal-case font-normal">
+              {subtitulo}
+            </span>
+          )}
+        </div>
+
+        {/* Linha com valor A na esquerda e valor B na direita */}
+        <div className="flex items-center justify-between order-2 sm:order-none w-full">
+          <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 tabular-nums text-left">
+            {valA}
+          </span>
+
+          {/* No desktop: Título centralizado no meio */}
+          <div className="hidden sm:block text-center px-2">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              {titulo}
+            </span>
+            {subtitulo && (
+              <span className="text-[10px] text-slate-400 block mt-0.5 normal-case font-normal">
+                {subtitulo}
+              </span>
+            )}
+          </div>
+
+          <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 tabular-nums text-right">
+            {valB}
+          </span>
+        </div>
       </div>
 
       {/* Barra bilateral divergente ancorada ao centro */}
@@ -626,64 +648,71 @@ function BlocoPerformance({
         </div>
       </div>
 
-      {/* Composição do orçamento */}
-      {((perfA.info?.gasto_gabinete ?? 0) > 0 || (perfB.info?.gasto_gabinete ?? 0) > 0) && (
-        <div className="mt-4 bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-xs">
-          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50">
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-              Composição Orçamentária
-            </p>
-          </div>
+      {/* Composição do orçamento (Head-to-Head lado a lado) */}
+      {((perfA.info?.gasto_gabinete ?? 0) > 0 ||
+        (perfB.info?.gasto_gabinete ?? 0) > 0 ||
+        (perfA.info?.total_gasto ?? 0) > 0 ||
+        (perfB.info?.total_gasto ?? 0) > 0) && (() => {
+        const pctA = perfA.info?.orcamento_utilizado_pct ?? perfA.info?.cota_utilizada_pct ?? 0
+        const pctB = perfB.info?.orcamento_utilizado_pct ?? perfB.info?.cota_utilizada_pct ?? 0
+        const fmtMoeda = (val: number) =>
+          `R$ ${val.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-          {[
-            { info: perfA.info, nome: nomeA },
-            { info: perfB.info, nome: nomeB },
-          ].map(({ info, nome }, i) => {
-            const pct = info?.orcamento_utilizado_pct ?? info?.cota_utilizada_pct ?? 0
-            return (
-              <div key={i} className={i === 1 ? "border-t border-slate-200/70" : ""}>
-                <div className="px-5 py-2.5 bg-slate-50/30 border-b border-slate-100">
-                  <p className="text-xs font-semibold text-slate-700 truncate">{nome}</p>
+        return (
+          <div className="mt-4 bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-xs">
+            <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50">
+              <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
+                <p className="text-left text-xs font-semibold text-slate-900 truncate">{nomeA}</p>
+                <div className="min-w-[140px] text-center text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Composição Orçamentária
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100">
-                  {[
-                    {
-                      label: "Cota Parlamentar",
-                      value: `R$ ${(info?.total_gasto ?? 0).toLocaleString("pt-BR")}`,
-                      sub: "gastos CEAP",
-                      color: "text-slate-900",
-                    },
-                    {
-                      label: "Verba de Gabinete",
-                      value: `R$ ${(info?.gasto_gabinete ?? 0).toLocaleString("pt-BR")}`,
-                      sub: "pessoal / funcionários",
-                      color: "text-slate-900",
-                    },
-                    {
-                      label: "Gasto Total",
-                      value: `R$ ${(info?.gasto_total ?? 0).toLocaleString("pt-BR")}`,
-                      sub: "CEAP + gabinete",
-                      color: "text-slate-900",
-                    },
-                    {
-                      label: "Orçamento Utilizado",
-                      value: `${pct.toFixed(1)}%`,
-                      sub: "do total disponível",
-                      color: getOrcamentoColor(pct),
-                    },
-                  ].map((item) => (
-                    <div key={item.label} className="px-5 py-4 text-center">
-                      <p className={`font-mono tabular-nums font-bold text-base ${item.color}`}>{item.value}</p>
-                      <p className="text-[11px] font-semibold text-slate-600 mt-1">{item.label}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{item.sub}</p>
-                    </div>
-                  ))}
-                </div>
+                <p className="text-right text-xs font-semibold text-slate-700 truncate">{nomeB}</p>
               </div>
-            )
-          })}
-        </div>
-      )}
+            </div>
+
+            <div className="px-5 py-1">
+              <LinhaComparacao
+                titulo="Cota Parlamentar"
+                subtitulo="gastos CEAP"
+                valA={fmtMoeda(perfA.info?.total_gasto ?? 0)}
+                valB={fmtMoeda(perfB.info?.total_gasto ?? 0)}
+                numA={perfA.info?.total_gasto ?? 0}
+                numB={perfB.info?.total_gasto ?? 0}
+              />
+              <LinhaComparacao
+                titulo="Verba de Gabinete"
+                subtitulo="pessoal / funcionários"
+                valA={fmtMoeda(perfA.info?.gasto_gabinete ?? 0)}
+                valB={fmtMoeda(perfB.info?.gasto_gabinete ?? 0)}
+                numA={perfA.info?.gasto_gabinete ?? 0}
+                numB={perfB.info?.gasto_gabinete ?? 0}
+              />
+              <LinhaComparacao
+                titulo="Gasto Total"
+                subtitulo="CEAP + gabinete"
+                valA={fmtMoeda(perfA.info?.gasto_total ?? 0)}
+                valB={fmtMoeda(perfB.info?.gasto_total ?? 0)}
+                numA={perfA.info?.gasto_total ?? 0}
+                numB={perfB.info?.gasto_total ?? 0}
+              />
+              <LinhaComparacao
+                titulo="Orçamento Utilizado"
+                subtitulo="do total disponível"
+                valA={`${pctA.toFixed(1)}%`}
+                valB={`${pctB.toFixed(1)}%`}
+                numA={pctA}
+                numB={pctB}
+              />
+            </div>
+
+            <div className="px-5 py-2.5 border-t border-slate-100 bg-slate-50/40">
+              <p className="text-[11px] text-slate-400 text-center">
+                A Cota Parlamentar (CEAP) cobre despesas de mandato. A Verba de Gabinete custeia secretários parlamentares.
+              </p>
+            </div>
+          </div>
+        )
+      })()}
     </section>
   )
 }

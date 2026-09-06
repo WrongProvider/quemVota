@@ -91,6 +91,14 @@ test.describe("Comparador Direto de Parlamentares", () => {
     const btnInverter = page.getByTestId("btn-inverter-lados")
     await expect(btnInverter).toBeVisible()
 
+    // Valida seção de Composição Orçamentária lado a lado (Head-to-Head)
+    const secOrcamento = page.locator("text=Composição Orçamentária").first()
+    await expect(secOrcamento).toBeVisible({ timeout: 10000 })
+    await expect(page.locator("text=Cota Parlamentar").first()).toBeVisible()
+    await expect(page.locator("text=Verba de Gabinete").first()).toBeVisible()
+    await expect(page.locator("text=Gasto Total").first()).toBeVisible()
+    await expect(page.locator("text=Orçamento Utilizado").first()).toBeVisible()
+
     // Captura screenshot da página de confronto
     await page.screenshot({ path: "test-results/comparador-confronto-fullpage.png", fullPage: true })
 
