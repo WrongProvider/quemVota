@@ -207,6 +207,10 @@ test.describe("Otimizações Mobile Anti-Scroll Fatigue (Galaxy S25)", () => {
     await expect(cardNotas).toBeVisible()
     await expect(cardTotalValor).toBeVisible()
 
+    // Scroll para os cards de resumo de gastos e aguarda estabilização
+    await resumoCards.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(500)
+
     const boxTotal = await cardTotal.boundingBox()
     const boxNotas = await cardNotas.boundingBox()
     const boxValor = await cardTotalValor.boundingBox()
@@ -222,10 +226,6 @@ test.describe("Otimizações Mobile Anti-Scroll Fatigue (Galaxy S25)", () => {
       // O texto do valor R$ deve estar contido DENTRO da largura do card-total-gasto (sem vazar para a direita)
       expect(boxValor.x + boxValor.width).toBeLessThanOrEqual(boxTotal.x + boxTotal.width + 1)
     }
-
-    // Scroll para os cards de resumo de gastos
-    await resumoCards.scrollIntoViewIfNeeded()
-    await page.waitForTimeout(400)
 
     // Screenshot dos Gastos sem sobreposição
     await page.screenshot({
