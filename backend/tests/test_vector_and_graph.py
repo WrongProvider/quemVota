@@ -258,7 +258,10 @@ async def test_api_comparador_politicos_filtro_busca_popular(client):
     assert data["busca_filtrada"] == "previdencia"
     assert "votos_alinhados" in data
     assert "votos_divergentes" in data
-    assert data["votos_alinhados"] + data["votos_divergentes"] == data["total_votacoes_comuns"]
+    assert (
+        data["votos_alinhados"] + data["votos_divergentes"]
+        == data["total_votacoes_comuns"]
+    )
     # Se houver divergências ou alinhamentos retornados, eles devem conter a estrutura esperada
     for item in data.get("divergencias", []) + data.get("alinhamentos", []):
         assert "id_votacao" in item
@@ -328,3 +331,19 @@ async def test_api_grafo_proposicao(client):
     assert "temas" in data
     assert "votacoes" in data
     assert "fonte_dados" in data
+
+
+def test_execute_cypher_handles_percent_sign():
+    """Garante que strings com símbolo '%' (ex: '10% das multas') não causem TypeError de immutabledict."""
+    from shared.database import SessionLocal
+    from shared.graph import _escape, execute_cypher
+
+    session = SessionLocal()
+    try:
+        cypher = f"RETURN '{_escape('Dispõe sobre 10% de reajuste')}' AS txt"
+        res = execute_cypher(session, cypher, "txt agtype")
+        assert res is not None
+        assert len(res) == 1
+        assert "10% de reajuste" in res[0][0]
+    finally:
+        session.close()

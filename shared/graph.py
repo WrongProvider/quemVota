@@ -104,10 +104,20 @@ def execute_cypher(
         if params:
             res = conn.exec_driver_sql(sql, params)
         else:
-            res = conn.exec_driver_sql(sql)
+            # Escapa '%' duplicando-o ('%%') quando não há parâmetros informados.
+            # No driver psycopg2, caracteres '%' literais (comuns em ementas como '10%')
+            # são interpretados como marcadores de formatação printf quando executados
+            # sem escape, gerando:
+            # TypeError: 'sqlalchemy.cyextension.immutabledict.immutabledict is not a sequence'.
+            safe_sql = sql.replace("%", "%%")
+            res = conn.exec_driver_sql(safe_sql)
         return res.fetchall()
     except Exception as e:
         logger.error(f"Erro ao executar Cypher: {e}")
+        try:
+            session.rollback()
+        except Exception:
+            pass
         raise
 
 
@@ -166,6 +176,7 @@ def sync_relational_to_graph(
             counts["temas"] += 1
         except Exception:
             pass
+    session.commit()
 
     # 2. Sincroniza Deputados (Políticos)
     q_dep = session.query(Deputado)
@@ -190,6 +201,7 @@ def sync_relational_to_graph(
             counts["politicos"] += 1
         except Exception:
             pass
+    session.commit()
 
     # 3. Sincroniza Proposições & Relação com Temas
     q_prop = session.query(Proposicao)
@@ -207,7 +219,7 @@ def sync_relational_to_graph(
         q_prop = q_prop.limit(batch_limit)
     proposicoes = q_prop.all()
 
-    for pr in proposicoes:
+    for idx, pr in enumerate(proposicoes, 1):
         cypher_pr = f"""
         MERGE (p:{LABEL_PROPOSICAO} {{id: {pr.id}}})
         SET p.idCamara = {pr.idCamara or 0},
@@ -234,6 +246,10 @@ def sync_relational_to_graph(
             except Exception:
                 pass
 
+        if idx % 200 == 0:
+            session.commit()
+    session.commit()
+
     # 4. Sincroniza Autoria de Proposições (:PROPOSED)
     q_aut = session.query(ProposicaoAutor).filter(
         ProposicaoAutor.idDeputadoAutor.isnot(None)
@@ -243,7 +259,7 @@ def sync_relational_to_graph(
     if batch_limit:
         q_aut = q_aut.limit(batch_limit)
     autores = q_aut.all()
-    for aut in autores:
+    for idx, aut in enumerate(autores, 1):
         prop_bool = "true" if aut.proponente else "false"
         cypher_aut = f"""
         MATCH (p:{LABEL_POLITICO} {{id: {aut.idDeputadoAutor}}}), (pr:{LABEL_PROPOSICAO} {{id: {aut.idProposicao}}})
@@ -254,6 +270,9 @@ def sync_relational_to_graph(
             counts["arestas"] += 1
         except Exception:
             pass
+        if idx % 200 == 0:
+            session.commit()
+    session.commit()
 
     # 5. Sincroniza Votações & Votos (:VOTED_IN, :REGARDING)
     q_vot = session.query(Votacao)
@@ -265,7 +284,7 @@ def sync_relational_to_graph(
         q_vot = q_vot.limit(batch_limit)
     votacoes = q_vot.all()
 
-    for v in votacoes:
+    for idx, v in enumerate(votacoes, 1):
         cypher_v = f"""
         MERGE (vt:{LABEL_VOTACAO} {{id: {v.id}}})
         SET vt.idCamara = '{_escape(v.idCamara or "")}',
@@ -330,6 +349,9 @@ def sync_relational_to_graph(
                     counts["arestas"] += 1
                 except Exception:
                     pass
+
+        if idx % 100 == 0:
+            session.commit()
 
     session.commit()
     return counts
@@ -533,6 +555,7 @@ async def cypher_sample_alinhamento_votos_async(
     if q and q.strip():
         try:
             from backend.repositories.politico_repository import expand_popular_query
+
             terms = [t.lower().strip() for t in expand_popular_query(q) if t.strip()]
             filtered = []
             for v in results:
@@ -985,9 +1008,14 @@ def graph_rag_retrieval(
 
 
 def _escape(val: str) -> str:
+    if not val:
+        return ""
     return (
-        val.replace("'", "''")
+        str(val)
+        .replace("\x00", "")
+        .replace("'", "''")
         .replace("\\", "\\\\")
+        .replace("$$", " ")
         .replace("\n", " ")
         .replace("\r", "")
     )
