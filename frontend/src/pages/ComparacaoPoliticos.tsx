@@ -403,39 +403,30 @@ function LinhaComparacao({
 
   return (
     <div className="py-3.5 border-b border-slate-100 last:border-0">
-      {/* Rótulo com valores: empilhado no mobile para não espremer valores monetários, lado a lado no desktop */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 mb-2">
-        {/* No mobile: Título centralizado no topo com subtítulo */}
-        <div className="text-center sm:hidden order-1">
+      {/* Rótulo com valores: empilhado no mobile (título no topo e valores lado a lado), 3 colunas no desktop */}
+      <div className="grid grid-cols-2 sm:grid-cols-[1fr_auto_1fr] items-center gap-x-2 gap-y-1 mb-2">
+        {/* Lado A: no mobile col 1 row 2, no desktop col 1 */}
+        <div className="order-2 sm:order-1 text-left">
+          <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 tabular-nums">
+            {valA}
+          </span>
+        </div>
+
+        {/* Título e Subtítulo: no mobile col-span-2 row 1, no desktop col 2 no centro */}
+        <div className="col-span-2 sm:col-span-1 order-1 sm:order-2 text-center px-1 sm:px-2">
           <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider block">
             {titulo}
           </span>
           {subtitulo && (
-            <span className="text-[10px] text-slate-400 block normal-case font-normal">
+            <span className="text-[10px] text-slate-400 block -mt-0.5 sm:mt-0.5 normal-case font-normal">
               {subtitulo}
             </span>
           )}
         </div>
 
-        {/* Linha com valor A na esquerda e valor B na direita */}
-        <div className="flex items-center justify-between order-2 sm:order-none w-full">
-          <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 tabular-nums text-left">
-            {valA}
-          </span>
-
-          {/* No desktop: Título centralizado no meio */}
-          <div className="hidden sm:block text-center px-2">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-              {titulo}
-            </span>
-            {subtitulo && (
-              <span className="text-[10px] text-slate-400 block mt-0.5 normal-case font-normal">
-                {subtitulo}
-              </span>
-            )}
-          </div>
-
-          <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 tabular-nums text-right">
+        {/* Lado B: no mobile col 2 row 2, no desktop col 3 */}
+        <div className="order-3 sm:order-3 text-right">
+          <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 tabular-nums">
             {valB}
           </span>
         </div>
