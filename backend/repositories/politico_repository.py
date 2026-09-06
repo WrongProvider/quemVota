@@ -51,6 +51,44 @@ _MAX_LIMIT_VOTACOES = 20
 _MAX_LIMIT_DESPESAS = 20
 _MAX_LIMIT_RESUMO = 60
 
+POPULAR_TOPIC_SYNONYMS: dict[str, list[str]] = {
+    "6x1": ["jornada de trabalho", "36 horas", "escala 6x1", "PEC 221", "221/2019"],
+    "escala 6x1": ["jornada de trabalho", "36 horas", "escala 6x1", "PEC 221", "221/2019"],
+    "escala 6 por 1": ["jornada de trabalho", "36 horas", "PEC 221"],
+    "fim da escala 6x1": ["jornada de trabalho", "36 horas", "PEC 221"],
+    "reforma tributaria": ["tributária", "tributario", "PLP 68", "PEC 45/2019", "IBS", "CBS"],
+    "tributaria": ["tributária", "tributario", "impostos"],
+    "marco temporal": ["terras indígenas", "indígena", "demarcação", "PL 2903", "14701"],
+    "aborto": ["interrupção de gravidez", "gestação", "PL 1904"],
+    "pl do aborto": ["interrupção de gravidez", "PL 1904"],
+    "bets": ["apostas", "quota fixa", "jogos de azar", "cassino", "PL 3626"],
+    "apostas": ["apostas esportivas", "quota fixa", "bets", "PL 3626"],
+    "armas": ["porte de arma", "posse de arma", "CAC", "desarmamento", "arma de fogo"],
+    "porte de armas": ["porte de arma", "posse de arma", "arma de fogo"],
+    "drogas": ["entorpecentes", "maconha", "porte de drogas", "PEC 45/2023"],
+    "maconha": ["entorpecentes", "drogas", "porte de drogas"],
+    "desoneracao": ["desoneração", "folha de pagamento", "PL 334/2023"],
+    "desoneracao da folha": ["desoneração", "folha de pagamento", "PL 334/2023"],
+    "combustiveis": ["gasolina", "diesel", "etanol", "combustíveis", "PLP 18"],
+}
+
+
+def expand_popular_query(q: str | None) -> list[str]:
+    if not q or not q.strip():
+        return []
+    cleaned = q.strip().lower()
+    import unicodedata
+
+    nfkd = unicodedata.normalize("NFKD", cleaned)
+    unaccented = "".join([c for c in nfkd if not unicodedata.combining(c)])
+
+    terms: set[str] = {q.strip()}
+    for key, syns in POPULAR_TOPIC_SYNONYMS.items():
+        if key in unaccented or unaccented in key:
+            for s in syns:
+                terms.add(s)
+    return list(terms)
+
 
 class PoliticoRepository:
     """Acesso a dados de deputados. Todas as queries são parametrizadas."""
@@ -589,46 +627,6 @@ class PoliticoRepository:
                 "Erro ao buscar verba de gabinete do deputado id=%s", politico_id
             )
             raise
-
-
-POPULAR_TOPIC_SYNONYMS: dict[str, list[str]] = {
-    "6x1": ["jornada de trabalho", "36 horas", "escala 6x1", "PEC 221", "221/2019"],
-    "escala 6x1": ["jornada de trabalho", "36 horas", "escala 6x1", "PEC 221", "221/2019"],
-    "escala 6 por 1": ["jornada de trabalho", "36 horas", "PEC 221"],
-    "fim da escala 6x1": ["jornada de trabalho", "36 horas", "PEC 221"],
-    "reforma tributaria": ["tributária", "tributario", "PLP 68", "PEC 45/2019", "IBS", "CBS"],
-    "tributaria": ["tributária", "tributario", "impostos"],
-    "marco temporal": ["terras indígenas", "indígena", "demarcação", "PL 2903", "14701"],
-    "aborto": ["interrupção de gravidez", "gestação", "PL 1904"],
-    "pl do aborto": ["interrupção de gravidez", "PL 1904"],
-    "bets": ["apostas", "quota fixa", "jogos de azar", "cassino", "PL 3626"],
-    "apostas": ["apostas esportivas", "quota fixa", "bets", "PL 3626"],
-    "armas": ["porte de arma", "posse de arma", "CAC", "desarmamento", "arma de fogo"],
-    "porte de armas": ["porte de arma", "posse de arma", "arma de fogo"],
-    "drogas": ["entorpecentes", "maconha", "porte de drogas", "PEC 45/2023"],
-    "maconha": ["entorpecentes", "drogas", "porte de drogas"],
-    "desoneracao": ["desoneração", "folha de pagamento", "PL 334/2023"],
-    "desoneracao da folha": ["desoneração", "folha de pagamento", "PL 334/2023"],
-    "combustiveis": ["gasolina", "diesel", "etanol", "combustíveis", "PLP 18"],
-}
-
-
-def expand_popular_query(q: str | None) -> list[str]:
-    if not q or not q.strip():
-        return []
-    cleaned = q.strip().lower()
-    import unicodedata
-
-    nfkd = unicodedata.normalize("NFKD", cleaned)
-    unaccented = "".join([c for c in nfkd if not unicodedata.combining(c)])
-
-    terms: set[str] = {q.strip()}
-    for key, syns in POPULAR_TOPIC_SYNONYMS.items():
-        if key in unaccented or unaccented in key:
-            for s in syns:
-                terms.add(s)
-    return list(terms)
-
 
     # ------------------------------------------------------------------
     # Atividade legislativa — votações paginadas
