@@ -29,9 +29,9 @@ test.describe("Fidelidade Partidária nas Votações Nominais", () => {
     await expect(sectionFidelidade).toContainText("Fidelidade Partidária nas Votações")
     await expect(sectionFidelidade).toContainText("Bancada PCdoB")
     await expect(sectionFidelidade).toContainText("97.2%")
-    await expect(sectionFidelidade).toContainText("2.508")
-    await expect(sectionFidelidade).toContainText("73")
-    await expect(sectionFidelidade).toContainText("2.581")
+    await expect(sectionFidelidade).toContainText("3.352")
+    await expect(sectionFidelidade).toContainText("96")
+    await expect(sectionFidelidade).toContainText("3.448")
 
     // Expande a lista de matérias divergentes
     const btnToggle = sectionFidelidade.locator('[data-testid="btn-toggle-divergencias"]')
@@ -64,5 +64,27 @@ test.describe("Fidelidade Partidária nas Votações Nominais", () => {
       (e) => !e.includes("favicon") && !e.includes("404")
     )
     expect(criticalErrors).toHaveLength(0)
+  })
+
+  test("deve exibir o painel de fidelidade partidária de Erika Hilton com métricas da Federação PSOL-REDE", async ({ page }) => {
+    // Navega para o perfil de Erika Hilton
+    await page.goto("/politicos/erika-hilton")
+    await expect(page.locator("h1")).toContainText("Erika Hilton")
+
+    // Clica na aba de Fidelidade Partidária
+    const tabSubFidelidade = page.locator('[data-testid="tab-sub-fidelidade"]')
+    await expect(tabSubFidelidade).toBeVisible()
+    await tabSubFidelidade.click()
+
+    // Localiza e valida o painel de fidelidade
+    const sectionFidelidade = page.locator('[data-testid="section-fidelidade-partidaria"]')
+    await expect(sectionFidelidade).toBeVisible({ timeout: 10000 })
+
+    // Valida título e métricas da Erika Hilton
+    await expect(sectionFidelidade).toContainText("Fidelidade Partidária nas Votações")
+    await expect(sectionFidelidade).toContainText("Bancada PSOL")
+    await expect(sectionFidelidade).toContainText("98.7%")
+    await expect(sectionFidelidade).toContainText("703")
+    await expect(sectionFidelidade).toContainText("712")
   })
 })
