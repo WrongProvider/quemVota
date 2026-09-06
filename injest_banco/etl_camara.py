@@ -41,13 +41,13 @@ for _p in [str(_repo_root), str(_current_dir)]:
 try:
     from injest_banco.backfill import run_backfill_deputados  # noqa: E402
     from injest_banco.catalog import Dataset, build_catalog  # noqa: E402
-    from injest_banco.client import CamaraClient, ETagCache, _CACHE_HIT  # noqa: E402
+    from injest_banco.client import CamaraClient, ETagCache, _CACHE_HIT, _NOT_FOUND  # noqa: E402
     from injest_banco.loaders import bulk_resolve_and_insert, bulk_upsert  # noqa: E402
     from injest_banco.reconciler import reconcile_orphan_votacoes  # noqa: E402
 except ImportError:
     from backfill import run_backfill_deputados  # noqa: E402
     from catalog import Dataset, build_catalog  # noqa: E402
-    from client import CamaraClient, ETagCache, _CACHE_HIT  # noqa: E402
+    from client import CamaraClient, ETagCache, _CACHE_HIT, _NOT_FOUND  # noqa: E402
     from loaders import bulk_resolve_and_insert, bulk_upsert  # noqa: E402
     from reconciler import reconcile_orphan_votacoes  # noqa: E402
 
@@ -88,21 +88,51 @@ def get_legislaturas_disponiveis(engine) -> list[int]:
         return [56, 57]
 
 
+def get_legislatura_atual(engine) -> int:
+    """Obtém a legislatura vigente com base na data atual ou maior registrada."""
+    if engine is None:
+        return 57
+    try:
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(
+                    'SELECT "idLegislatura" FROM legislaturas '
+                    'WHERE CURRENT_DATE BETWEEN "dataInicio" AND "dataFim" '
+                    'ORDER BY "idLegislatura" DESC LIMIT 1'
+                )
+            ).fetchone()
+            if row and row[0]:
+                return int(row[0])
+            row = conn.execute(
+                text('SELECT MAX("idLegislatura") FROM legislaturas')
+            ).fetchone()
+            if row and row[0]:
+                return int(row[0])
+    except Exception:
+        pass
+    return 57
+
+
 def process_dataset(
     ds: Dataset,
     client: CamaraClient,
     engine,
     skip_historical: bool,
     dry_run: bool = False,
+    leg_atual: int = 57,
 ) -> tuple[str, str, int]:
     """
     Processa um único dataset: download -> transformação -> persistência.
     Retorna (nome_dataset, status, total_registros).
-    Status: "ok" | "304" | "skip_hist" | "error"
+    Status: "ok" | "304" | "404" | "skip_hist" | "error"
     """
-    if skip_historical and ds.ano_ref is not None and ds.ano_ref < ANO_ATUAL:
-        log.debug("⏭ histórico imutável, pulando: %s", ds.nome)
-        return ds.nome, "skip_hist", 0
+    if skip_historical:
+        if ds.ano_ref is not None and ds.ano_ref < ANO_ATUAL:
+            log.debug("⏭ histórico anual imutável, pulando: %s", ds.nome)
+            return ds.nome, "skip_hist", 0
+        if ds.leg_ref is not None and ds.leg_ref < leg_atual:
+            log.debug("⏭ histórico de legislatura imutável, pulando: %s", ds.nome)
+            return ds.nome, "skip_hist", 0
 
     url = ds.url_fn()
 
@@ -113,6 +143,9 @@ def process_dataset(
 
     if df is _CACHE_HIT:
         return ds.nome, "304", 0
+    if df is _NOT_FOUND:
+        log.info("ℹ️ Dataset não encontrado na Câmara (404), ignorando: %s", ds.nome)
+        return ds.nome, "404", 0
     if df is None:
         return ds.nome, "error", 0
 
@@ -159,6 +192,7 @@ def run_etl(
     backfill_slug_only: bool = False,
     workers: int = DEFAULT_DOWNLOAD_WORKERS,
     backfill_workers: int = DEFAULT_BACKFILL_WORKERS,
+    leg_atual: int = 57,
 ) -> list[str]:
     """
     Executa o pipeline de ETL particionado nas ondas de dependência (dep_group).
@@ -166,6 +200,7 @@ def run_etl(
     erros: list[str] = []
     pulados_historico = 0
     pulados_304 = 0
+    pulados_404 = 0
     processados = 0
     total_linhas_processadas = 0
 
@@ -192,7 +227,13 @@ def run_etl(
         ) as pool:
             for ds in grupo_datasets:
                 future = pool.submit(
-                    process_dataset, ds, client, engine, skip_historical, dry_run
+                    process_dataset,
+                    ds,
+                    client,
+                    engine,
+                    skip_historical,
+                    dry_run,
+                    leg_atual,
                 )
                 futures_map[future] = ds
 
@@ -218,6 +259,8 @@ def run_etl(
                             deputados_processado = True
                     elif status == "304":
                         pulados_304 += 1
+                    elif status == "404":
+                        pulados_404 += 1
                     elif status == "skip_hist":
                         pulados_historico += 1
                     elif status == "error":
@@ -248,10 +291,11 @@ def run_etl(
     log.info("━" * 60)
     log.info(
         "🏁 ETL concluído — datasets processados: %d (%d registros) | 304: %d | "
-        "histórico pulado: %d | erros: %d | total datasets: %d",
+        "404 ignorados: %d | histórico pulado: %d | erros: %d | total datasets: %d",
         processados,
         total_linhas_processadas,
         pulados_304,
+        pulados_404,
         pulados_historico,
         len(erros),
         total,
@@ -400,17 +444,28 @@ def main():
 
         sys.exit(0)
 
+    leg_atual = get_legislatura_atual(engine) if engine else 57
+
     if args.full:
         anos = ANOS_HISTORICO
         skip_historical = False
+        disponiveis = get_legislaturas_disponiveis(engine) if engine else [56, 57]
+        legislaturas = [leg for leg in disponiveis if leg >= 51]
     elif args.update:
         anos = args.anos or [ANO_ATUAL]
         skip_historical = not args.force
+        disponiveis = get_legislaturas_disponiveis(engine) if engine else [56, 57]
+        legislaturas = (
+            [leg_atual]
+            if skip_historical
+            else [leg for leg in disponiveis if leg >= 51]
+        )
     else:
         anos = args.anos or [ANO_ATUAL]
         skip_historical = False
+        disponiveis = get_legislaturas_disponiveis(engine) if engine else [56, 57]
+        legislaturas = [leg for leg in disponiveis if leg >= 51]
 
-    legislaturas = [56, 57] if args.dry_run else get_legislaturas_disponiveis(engine)
     catalog = build_catalog(anos, legislaturas)
 
     if args.dataset:
@@ -441,6 +496,7 @@ def main():
         backfill_slug_only=args.backfill_slug_only,
         workers=args.workers,
         backfill_workers=args.backfill_workers,
+        leg_atual=leg_atual,
     )
 
     if args.reconcile_orfas and not args.dry_run and engine is not None:

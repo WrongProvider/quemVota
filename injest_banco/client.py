@@ -41,6 +41,7 @@ DEFAULT_RETRY_DELAY = 3.0
 
 CACHE_FILE_DEFAULT = Path(os.getenv("ETL_CACHE_FILE", "etl_cache.json"))
 _CACHE_HIT = object()
+_NOT_FOUND = object()
 
 
 class ETagCache:
@@ -188,8 +189,8 @@ class CamaraClient:
                     log.info("→ sem alterações (304): %s", url.split("/")[-1])
                     return _CACHE_HIT
                 if resp.status_code == 404:
-                    log.warning("404 — não encontrado: %s", url)
-                    return None
+                    log.info("404 — não encontrado: %s", url.split("/")[-1])
+                    return _NOT_FOUND
                 if resp.status_code == 429:
                     self._wait_backoff(attempt, resp)
                     continue
@@ -243,8 +244,9 @@ class CamaraClient:
                     log.info("→ sem alterações (304): %s", url.split("/")[-1])
                     return _CACHE_HIT
                 if resp.status_code == 404:
-                    log.warning("404 — não encontrado: %s", url)
-                    return None
+                    log.info("404 — não encontrado: %s", url.split("/")[-1])
+                    return _NOT_FOUND
+
                 if resp.status_code == 429:
                     self._wait_backoff(attempt, resp)
                     continue

@@ -62,6 +62,7 @@ class Dataset:
     )
     conflict_cols: list[str]
     ano_ref: Optional[int] = None  # ano dos dados; None = dataset atemporal
+    leg_ref: Optional[int] = None  # legislatura dos dados; None = atemporal
     preserve_cols: Optional[list[str]] = None  # colunas a não sobrescrever no upsert
     dep_group: int = 0  # onda de dependência de execução (0 -> 1 -> 2)
 
@@ -410,7 +411,7 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
             ),
         ]
 
-    # ── Datasets por legislatura ──────────────────────────────────────────────
+    # ── Datasets por legislatura (Dados Abertos publica orgaosDeputados a partir da L51) ──
     leg_datasets = [
         Dataset(
             f"orgaosDeputados_L{leg}",
@@ -418,9 +419,11 @@ def build_catalog(anos: list[int], legislaturas: list[int]) -> list[Dataset]:
             t_orgaos_deputados,
             "_raw_orgaosDeputados",
             [],
+            leg_ref=leg,
             dep_group=1,
         )
         for leg in L
+        if leg >= 51
     ]
 
     # ── Cotas parlamentares (CEAP) ────────────────────────────────────────────

@@ -24,6 +24,7 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
     Limpeza global do DataFrame:
       - Remove BOM (\ufeff), aspas duplas e espaços nos nomes de colunas
+      - Remove duplicatas de colunas (mantém primeira ocorrência)
       - Remove espaços em branco, quebras desnecessárias e aspas espúrias nos textos
       - Converte strings vazias, 'nan' e 'None' para None
     """
@@ -34,8 +35,10 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         .str.replace('"', "")
         .str.strip()
     )
+    if df.columns.duplicated().any():
+        df = df.loc[:, ~df.columns.duplicated(keep="first")]
 
-    for col in df.select_dtypes(include="object").columns:
+    for col in df.select_dtypes(include=["object", "string"]).columns:
         df[col] = (
             df[col]
             .astype(str)
@@ -105,7 +108,13 @@ def sanitize_val(v: Any) -> Any:
 
 def keep_columns(df: pd.DataFrame, cols: list[str]) -> list[dict[str, Any]]:
     """Filtra colunas existentes e retorna lista de dicionários sanitizados."""
-    sub = df[[c for c in cols if c in df.columns]]
+    seen = set()
+    unique_cols = [
+        c for c in cols if c in df.columns and not (c in seen or seen.add(c))
+    ]
+    sub = df[unique_cols]
+    if sub.columns.duplicated().any():
+        sub = sub.loc[:, ~sub.columns.duplicated(keep="first")]
     return [
         {k: sanitize_val(v) for k, v in row.items()} for row in sub.to_dict("records")
     ]
