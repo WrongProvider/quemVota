@@ -72,7 +72,7 @@ const PATH_FOTOS = "/fotos_politicos/"
 
 // ── SEO HEAD ────────────────────────────────────────────────────────────────
 
-import { useSeo } from "../hooks/useSeo"
+import { useSeo, BASE_URL } from "../hooks/useSeo"
 
 /**
  * Injeta meta tags SEO, Open Graph, Twitter Card, canonical e
@@ -102,14 +102,7 @@ function SeoHead({
     image: fotoUrl,
     type: "profile",
     keywords: `${nome}, deputado federal, ${partido ?? ""}, ${uf ?? ""}, perfil parlamentar`,
-  })
-
-  // ── JSON-LD Person ──────────────────────────────────────────────────────
-  useEffect(() => {
-    const script = document.createElement("script")
-    script.setAttribute("type", "application/ld+json")
-    script.setAttribute("data-seo-dynamic", "true")
-    script.textContent = JSON.stringify({
+    jsonLd: {
       "@context": "https://schema.org",
       "@type": "Person",
       name: nome,
@@ -137,13 +130,8 @@ function SeoHead({
         name: "Câmara dos Deputados",
         url: "https://www.camara.leg.br",
       },
-    })
-    document.head.appendChild(script)
-
-    return () => {
-      document.querySelectorAll('[data-seo-dynamic="true"]').forEach((el) => el.remove())
-    }
-  }, [nome, partido, uf, fotoUrl, pageUrl])
+    },
+  })
 
   return null
 }
@@ -448,8 +436,8 @@ export default function PoliticoDetalhe() {
 
   if (isPerfilHistorico) return <PerfilHistorico data={data} />
 
-  const pageUrl = `${window.location.origin}/politicos/${data.slug}`
-  const fotoAbsoluta = `${window.location.origin}${PATH_FOTOS}${data.id}.jpg`
+  const pageUrl = `${BASE_URL}/politicos/${data.slug}`
+  const fotoAbsoluta = `${BASE_URL}${PATH_FOTOS}${data.id}.jpg`
 
   return (
     <>

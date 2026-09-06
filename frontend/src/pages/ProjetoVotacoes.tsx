@@ -799,7 +799,7 @@ function FiltrosProposicoes({
           placeholder="Buscar na ementa..."
           value={filtros.q ?? ""}
           onChange={(e) => onChange({ ...filtros, q: e.target.value || undefined, offset: 0 })}
-          className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+          className="w-full pl-9 pr-3 py-2 text-base sm:text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-slate-800"
         />
       </div>
 
@@ -968,7 +968,7 @@ export default function ProjetosVotacoes() {
     title: "Projetos de Lei e Votações — Câmara dos Deputados | quemvota",
     description:
       "Pesquise proposições legislativas e votações da Câmara dos Deputados. Veja como cada partido orientou seus votos e o resultado de cada votação.",
-    url: "https://www.quemvota.com.br/votacoes",
+    url: "https://www.quemvota.com.br/proposicoes",
     keywords: "projetos de lei, votações, proposições, câmara dos deputados, plenário",
   })
 
@@ -988,20 +988,20 @@ export default function ProjetosVotacoes() {
       <Header />
       {/* ── Cabeçalho da página ── */}
       <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 py-8 pt-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-20 sm:pt-24">
           <p className="text-xs font-semibold tracking-wider uppercase text-blue-700 mb-1">
             Legislativo
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mb-1">
             Projetos e Votações
           </h1>
-          <p className="text-slate-500 text-sm">
+          <p className="text-slate-500 text-xs sm:text-sm">
             Pesquise proposições em tramitação e votações realizadas na Câmara dos Deputados.
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex gap-6 transition-all duration-300">
 
           {/* ── Coluna principal ── */}
@@ -1106,17 +1106,68 @@ export default function ProjetosVotacoes() {
             </div>
           </div>
 
-          {/* ── Painel lateral de detalhe ── */}
-          <AnimatePresence>
-            {painelAberto && (
+          {/* ── Painel lateral de detalhe no Desktop (>= lg) ── */}
+          <div className="hidden lg:block">
+            <AnimatePresence>
+              {painelAberto && (
+                <motion.div
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: 420, opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="flex-shrink-0 overflow-hidden"
+                >
+                  <div className="w-[420px] bg-white rounded-2xl border border-slate-200 shadow-sm h-[calc(100vh-180px)] sticky top-6">
+                    <AnimatePresence mode="wait">
+                      {aba === "projetos" && proposicaoSelecionada !== null && (
+                        <PainelProposicao
+                          key={proposicaoSelecionada}
+                          id={proposicaoSelecionada}
+                          onClose={() => setProposicaoSelecionada(null)}
+                        />
+                      )}
+                      {aba === "votacoes" && votacaoSelecionada !== null && (
+                        <PainelVotacao
+                          key={votacaoSelecionada}
+                          id={votacaoSelecionada}
+                          onClose={() => setVotacaoSelecionada(null)}
+                        />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Painel de detalhe em Drawer/Sheet no Mobile (< lg) ── */}
+      <div className="lg:hidden">
+        <AnimatePresence>
+          {painelAberto && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+              {/* Backdrop escuro com desfoque */}
               <motion.div
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 420, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="flex-shrink-0 overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => {
+                  setProposicaoSelecionada(null)
+                  setVotacaoSelecionada(null)
+                }}
+                className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+              />
+
+              {/* Conteúdo do Sheet Mobile */}
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                className="relative z-10 w-full max-w-xl max-h-[90vh] bg-white rounded-t-3xl sm:rounded-2xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col"
               >
-                <div className="w-[420px] bg-white rounded-2xl border border-slate-200 shadow-sm h-[calc(100vh-180px)] sticky top-6">
+                <div className="overflow-y-auto flex-1">
                   <AnimatePresence mode="wait">
                     {aba === "projetos" && proposicaoSelecionada !== null && (
                       <PainelProposicao
@@ -1135,9 +1186,9 @@ export default function ProjetosVotacoes() {
                   </AnimatePresence>
                 </div>
               </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )

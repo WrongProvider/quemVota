@@ -364,9 +364,9 @@ export default function Header() {
 
           {/* HAMBURGER */}
           <button
-            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-black/[0.05] transition-colors border-0 bg-transparent cursor-pointer"
+            className="md:hidden flex items-center justify-center w-11 h-11 rounded-lg hover:bg-black/[0.05] transition-colors border-0 bg-transparent cursor-pointer min-w-[44px] min-h-[44px]"
             onClick={() => setDrawerOpen((v) => !v)}
-            aria-label="Abrir menu"
+            aria-label={drawerOpen ? "Fechar menu" : "Abrir menu"}
           >
             <div className="flex flex-col gap-[5px]">
               <span className={`block w-5 h-[1.5px] bg-[#1a1a1a] rounded-full origin-center transition-all duration-300 ${drawerOpen ? "translate-y-[6.5px] rotate-45" : ""}`} />
@@ -408,7 +408,8 @@ export default function Header() {
           </Link>
           <button
             onClick={() => setDrawerOpen(false)}
-            className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center transition-colors border-0 cursor-pointer text-zinc-500"
+            aria-label="Fechar menu"
+            className="w-10 h-10 rounded-xl bg-zinc-100 hover:bg-zinc-200 active:bg-zinc-300 flex items-center justify-center transition-colors border-0 cursor-pointer text-zinc-600 min-w-[44px] min-h-[44px]"
           >
             <Icons.Close />
           </button>

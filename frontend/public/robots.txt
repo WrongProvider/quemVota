@@ -2,6 +2,8 @@ User-agent: *
 Allow: /
 Allow: /politicos/*
 Allow: /rankings
+Allow: /comparar
+Allow: /comparar/*
 Allow: /proposicoes
 Allow: /sobre
 Allow: /metodologia

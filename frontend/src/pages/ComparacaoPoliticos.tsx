@@ -165,11 +165,21 @@ function BotoesCompartilhamento({ texto, url }: { texto: string; url: string }) 
 
 // ── SEO HEAD ────────────────────────────────────────────────────────────────
 
-function SeoHead({ nomeA, nomeB }: { nomeA: string; nomeB: string }) {
+function SeoHead({
+  nomeA,
+  nomeB,
+  slugA,
+  slugB,
+}: {
+  nomeA: string
+  nomeB: string
+  slugA: string
+  slugB: string
+}) {
   useSeo({
     title: `${nomeA} vs ${nomeB} — Comparação Parlamentar | quemvota`,
     description: `Compare a atuação de ${nomeA} e ${nomeB}. Gastos, votações e atividade parlamentar lado a lado.`,
-    url: typeof window !== "undefined" ? window.location.href : "",
+    url: `https://www.quemvota.com.br/comparar/${slugA}/${slugB}`,
     keywords: `${nomeA}, ${nomeB}, comparação parlamentar, deputados, votações, gastos`,
     type: "website",
   })
@@ -860,7 +870,7 @@ function BlocoAlinhamentoVotos({
             value={busca}
             onChange={(e) => onBuscaChange(e.target.value)}
             placeholder="Buscar por tema ou proposição (ex: escala 6x1, previdência, PEC 221, armas, reforma)..."
-            className="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all min-h-[42px]"
+            className="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all min-h-[42px]"
           />
           {busca && (
             <button
@@ -1182,7 +1192,12 @@ export default function ComparacaoPoliticos() {
 
   return (
     <>
-      <SeoHead nomeA={dataA.nome} nomeB={dataB.nome} />
+      <SeoHead
+        nomeA={dataA.nome}
+        nomeB={dataB.nome}
+        slugA={dataA.slug || slugA!}
+        slugB={dataB.slug || slugB!}
+      />
 
       <style>{`
         .detail-root  { font-family: 'DM Sans', sans-serif; }
@@ -1332,7 +1347,7 @@ export default function ComparacaoPoliticos() {
         </div>
 
         {/* ── CONTEÚDO PRINCIPAL ── */}
-        <div className="max-w-5xl mx-auto px-6 py-10 space-y-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8 sm:space-y-10">
 
           {/* Âncora visual de legenda de colunas */}
           <div className="grid grid-cols-2 gap-3">
@@ -1379,20 +1394,20 @@ export default function ComparacaoPoliticos() {
           )}
 
           {/* ── CTAs finais ── */}
-          <div className="grid grid-cols-2 gap-4 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pb-4">
             <Link
               to={`/politicos/${dataA.slug}`}
-              className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-sm font-medium border border-slate-200 hover:border-blue-200 transition-colors shadow-sm"
+              className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3.5 rounded-xl bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-sm font-medium border border-slate-200 hover:border-blue-200 transition-colors shadow-sm min-w-0"
             >
-              <ArrowLeft size={14} />
-              Perfil de {primeiroNomeA}
+              <ArrowLeft size={14} className="flex-shrink-0" />
+              <span className="truncate">Perfil de {primeiroNomeA}</span>
             </Link>
             <Link
               to={`/politicos/${dataB.slug}`}
-              className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-sm font-medium border border-slate-200 hover:border-blue-200 transition-colors shadow-sm"
+              className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3.5 rounded-xl bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-sm font-medium border border-slate-200 hover:border-blue-200 transition-colors shadow-sm min-w-0"
             >
-              Perfil de {primeiroNomeB}
-              <ChevronRight size={14} />
+              <span className="truncate">Perfil de {primeiroNomeB}</span>
+              <ChevronRight size={14} className="flex-shrink-0" />
             </Link>
           </div>
 

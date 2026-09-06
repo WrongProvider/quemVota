@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 
-interface SeoOptions {
+export interface SeoOptions {
   title: string
   description: string
   url?: string
@@ -8,18 +8,22 @@ interface SeoOptions {
   type?: "website" | "profile" | "article"
   /** Palavras-chave adicionais (opcional) */
   keywords?: string
+  /** Estrutura JSON-LD personalizada (ex: Person, FAQPage, BreadcrumbList) */
+  jsonLd?: Record<string, any> | Record<string, any>[]
+  /** Se true, instrui motores de busca a não indexarem a página (ex: 404) */
+  noindex?: boolean
 }
 
-const BASE_URL = "https://www.quemvota.com.br"
+export const BASE_URL = "https://www.quemvota.com.br"
 const DEFAULT_IMAGE = `${BASE_URL}/og-default.png`
 const SITE_NAME = "quemvota"
 
 /**
- * Hook reutilizável para injetar meta tags SEO, Open Graph e Twitter Card
- * dinamicamente no <head> e restaurar o estado anterior ao desmontar.
+ * Hook reutilizável para injetar meta tags SEO, Open Graph, Twitter Card,
+ * canonical e JSON-LD dinamicamente no <head> e restaurar o estado anterior ao desmontar.
  *
  * Uso:
- *   useSeo({ title: "Página X", description: "Descrição..." })
+ *   useSeo({ title: "Página X", description: "Descrição...", jsonLd: { ... } })
  */
 export function useSeo({
   title,
@@ -28,10 +32,19 @@ export function useSeo({
   image = DEFAULT_IMAGE,
   type = "website",
   keywords,
+  jsonLd,
+  noindex = false,
 }: SeoOptions) {
   useEffect(() => {
     const fullTitle = title.includes("quemvota") ? title : `${title} | quemvota`
-    const canonicalUrl = url ?? window.location.href
+
+    // Canonical limpo: se não passado explicitamente, compõe com BASE_URL + pathname (sem query params)
+    let canonicalUrl = url
+    if (!canonicalUrl && typeof window !== "undefined") {
+      canonicalUrl = `${BASE_URL}${window.location.pathname}`
+    } else if (!canonicalUrl) {
+      canonicalUrl = BASE_URL
+    }
 
     // ── Título da aba ──────────────────────────────────────────────────────
     const prevTitle = document.title
@@ -64,47 +77,39 @@ export function useSeo({
     }
 
     // ── Meta básicas ───────────────────────────────────────────────────────
-    setMeta('meta[name="description"]',   "name=description",   description)
-    setMeta('meta[name="robots"]',        "name=robots",        "index, follow")
+    setMeta('meta[name="description"]', "name=description", description)
+    setMeta('meta[name="robots"]', "name=robots", noindex ? "noindex, nofollow" : "index, follow")
     if (keywords) {
       setMeta('meta[name="keywords"]', "name=keywords", keywords)
     }
 
     // ── Open Graph ─────────────────────────────────────────────────────────
-    setMeta('meta[property="og:title"]',       "property=og:title",       fullTitle)
+    setMeta('meta[property="og:title"]', "property=og:title", fullTitle)
     setMeta('meta[property="og:description"]', "property=og:description", description)
-    setMeta('meta[property="og:url"]',         "property=og:url",         canonicalUrl)
-    setMeta('meta[property="og:type"]',        "property=og:type",        type)
-    setMeta('meta[property="og:image"]',       "property=og:image",       image)
+    setMeta('meta[property="og:url"]', "property=og:url", canonicalUrl)
+    setMeta('meta[property="og:type"]', "property=og:type", type)
+    setMeta('meta[property="og:image"]', "property=og:image", image)
     setMeta('meta[property="og:image:width"]', "property=og:image:width", "1200")
-    setMeta('meta[property="og:image:height"]',"property=og:image:height","630")
-    setMeta('meta[property="og:site_name"]',   "property=og:site_name",   SITE_NAME)
-    setMeta('meta[property="og:locale"]',      "property=og:locale",      "pt_BR")
+    setMeta('meta[property="og:image:height"]', "property=og:image:height", "630")
+    setMeta('meta[property="og:site_name"]', "property=og:site_name", SITE_NAME)
+    setMeta('meta[property="og:locale"]', "property=og:locale", "pt_BR")
 
     // ── Twitter Card ───────────────────────────────────────────────────────
-    setMeta('meta[name="twitter:card"]',        "name=twitter:card",        "summary_large_image")
-    setMeta('meta[name="twitter:title"]',       "name=twitter:title",       fullTitle)
+    setMeta('meta[name="twitter:card"]', "name=twitter:card", "summary_large_image")
+    setMeta('meta[name="twitter:title"]', "name=twitter:title", fullTitle)
     setMeta('meta[name="twitter:description"]', "name=twitter:description", description)
-    setMeta('meta[name="twitter:image"]',       "name=twitter:image",       image)
-    setMeta('meta[name="twitter:site"]',        "name=twitter:site",        "@quemvota")
+    setMeta('meta[name="twitter:image"]', "name=twitter:image", image)
+    setMeta('meta[name="twitter:site"]', "name=twitter:site", "@quemvota")
 
     // ── Canonical ─────────────────────────────────────────────────────────
     setLink("canonical", canonicalUrl)
 
-    // ── JSON-LD: WebSite schema básico ─────────────────────────────────────
-    const existingLd = document.querySelector('script[data-seo-dynamic="true"]')
-    if (!existingLd) {
+    // ── JSON-LD Especializado ──────────────────────────────────────────────
+    if (jsonLd) {
       const ld = document.createElement("script")
       ld.setAttribute("type", "application/ld+json")
       ld.setAttribute("data-seo-dynamic", "true")
-      ld.textContent = JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        name: SITE_NAME,
-        url: BASE_URL,
-        description: "Plataforma independente de transparência legislativa brasileira.",
-        inLanguage: "pt-BR",
-      })
+      ld.textContent = JSON.stringify(jsonLd)
       document.head.appendChild(ld)
     }
 
@@ -113,5 +118,6 @@ export function useSeo({
       document.querySelectorAll("[data-seo-dynamic='true']").forEach((el) => el.remove())
       document.title = prevTitle
     }
-  }, [title, description, url, image, type, keywords])
+  }, [title, description, url, image, type, keywords, jsonLd, noindex])
 }
+

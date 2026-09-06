@@ -13,6 +13,7 @@ import Roadmap from "./pages/Roadmap"
 import GlobalExternalLinkModal from "./components/GlobalExternalLinkModal"
 import ComparacaoPoliticos from "./pages/ComparacaoPoliticos"
 import ComparadorLanding from "./pages/ComparadorLanding"
+import NotFound from "./pages/NotFound"
 
 /**
  * Redireciona URLs legadas com ID numérico para o formato com slug.
@@ -52,7 +53,7 @@ export default function App() {
         <Route path="/faq" element={<Faq />} />
         <Route path="/proposicoes" element={<ProjetosVotacoes />} />
         <Route path="/roadmap" element={<Roadmap />} />
-        <Route path="*" element={<p>Página não encontrada</p>} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <GlobalExternalLinkModal />
     </BrowserRouter>

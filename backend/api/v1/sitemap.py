@@ -18,18 +18,19 @@ from shared.models import Deputado
 # Configuração — edite ao colocar em produção
 # ─────────────────────────────────────────────────────────────────────────────
 
-BASE_URL = "https://quemvota.com.br"   # prod
+BASE_URL = "https://quemvota.com.br"  # prod
 # BASE_URL = "http://localhost:8000"    # dev
 # Páginas estáticas do frontend — atualize se adicionar novas rotas
 STATIC_PAGES: list[dict] = [
-    {"loc": "/",             "priority": "1.0", "changefreq": "weekly"},
-    {"loc": "/politicos",    "priority": "0.9", "changefreq": "weekly"},
-    {"loc": "/rankings",     "priority": "0.8", "changefreq": "weekly"},
-    {"loc": "/proposicoes",  "priority": "0.7", "changefreq": "daily"},
-    {"loc": "/sobre",        "priority": "0.5", "changefreq": "monthly"},
-    {"loc": "/metodologia",  "priority": "0.5", "changefreq": "monthly"},
-    {"loc": "/faq",          "priority": "0.5", "changefreq": "monthly"},
-    {"loc": "/roadmap",      "priority": "0.4", "changefreq": "monthly"},
+    {"loc": "/", "priority": "1.0", "changefreq": "weekly"},
+    {"loc": "/politicos", "priority": "0.9", "changefreq": "weekly"},
+    {"loc": "/rankings", "priority": "0.8", "changefreq": "weekly"},
+    {"loc": "/comparar", "priority": "0.8", "changefreq": "weekly"},
+    {"loc": "/proposicoes", "priority": "0.7", "changefreq": "daily"},
+    {"loc": "/sobre", "priority": "0.5", "changefreq": "monthly"},
+    {"loc": "/metodologia", "priority": "0.5", "changefreq": "monthly"},
+    {"loc": "/faq", "priority": "0.5", "changefreq": "monthly"},
+    {"loc": "/roadmap", "priority": "0.4", "changefreq": "monthly"},
 ]
 
 router = APIRouter(tags=["SEO"])
@@ -38,6 +39,7 @@ router = APIRouter(tags=["SEO"])
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _url_entry(loc: str, lastmod: str, priority: str, changefreq: str) -> str:
     return (
@@ -53,6 +55,7 @@ def _url_entry(loc: str, lastmod: str, priority: str, changefreq: str) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 # Sitemap
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @router.get("/sitemap.xml", include_in_schema=False)
 async def sitemap(db: AsyncSession = Depends(get_db)):
@@ -74,21 +77,25 @@ async def sitemap(db: AsyncSession = Depends(get_db)):
 
     # Páginas estáticas
     for page in STATIC_PAGES:
-        entries.append(_url_entry(
-            loc=page["loc"],
-            lastmod=today,
-            priority=page["priority"],
-            changefreq=page["changefreq"],
-        ))
+        entries.append(
+            _url_entry(
+                loc=page["loc"],
+                lastmod=today,
+                priority=page["priority"],
+                changefreq=page["changefreq"],
+            )
+        )
 
     # Perfis dos parlamentares
     for politico in politicos:
-        entries.append(_url_entry(
-            loc=f"/politicos/{politico.slug}",
-            lastmod=today,
-            priority="0.8",
-            changefreq="weekly",
-        ))
+        entries.append(
+            _url_entry(
+                loc=f"/politicos/{politico.slug}",
+                lastmod=today,
+                priority="0.8",
+                changefreq="weekly",
+            )
+        )
 
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -103,6 +110,7 @@ async def sitemap(db: AsyncSession = Depends(get_db)):
 # ─────────────────────────────────────────────────────────────────────────────
 # Robots.txt
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @router.get("/robots.txt", include_in_schema=False)
 async def robots():

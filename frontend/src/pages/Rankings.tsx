@@ -384,7 +384,7 @@ export default function Rankings() {
   const [selectedUF, setSelectedUF] = useState("")
 
   useSeo({
-    title: "Rankings Fatuais — Gastos, Presença e Discursos | quemvota",
+    title: "Rankings Factuais — Gastos, Presença e Discursos | quemvota",
     description:
       "Consulte os dados abertos oficiais da Câmara dos Deputados: maiores e menores gastos de cota parlamentar, discursos proferidos e empresas contratadas.",
     url: "https://www.quemvota.com.br/rankings",
@@ -401,7 +401,7 @@ export default function Rankings() {
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-20 sm:pt-24">
           <p className="text-xs font-semibold tracking-wider uppercase text-blue-700 mb-1">
-            Dados Fatuais da Câmara dos Deputados
+            Dados Factuais da Câmara dos Deputados
           </p>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mb-1">
             Rankings Parlamentares
@@ -443,7 +443,7 @@ export default function Rankings() {
                   placeholder="Buscar parlamentar..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all text-slate-800 min-w-0"
+                  className="w-full pl-9 pr-3 py-1.5 text-base sm:text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all text-slate-800 min-w-0"
                 />
               </div>
 
@@ -453,7 +453,7 @@ export default function Rankings() {
                 <select
                   value={selectedUF}
                   onChange={(e) => setSelectedUF(e.target.value)}
-                  className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all text-slate-800"
+                  className="text-base sm:text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all text-slate-800"
                 >
                   <option value="">Todos os estados</option>
                   {FilterService.UFs.map((uf) => (

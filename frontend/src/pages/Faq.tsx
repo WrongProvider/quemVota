@@ -258,9 +258,33 @@ function Acordeao({ item }: { item: FaqItem }) {
 // Página principal
 // ─────────────────────────────────────────────────────────────────────────────
 
+function nodeToPlainText(node: any): string {
+  if (!node) return ""
+  if (typeof node === "string") return node
+  if (typeof node === "number") return String(node)
+  if (Array.isArray(node)) return node.map(nodeToPlainText).join("")
+  if (node.props && node.props.children) return nodeToPlainText(node.props.children)
+  return ""
+}
+
 export default function FAQ() {
   const [busca, setBusca] = useState("")
   const [categoriaAtiva, setCategoriaAtiva] = useState<string | null>(null)
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: CATEGORIAS.flatMap((cat) =>
+      cat.items.map((item) => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: nodeToPlainText(item.a).trim(),
+        },
+      }))
+    ),
+  }
 
   useSeo({
     title: "Perguntas Frequentes — FAQ | quemvota",
@@ -268,6 +292,7 @@ export default function FAQ() {
       "Tire suas dúvidas sobre o quemvota: de onde vêm os dados, neutralidade factual, como comparar parlamentares e muito mais.",
     url: "https://www.quemvota.com.br/faq",
     keywords: "dúvidas frequentes, como funciona, dados abertos, câmara deputados, neutralidade factual, quemvota",
+    jsonLd: faqSchema,
   })
 
   // Filtra as perguntas pela busca
@@ -325,7 +350,7 @@ export default function FAQ() {
                   setBusca(e.target.value)
                   if (e.target.value) setCategoriaAtiva(null)
                 }}
-                className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all text-slate-800"
+                className="w-full pl-10 pr-4 py-2 text-base sm:text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all text-slate-800"
               />
             </div>
 

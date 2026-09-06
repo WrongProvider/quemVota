@@ -162,7 +162,7 @@ export default function Politicos() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar por nome do deputado..."
-                  className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all text-slate-800 placeholder-slate-400 min-w-0"
+                  className="w-full pl-9 pr-3 py-1.5 text-base sm:text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all text-slate-800 placeholder-slate-400 min-w-0"
                 />
               </div>
 
@@ -209,12 +209,12 @@ export default function Politicos() {
                       Estado (UF)
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 max-h-28 sm:max-h-none overflow-y-auto sm:overflow-visible pr-1">
                     {UFs.map((uf) => (
                       <button
                         key={uf}
                         onClick={() => setSelectedUF(selectedUF === uf ? "" : uf)}
-                        className={`px-2 py-1 rounded border text-xs font-mono transition-all ${
+                        className={`px-2 py-1 rounded border text-xs font-mono transition-all min-h-[32px] sm:min-h-0 ${
                           selectedUF === uf
                             ? "border-slate-900 bg-slate-900 text-white font-bold"
                             : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
@@ -233,12 +233,12 @@ export default function Politicos() {
                       Partido Político
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 max-h-32 sm:max-h-none overflow-y-auto sm:overflow-visible pr-1">
                     {Partidos.map((partido) => (
                       <button
                         key={partido}
                         onClick={() => setSelectedPartido(selectedPartido === partido ? "" : partido)}
-                        className={`px-2 py-1 rounded border text-xs font-mono transition-all ${
+                        className={`px-2 py-1 rounded border text-xs font-mono transition-all min-h-[32px] sm:min-h-0 ${
                           selectedPartido === partido
                             ? "border-slate-900 bg-slate-900 text-white font-bold"
                             : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"

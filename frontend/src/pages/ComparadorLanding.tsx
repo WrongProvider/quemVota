@@ -97,7 +97,7 @@ export default function ComparadorLanding() {
     title: "Comparador de Parlamentares — Confronto de Votos e Atuação | quemvota",
     description:
       "Compare lado a lado o histórico de votações nominais, fidelidade partidária, uso de verbas e indicadores de atividade de dois deputados federais.",
-    url: typeof window !== "undefined" ? window.location.href : "",
+    url: "https://www.quemvota.com.br/comparar",
     keywords: "comparador de politicos, confronto de votos, deputados federais, comparacao parlamentar, camara dos deputados",
     type: "website",
   })
@@ -240,7 +240,7 @@ export default function ComparadorLanding() {
                         value={query1}
                         onChange={(e) => setQuery1(e.target.value)}
                         placeholder="Busque o 1º parlamentar (ex: Arthur Lira)..."
-                        className="w-full pl-10 pr-9 py-2.5 text-sm bg-white border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition shadow-xs"
+                        className="w-full pl-10 pr-9 py-2.5 text-base sm:text-sm bg-white border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition shadow-xs"
                       />
                       {buscando1 && (
                         <Loader2
@@ -388,7 +388,7 @@ export default function ComparadorLanding() {
                         value={query2}
                         onChange={(e) => setQuery2(e.target.value)}
                         placeholder="Busque o 2º parlamentar (ex: Erika Hilton)..."
-                        className="w-full pl-10 pr-9 py-2.5 text-sm bg-white border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition shadow-xs"
+                        className="w-full pl-10 pr-9 py-2.5 text-base sm:text-sm bg-white border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition shadow-xs"
                       />
                       {buscando2 && (
                         <Loader2
