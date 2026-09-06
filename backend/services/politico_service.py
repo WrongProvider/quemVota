@@ -366,6 +366,8 @@ class PoliticoService:
         q: str | None = None,
         q_votacao: str | None = None,
         voto: str | None = None,
+        sigla_tipo_votacao: str | None = None,
+        tema_votacao: str | None = None,
         data_inicio_votacao: date | None = None,
         data_fim_votacao: date | None = None,
         q_proposicao: str | None = None,
@@ -406,15 +408,19 @@ class PoliticoService:
 
         # Queries sequenciais na mesma sessão — evita concorrência na mesma
         # conexão asyncpg (InterfaceError: "another operation is in progress")
-        votacoes, total_v = await self._repo.get_atividade_votacoes_repo(
-            deputado_id,
-            q=term_votacao,
-            voto=voto,
-            data_inicio=data_inicio_votacao,
-            data_fim=data_fim_votacao,
-            ano=ano,
-            limit=safe_lv,
-            offset=safe_ov,
+        votacoes, total_v, total_sim, total_nao, total_outros = (
+            await self._repo.get_atividade_votacoes_repo(
+                deputado_id,
+                q=term_votacao,
+                voto=voto,
+                sigla_tipo=sigla_tipo_votacao,
+                tema=tema_votacao,
+                data_inicio=data_inicio_votacao,
+                data_fim=data_fim_votacao,
+                ano=ano,
+                limit=safe_lv,
+                offset=safe_ov,
+            )
         )
         proposicoes, total_p, total_prop, total_coaut = await self._repo.get_atividade_proposicoes_repo(
             deputado_id,
@@ -435,6 +441,9 @@ class PoliticoService:
             total_proposicoes=total_p,
             total_proponente=total_prop,
             total_coautor=total_coaut,
+            total_votos_sim=total_sim,
+            total_votos_nao=total_nao,
+            total_votos_outros=total_outros,
             limit_votacoes=safe_lv,
             limit_proposicoes=safe_lp,
             offset_votacoes=safe_ov,

@@ -527,6 +527,14 @@ async def atividade_legislativa(
         Optional[str],
         Query(max_length=50, description="Filtrar por voto (ex: Sim, Não, Abstenção, Obstrução)"),
     ] = None,
+    sigla_tipo_votacao: Annotated[
+        Optional[str],
+        Query(max_length=20, description="Sigla do tipo de proposição na votação (ex: PL, PEC)"),
+    ] = None,
+    tema_votacao: Annotated[
+        Optional[str],
+        Query(max_length=100, description="Tema legislativo da matéria votada"),
+    ] = None,
     data_inicio_votacao: Annotated[
         Optional[date],
         Query(description="Data de início das votações (AAAA-MM-DD)"),
@@ -564,12 +572,14 @@ async def atividade_legislativa(
     service: PoliticoService = Depends(_politico_service),
 ):
     logger.info(
-        "Atividade legislativa | deputado id=%s ano=%s q=%s q_v=%s voto=%s q_p=%s prop=%s lv=%s lp=%s ov=%s op=%s",
+        "Atividade legislativa | deputado id=%s ano=%s q=%s q_v=%s voto=%s tipo_v=%s tema_v=%s q_p=%s prop=%s lv=%s lp=%s ov=%s op=%s",
         politico_id,
         ano,
         q,
         q_votacao,
         voto,
+        sigla_tipo_votacao,
+        tema_votacao,
         q_proposicao,
         proponente,
         limit_votacoes,
@@ -584,6 +594,8 @@ async def atividade_legislativa(
         q=q,
         q_votacao=q_votacao,
         voto=voto,
+        sigla_tipo_votacao=sigla_tipo_votacao,
+        tema_votacao=tema_votacao,
         data_inicio_votacao=data_inicio_votacao,
         data_fim_votacao=data_fim_votacao,
         q_proposicao=q_proposicao,

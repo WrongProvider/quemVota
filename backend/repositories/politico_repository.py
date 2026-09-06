@@ -590,6 +590,46 @@ class PoliticoRepository:
             )
             raise
 
+
+POPULAR_TOPIC_SYNONYMS: dict[str, list[str]] = {
+    "6x1": ["jornada de trabalho", "36 horas", "escala 6x1", "PEC 221", "221/2019"],
+    "escala 6x1": ["jornada de trabalho", "36 horas", "escala 6x1", "PEC 221", "221/2019"],
+    "escala 6 por 1": ["jornada de trabalho", "36 horas", "PEC 221"],
+    "fim da escala 6x1": ["jornada de trabalho", "36 horas", "PEC 221"],
+    "reforma tributaria": ["tributária", "tributario", "PLP 68", "PEC 45/2019", "IBS", "CBS"],
+    "tributaria": ["tributária", "tributario", "impostos"],
+    "marco temporal": ["terras indígenas", "indígena", "demarcação", "PL 2903", "14701"],
+    "aborto": ["interrupção de gravidez", "gestação", "PL 1904"],
+    "pl do aborto": ["interrupção de gravidez", "PL 1904"],
+    "bets": ["apostas", "quota fixa", "jogos de azar", "cassino", "PL 3626"],
+    "apostas": ["apostas esportivas", "quota fixa", "bets", "PL 3626"],
+    "armas": ["porte de arma", "posse de arma", "CAC", "desarmamento", "arma de fogo"],
+    "porte de armas": ["porte de arma", "posse de arma", "arma de fogo"],
+    "drogas": ["entorpecentes", "maconha", "porte de drogas", "PEC 45/2023"],
+    "maconha": ["entorpecentes", "drogas", "porte de drogas"],
+    "desoneracao": ["desoneração", "folha de pagamento", "PL 334/2023"],
+    "desoneracao da folha": ["desoneração", "folha de pagamento", "PL 334/2023"],
+    "combustiveis": ["gasolina", "diesel", "etanol", "combustíveis", "PLP 18"],
+}
+
+
+def expand_popular_query(q: str | None) -> list[str]:
+    if not q or not q.strip():
+        return []
+    cleaned = q.strip().lower()
+    import unicodedata
+
+    nfkd = unicodedata.normalize("NFKD", cleaned)
+    unaccented = "".join([c for c in nfkd if not unicodedata.combining(c)])
+
+    terms: set[str] = {q.strip()}
+    for key, syns in POPULAR_TOPIC_SYNONYMS.items():
+        if key in unaccented or unaccented in key:
+            for s in syns:
+                terms.add(s)
+    return list(terms)
+
+
     # ------------------------------------------------------------------
     # Atividade legislativa — votações paginadas
     # ------------------------------------------------------------------
@@ -603,9 +643,11 @@ class PoliticoRepository:
         offset: int = 0,
         q: str | None = None,
         voto: str | None = None,
+        sigla_tipo: str | None = None,
+        tema: str | None = None,
         data_inicio: date | None = None,
         data_fim: date | None = None,
-    ) -> tuple[list[VotacaoResumida], int]:
+    ) -> tuple[list[VotacaoResumida], int, int, int, int]:
         safe_limit = min(abs(limit), 100)
         safe_offset = max(offset, 0)
 
@@ -614,24 +656,46 @@ class PoliticoRepository:
             base_filter.append(func.extract("year", Votacao.data) == ano)
         if voto and voto.strip():
             base_filter.append(Voto.voto.ilike(voto.strip()))
+        if sigla_tipo and sigla_tipo.strip():
+            base_filter.append(Proposicao.siglaTipo.ilike(sigla_tipo.strip()))
+        if tema and tema.strip():
+            base_filter.append(Proposicao.temas.any(Tema.tema.ilike(f"%{tema.strip()}%")))
         if data_inicio is not None:
             base_filter.append(Votacao.data >= data_inicio)
         if data_fim is not None:
             base_filter.append(Votacao.data <= data_fim)
         if q and q.strip():
-            termo = f"%{q.strip()}%"
-            base_filter.append(
-                or_(
-                    Proposicao.ementa.ilike(termo),
-                    Proposicao.siglaTipo.ilike(termo),
-                    cast(Proposicao.numero, String).ilike(termo),
-                    Votacao.descricao.ilike(termo),
-                    Votacao.tipoVotacao.ilike(termo),
+            termos_expandidos = expand_popular_query(q)
+            or_conditions = []
+            for t_str in termos_expandidos:
+                termo = f"%{t_str.strip()}%"
+                or_conditions.extend(
+                    [
+                        Proposicao.ementa.ilike(termo),
+                        Proposicao.siglaTipo.ilike(termo),
+                        cast(Proposicao.numero, String).ilike(termo),
+                        Votacao.descricao.ilike(termo),
+                        Votacao.tipoVotacao.ilike(termo),
+                    ]
                 )
-            )
+            base_filter.append(or_(*or_conditions))
 
-        stmt_count = (
-            select(func.count())
+        stmt_counts = (
+            select(
+                func.count().label("total"),
+                func.count(
+                    case((Voto.voto.ilike("Sim"), 1), else_=None)
+                ).label("total_sim"),
+                func.count(
+                    case((Voto.voto.ilike("Não"), 1), else_=None)
+                ).label("total_nao"),
+                func.count(
+                    case(
+                        (~Voto.voto.ilike("Sim") & ~Voto.voto.ilike("Não"), 1),
+                        else_=None,
+                    )
+                ).label("total_outros"),
+            )
             .select_from(Voto)
             .join(Votacao, Votacao.id == Voto.idVotacao)
             .outerjoin(Proposicao, Proposicao.id == Votacao.idProposicao)
@@ -643,10 +707,13 @@ class PoliticoRepository:
                 Votacao.id.label("id_votacao"),
                 Votacao.data,
                 Votacao.idProposicao.label("proposicao_id"),
+                Proposicao.idCamara.label("proposicao_id_camara"),
                 Proposicao.siglaTipo.label("proposicao_sigla"),
                 Proposicao.numero.label("proposicao_numero"),
                 Proposicao.ano.label("proposicao_ano"),
                 Proposicao.ementa.label("proposicao_ementa"),
+                Proposicao.descricaoTipo.label("proposicao_descricao_tipo"),
+                Proposicao.urlInteiroTeor.label("proposicao_url_inteiro_teor"),
                 Voto.voto.label("voto"),
                 Votacao.aprovacao,
                 Votacao.tipoVotacao.label("tipo_votacao"),
@@ -662,7 +729,7 @@ class PoliticoRepository:
         )
 
         try:
-            res_count = await self.db.execute(stmt_count)
+            res_counts = await self.db.execute(stmt_counts)
             res_data = await self.db.execute(stmt_data)
         except SQLAlchemyError:
             logger.exception(
@@ -670,27 +737,54 @@ class PoliticoRepository:
             )
             raise
 
-        total = res_count.scalar() or 0
+        row_counts = res_counts.mappings().one()
+        total = row_counts["total"] or 0
+        total_sim = row_counts["total_sim"] or 0
+        total_nao = row_counts["total_nao"] or 0
+        total_outros = row_counts["total_outros"] or 0
+
         rows = res_data.mappings().all()
+
+        prop_ids = [r["proposicao_id"] for r in rows if r["proposicao_id"]]
+        temas_by_prop_id: dict[int, list[str]] = {}
+        if prop_ids:
+            stmt_temas = (
+                select(Proposicao)
+                .where(Proposicao.id.in_(prop_ids))
+                .options(selectinload(Proposicao.temas))
+            )
+            try:
+                res_temas = await self.db.execute(stmt_temas)
+                for p in res_temas.scalars().all():
+                    temas_by_prop_id[p.id] = [t.tema for t in p.temas if t.tema]
+            except SQLAlchemyError:
+                logger.warning(
+                    "Falha ao carregar temas das proposições nas votações do deputado id=%s",
+                    politico_id,
+                )
 
         votacoes = [
             VotacaoResumida(
                 id_votacao=row["id_votacao"],
                 data=row["data"],
                 proposicao_id=row["proposicao_id"],
+                proposicao_id_camara=row["proposicao_id_camara"],
                 proposicao_sigla=row["proposicao_sigla"],
                 proposicao_numero=row["proposicao_numero"],
                 proposicao_ano=row["proposicao_ano"],
                 proposicao_ementa=row["proposicao_ementa"],
+                proposicao_descricao_tipo=row["proposicao_descricao_tipo"],
+                proposicao_url_inteiro_teor=row["proposicao_url_inteiro_teor"],
                 voto=row["voto"],
                 aprovacao=row["aprovacao"],
                 tipo_votacao=row["tipo_votacao"],
                 sigla_orgao=row["sigla_orgao"],
+                temas=temas_by_prop_id.get(row["proposicao_id"], []),
             )
             for row in rows
         ]
 
-        return votacoes, total
+        return votacoes, total, total_sim, total_nao, total_outros
 
     # ------------------------------------------------------------------
     # Atividade legislativa — proposições paginadas
@@ -722,15 +816,19 @@ class PoliticoRepository:
         if data_fim is not None:
             base_filter_common.append(func.date(Proposicao.dataApresentacao) <= data_fim)
         if q and q.strip():
-            termo = f"%{q.strip()}%"
-            base_filter_common.append(
-                or_(
-                    Proposicao.ementa.ilike(termo),
-                    Proposicao.siglaTipo.ilike(termo),
-                    cast(Proposicao.numero, String).ilike(termo),
-                    Proposicao.keywords.ilike(termo),
+            termos_expandidos = expand_popular_query(q)
+            or_conditions = []
+            for t_str in termos_expandidos:
+                termo = f"%{t_str.strip()}%"
+                or_conditions.extend(
+                    [
+                        Proposicao.ementa.ilike(termo),
+                        Proposicao.siglaTipo.ilike(termo),
+                        cast(Proposicao.numero, String).ilike(termo),
+                        Proposicao.keywords.ilike(termo),
+                    ]
                 )
-            )
+            base_filter_common.append(or_(*or_conditions))
 
         stmt_counts = (
             select(

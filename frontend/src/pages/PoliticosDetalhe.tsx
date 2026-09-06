@@ -50,6 +50,9 @@ import {
   FileText,
   Search,
   X,
+  Building2,
+  Tag,
+  Flame,
 } from "lucide-react"
 import { useRegistrarBusca } from "../hooks/useBuscaPopular"
 import { useVotacao } from "../hooks/useProposicoes"
@@ -1304,10 +1307,47 @@ function PainelDetalheVotacao({
   )
 }
 
+const TIPOS_PROPOSICAO_VOTACAO = [
+  { label: "Todos os tipos", value: "" },
+  { label: "PL — Projeto de Lei", value: "PL" },
+  { label: "PEC — Emenda à Constituição", value: "PEC" },
+  { label: "PLP — Projeto de Lei Complementar", value: "PLP" },
+  { label: "PDL — Projeto de Decreto Legislativo", value: "PDL" },
+  { label: "MPV — Medida Provisória", value: "MPV" },
+  { label: "REQ — Requerimento", value: "REQ" },
+  { label: "PRC — Projeto de Resolução", value: "PRC" },
+]
+
+const TEMAS_LEGISLATIVOS_VOTACAO = [
+  { label: "Todos os temas", value: "" },
+  { label: "Trabalho e Emprego", value: "Trabalho" },
+  { label: "Economia e Finanças", value: "Economia" },
+  { label: "Saúde", value: "Saúde" },
+  { label: "Educação", value: "Educação" },
+  { label: "Segurança Pública", value: "Segurança" },
+  { label: "Meio Ambiente", value: "Meio Ambiente" },
+  { label: "Direitos Humanos", value: "Direitos Humanos" },
+  { label: "Administração Pública", value: "Administração Pública" },
+  { label: "Agricultura e Pecuária", value: "Agricultura" },
+  { label: "Ciência e Tecnologia", value: "Ciência" },
+  { label: "Comunicações", value: "Comunicações" },
+]
+
+const TEMAS_DO_MOMENTO = [
+  { label: "Escala 6x1 (PEC 221)", query: "escala 6x1" },
+  { label: "Reforma Tributária", query: "reforma tributária" },
+  { label: "Marco Temporal", query: "marco temporal" },
+  { label: "Apostas & Bets", query: "apostas" },
+  { label: "Porte de Armas", query: "armas" },
+  { label: "Desoneração da Folha", query: "desoneração" },
+]
+
 function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number; anoSelecionado: number | null }) {
   const PAGE_SIZE = 15
   const [offset, setOffset] = useState(0)
   const [filtroVoto, setFiltroVoto] = useState<string>("")
+  const [siglaTipo, setSiglaTipo] = useState<string>("")
+  const [tema, setTema] = useState<string>("")
   const [busca, setBusca] = useState<string>("")
   const [dataInicio, setDataInicio] = useState<string>("")
   const [dataFim, setDataFim] = useState<string>("")
@@ -1318,7 +1358,7 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
   // Reseta página ao trocar filtros ou ano
   useEffect(() => {
     setOffset(0)
-  }, [anoSelecionado, filtroVoto, buscaDebounced, dataInicio, dataFim])
+  }, [anoSelecionado, filtroVoto, siglaTipo, tema, buscaDebounced, dataInicio, dataFim])
 
   // Fecha painel ao trocar de página
   useEffect(() => {
@@ -1329,6 +1369,8 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
     ano: anoSelecionado ?? undefined,
     q_votacao: buscaDebounced || undefined,
     voto: filtroVoto || undefined,
+    sigla_tipo_votacao: siglaTipo || undefined,
+    tema_votacao: tema || undefined,
     data_inicio_votacao: dataInicio || undefined,
     data_fim_votacao: dataFim || undefined,
     limit_votacoes: PAGE_SIZE,
@@ -1353,17 +1395,22 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
 
   const votacoes: VotacaoResumida[] = (atividade?.votacoes ?? []).map(normalizarVotacao)
   const total = atividade?.total_votacoes ?? 0
+  const totalSim = atividade?.total_votos_sim ?? 0
+  const totalNao = atividade?.total_votos_nao ?? 0
+  const totalOutros = atividade?.total_votos_outros ?? 0
 
   const pagina = Math.floor(offset / PAGE_SIZE) + 1
   const totalPaginas = Math.ceil(total / PAGE_SIZE)
   const temAnterior = offset > 0
   const temProxima = offset + PAGE_SIZE < total
 
-  const temFiltroAtivo = Boolean(busca || filtroVoto || dataInicio || dataFim)
+  const temFiltroAtivo = Boolean(busca || filtroVoto || siglaTipo || tema || dataInicio || dataFim)
 
   const limparFiltros = () => {
     setBusca("")
     setFiltroVoto("")
+    setSiglaTipo("")
+    setTema("")
     setDataInicio("")
     setDataFim("")
     setOffset(0)
@@ -1371,7 +1418,11 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
 
   const formatarData = (iso: string | null | undefined) => {
     if (!iso) return "—"
-    return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
+    try {
+      return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
+    } catch {
+      return iso
+    }
   }
 
   return (
@@ -1384,7 +1435,8 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
         }
       `}</style>
 
-      <section className="section-fade space-y-4">
+      <section className="section-fade space-y-5">
+        {/* ── CABEÇALHO DA SEÇÃO ── */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <Vote size={18} className="text-blue-500" />
@@ -1395,11 +1447,68 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
               </span>
             )}
           </div>
+
+          <ToolDica
+            texto="Histórico factual de deliberações nominais do parlamentar em plenário e comissões da Câmara dos Deputados, com indicação do voto individual registrado oficialmente e link para a proposição."
+            posicao="left"
+          />
+        </div>
+
+        {/* ── KPIS DE VOTAÇÃO FACTUAL ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-slate-500">Total sob Filtro</span>
+              <Vote size={16} className="text-blue-500" />
+            </div>
+            <p
+              data-testid="kpi-total-votacoes"
+              className="mono-font text-2xl font-bold text-slate-800"
+            >
+              {total.toLocaleString("pt-BR")}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {anoSelecionado ? `votações em ${anoSelecionado}` : "votações nominais registradas"}
+            </p>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-emerald-700">Votos a Favor ("Sim")</span>
+              <CheckCircle2 size={16} className="text-emerald-600" />
+            </div>
+            <p
+              data-testid="kpi-votos-sim"
+              className="mono-font text-2xl font-bold text-emerald-900"
+            >
+              {totalSim.toLocaleString("pt-BR")}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {total > 0 ? `${Math.round((totalSim / total) * 100)}% das deliberações` : "posicionamento favorável"}
+            </p>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-slate-600">Votos Contra / Outros</span>
+              <XCircle size={16} className="text-rose-600" />
+            </div>
+            <p
+              data-testid="kpi-votos-nao"
+              className="mono-font text-2xl font-bold text-slate-700"
+            >
+              {(totalNao + totalOutros).toLocaleString("pt-BR")}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {totalNao.toLocaleString("pt-BR")} "Não" {totalOutros > 0 ? `· ${totalOutros.toLocaleString("pt-BR")} outros` : ""}
+            </p>
+          </div>
         </div>
 
         {/* ── BARRA DE FILTROS CÍVICA DE VOTAÇÕES ── */}
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3.5">
+          {/* Linha Superior: Busca textual e Abas de Voto */}
+          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
             {/* Campo de Busca Textual */}
             <div className="relative flex-1">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -1408,11 +1517,12 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
                 type="text"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar por nº, sigla ou ementa (ex: PL 74, tributário)..."
-                className="w-full text-sm pl-9 pr-8 py-1.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                placeholder="Buscar por tema, nº, sigla ou ementa (ex: escala 6x1, PL 74, tributário)..."
+                className="w-full text-sm pl-9 pr-8 py-2 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
               />
               {busca && (
                 <button
+                  type="button"
                   onClick={() => setBusca("")}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                   aria-label="Limpar busca"
@@ -1422,13 +1532,119 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
               )}
             </div>
 
+            {/* Seletor de Voto (Tabs Rápidas) */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-medium self-start md:self-auto">
+              <button
+                data-testid="filter-voto-tab-todos"
+                type="button"
+                onClick={() => setFiltroVoto("")}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  filtroVoto === ""
+                    ? "bg-white text-slate-900 font-semibold shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Todos ({total})
+              </button>
+              <button
+                data-testid="filter-voto-tab-sim"
+                type="button"
+                onClick={() => setFiltroVoto(filtroVoto === "Sim" ? "" : "Sim")}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
+                  filtroVoto === "Sim"
+                    ? "bg-emerald-600 text-white font-semibold shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <span>⭐ Sim</span>
+                <span className="text-[11px] opacity-90">({totalSim})</span>
+              </button>
+              <button
+                data-testid="filter-voto-tab-nao"
+                type="button"
+                onClick={() => setFiltroVoto(filtroVoto === "Não" ? "" : "Não")}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
+                  filtroVoto === "Não"
+                    ? "bg-rose-600 text-white font-semibold shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <span>👥 Não</span>
+                <span className="text-[11px] opacity-90">({totalNao})</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Linha de Temas do Momento */}
+          <div className="flex items-center gap-2 pt-1 flex-wrap">
+            <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+              <Flame size={13} className="text-amber-500" /> Temas em Alta:
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {TEMAS_DO_MOMENTO.map((item) => {
+                const isSelected = busca.toLowerCase() === item.query.toLowerCase()
+                return (
+                  <button
+                    key={item.query}
+                    type="button"
+                    onClick={() => setBusca(isSelected ? "" : item.query)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
+                      isSelected
+                        ? "bg-amber-100 border-amber-300 text-amber-900 font-semibold shadow-2xs"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-amber-50/60 hover:text-amber-800 hover:border-amber-200"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Linha Inferior: Dropdowns de Tipo, Tema, Voto, Datas e Limpar */}
+          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100 text-xs">
+            {/* Dropdown de Tipo */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 font-medium">Tipo:</span>
+              <select
+                data-testid="select-tipo-votacao"
+                value={siglaTipo}
+                onChange={(e) => setSiglaTipo(e.target.value)}
+                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 cursor-pointer"
+              >
+                {TIPOS_PROPOSICAO_VOTACAO.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Dropdown de Tema */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 font-medium">Tema:</span>
+              <select
+                data-testid="select-tema-votacao"
+                value={tema}
+                onChange={(e) => setTema(e.target.value)}
+                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 cursor-pointer"
+              >
+                {TEMAS_LEGISLATIVOS_VOTACAO.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Dropdown de Voto */}
-            <div className="relative">
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 font-medium">Voto:</span>
               <select
                 data-testid="filter-voto-select"
                 value={filtroVoto}
                 onChange={(e) => setFiltroVoto(e.target.value)}
-                className="appearance-none text-xs border border-slate-200 rounded-xl pl-3 pr-8 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 cursor-pointer"
+                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 cursor-pointer"
               >
                 <option value="">Todos os votos</option>
                 <option value="Sim">Sim</option>
@@ -1436,12 +1652,9 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
                 <option value="Obstrução">Obstrução</option>
                 <option value="Abstenção">Abstenção</option>
               </select>
-              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
-          </div>
 
-          {/* Filtro por Datas e Botão Limpar */}
-          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100 text-xs">
+            {/* Filtro por Datas */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-slate-500 font-medium flex items-center gap-1">
                 <Calendar size={13} className="text-slate-400" /> Período:
@@ -1465,11 +1678,13 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
               />
             </div>
 
+            {/* Botão Limpar Filtros */}
             {temFiltroAtivo && (
               <button
                 data-testid="btn-limpar-filtros-votacoes"
+                type="button"
                 onClick={limparFiltros}
-                className="ml-auto inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium py-0.5 px-1"
+                className="ml-auto inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium py-1 px-2"
               >
                 <X size={12} /> Limpar filtros
               </button>
@@ -1477,6 +1692,7 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
           </div>
         </div>
 
+        {/* ── LISTAGEM DE VOTAÇÕES EM CARDS FORMATADOS ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-16 gap-3 text-slate-400">
@@ -1491,109 +1707,135 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
               </p>
               {temFiltroAtivo && (
                 <button
+                  type="button"
                   onClick={limparFiltros}
                   className="mt-3 text-xs text-blue-600 hover:underline font-semibold"
                 >
-                  Limpar filtros
+                  Limpar todos os filtros
                 </button>
               )}
             </div>
           ) : (
             <>
-              {/* Cabeçalho da tabela */}
-              <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-5 py-3 border-b border-slate-100 bg-slate-50">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Proposição / Ementa</span>
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Data</span>
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Resultado</span>
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Voto</span>
-                <span /> {/* coluna do chevron */}
-              </div>
-
               <div data-testid="votacoes-list" className="divide-y divide-slate-100">
                 {votacoes.map((v, i) => {
                   const ativo = votacaoAberta?.id === v.id_votacao
                   const anoVoto = v.data ? new Date(v.data).getFullYear() : null
                   const gapAnos = anoVoto && v.proposicao_ano ? anoVoto - v.proposicao_ano : 0
+                  const urlCamara =
+                    v.proposicao_url_inteiro_teor ||
+                    (v.proposicao_id_camara
+                      ? `https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=${v.proposicao_id_camara}`
+                      : v.proposicao_id
+                      ? `https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=${v.proposicao_id}`
+                      : null)
+
                   return (
-                    <button
+                    <article
                       key={`${v.id_votacao}-${i}`}
                       data-testid={`votacao-item-${v.id_votacao}`}
                       onClick={() => setVotacaoAberta(ativo ? null : { id: v.id_votacao, voto: v.voto })}
-                      className={`w-full text-left px-5 py-3.5 transition-colors group ${
+                      className={`p-5 transition-colors space-y-2.5 cursor-pointer group ${
                         ativo
-                          ? "bg-blue-50 border-l-2 border-l-blue-500"
-                          : "hover:bg-slate-50 border-l-2 border-l-transparent"
+                          ? "bg-blue-50/60 border-l-4 border-l-blue-500"
+                          : "hover:bg-slate-50/70 border-l-4 border-l-transparent"
                       }`}
                     >
-                      {/* Layout mobile */}
-                      <div className="md:hidden space-y-2">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            {(v.proposicao_sigla || v.proposicao_numero) && (
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[11px] font-semibold text-blue-600 font-mono">
+                      {/* Linha 1: Identificação da Matéria, Voto, Tipo, Link Câmara e Data */}
+                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {v.proposicao_sigla || v.proposicao_numero ? (
+                            urlCamara ? (
+                              <a
+                                href={urlCamara}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="mono-font text-base font-bold text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+                                title="Ver ficha de tramitação no portal oficial da Câmara dos Deputados"
+                              >
+                                <span>
                                   {v.proposicao_sigla} {v.proposicao_numero}/{v.proposicao_ano}
                                 </span>
-                                {gapAnos >= 2 && (
-                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200/70 px-1.5 py-0.2 rounded">
-                                    <Clock size={9} className="text-amber-600" />
-                                    Projeto de {v.proposicao_ano}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            <p className="text-sm text-slate-700 leading-snug mt-0.5 line-clamp-2">
-                              {v.proposicao_ementa ?? v.tipo_votacao ?? "—"}
-                            </p>
-                          </div>
-                          <VotoBadge voto={v.voto} />
-                        </div>
-                        <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                          <span>{formatarData(v.data)}</span>
-                          <ResultadoVotacaoBadge aprovacao={v.aprovacao} resultadoTexto={(v as any).resultado_da_votacao} />
-                          {v.sigla_orgao && (
-                            <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">{v.sigla_orgao}</span>
+                                <ExternalLink size={13} className="text-blue-500" />
+                              </a>
+                            ) : (
+                              <span className="mono-font text-base font-bold text-slate-900">
+                                {v.proposicao_sigla} {v.proposicao_numero}/{v.proposicao_ano}
+                              </span>
+                            )
+                          ) : (
+                            <span className="mono-font text-base font-bold text-slate-900">
+                              {v.tipo_votacao || `Votação #${v.id_votacao}`}
+                            </span>
                           )}
+
+                          {/* Badge de Voto Nominal */}
+                          <VotoBadge voto={v.voto} />
+
+                          {/* Descrição do tipo da matéria */}
+                          {v.proposicao_descricao_tipo && (
+                            <span className="text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200/60">
+                              {v.proposicao_descricao_tipo}
+                            </span>
+                          )}
+
+                          {/* Alerta de projeto de anos anteriores */}
+                          {gapAnos >= 2 && (
+                            <span
+                              className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200/70 px-1.5 py-0.2 rounded"
+                              title={`Proposição apresentada em ${v.proposicao_ano}`}
+                            >
+                              <Clock size={9} className="text-amber-600" />
+                              Projeto de {v.proposicao_ano}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 text-xs text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <Calendar size={12} /> {formatarData(v.data)}
+                          </span>
+                          <span className="hidden sm:inline-flex items-center text-blue-600 text-xs font-medium group-hover:translate-x-0.5 transition-transform">
+                            Ver detalhes <ChevronRight size={14} className="ml-0.5" />
+                          </span>
                         </div>
                       </div>
 
-                      {/* Layout desktop */}
-                      <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 items-center">
-                        <div className="min-w-0">
-                          {(v.proposicao_sigla || v.proposicao_numero) && (
-                            <span className="inline-flex items-center gap-1.5 mr-2">
-                              <span className="text-[11px] font-semibold text-blue-600 font-mono">
-                                {v.proposicao_sigla} {v.proposicao_numero}/{v.proposicao_ano}
-                              </span>
-                              {gapAnos >= 2 && (
-                                <span
-                                  className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200/70 px-1.5 py-0.2 rounded"
-                                  title={`Proposição apresentada em ${v.proposicao_ano}`}
-                                >
-                                  <Clock size={9} className="text-amber-600" />
-                                  Projeto de {v.proposicao_ano}
-                                </span>
-                              )}
+                      {/* Linha 2: Ementa descritiva */}
+                      <p className="text-sm text-slate-700 leading-relaxed">
+                        {v.proposicao_ementa || v.tipo_votacao || "Ementa não informada."}
+                      </p>
+
+                      {/* Linha 3: Resultado da deliberação, Órgão e Tags Temáticas */}
+                      <div className="flex items-center justify-between gap-3 pt-1 flex-wrap text-xs">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <ResultadoVotacaoBadge aprovacao={v.aprovacao} resultadoTexto={(v as any).resultado_da_votacao} />
+
+                          {v.sigla_orgao && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md">
+                              <Building2 size={11} className="text-slate-400" />
+                              {v.sigla_orgao}
                             </span>
                           )}
-                          <p className="text-sm text-slate-700 leading-snug truncate">
-                            {v.proposicao_ementa ?? v.tipo_votacao ?? "—"}
-                          </p>
-                          {v.sigla_orgao && (
-                            <span className="text-[10px] text-slate-400 mt-0.5 inline-block">{v.sigla_orgao}</span>
-                          )}
                         </div>
-                        <span className="text-sm text-slate-500 whitespace-nowrap">{formatarData(v.data)}</span>
-                        <ResultadoVotacaoBadge aprovacao={v.aprovacao} resultadoTexto={(v as any).resultado_da_votacao} />
-                        <VotoBadge voto={v.voto} />
-                        <ChevronRight
-                          size={14}
-                          className={`transition-colors flex-shrink-0 ${
-                            ativo ? "text-blue-500" : "text-slate-300 group-hover:text-slate-500"
-                          }`}
-                        />
+
+                        {/* Badges Temáticas */}
+                        {v.temas && v.temas.length > 0 && (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {v.temas.slice(0, 3).map((temaItem, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full"
+                              >
+                                <Tag size={9} className="text-slate-400" />
+                                {temaItem}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </button>
+                    </article>
                   )
                 })}
               </div>
@@ -1602,21 +1844,23 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
               {(temAnterior || temProxima) && (
                 <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/60">
                   <button
+                    data-testid="btn-votacoes-anterior"
                     disabled={!temAnterior}
                     onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
                     className="text-xs text-slate-500 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed font-medium flex items-center gap-1 transition-colors"
                   >
-                    <ArrowLeft size={12} /> Anterior
+                    <ChevronLeft size={14} /> Anterior
                   </button>
                   <span className="text-xs text-slate-500 font-medium">
-                    Página {pagina} de {Math.max(1, totalPaginas)} ({total.toLocaleString("pt-BR")} registros)
+                    Página {pagina} de {Math.max(1, totalPaginas)} ({total.toLocaleString("pt-BR")} votações)
                   </span>
                   <button
+                    data-testid="btn-votacoes-proxima"
                     disabled={!temProxima}
                     onClick={() => setOffset(offset + PAGE_SIZE)}
                     className="text-xs text-slate-500 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed font-medium flex items-center gap-1 transition-colors"
                   >
-                    Próxima <ChevronRight size={12} />
+                    Próxima <ChevronRight size={14} />
                   </button>
                 </div>
               )}

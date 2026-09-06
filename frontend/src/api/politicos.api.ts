@@ -374,6 +374,8 @@ export interface AtividadeLegislativaParams {
   // Filtros de Votações
   q_votacao?: string          // busca textual em votações
   voto?: string               // "Sim", "Não", "Abstenção", "Obstrução"...
+  sigla_tipo_votacao?: string // "PL", "PEC", "REQ", etc.
+  tema_votacao?: string       // "Educação", "Saúde", "Segurança", etc.
   data_inicio_votacao?: string // AAAA-MM-DD
   data_fim_votacao?: string   // AAAA-MM-DD
   // Filtros de Proposições
@@ -394,14 +396,18 @@ export interface VotacaoResumida {
   readonly id_votacao: number
   readonly data: string | null
   readonly proposicao_id: number | null
+  readonly proposicao_id_camara?: number | null
   readonly proposicao_sigla: string | null     // "PL", "PEC"...
   readonly proposicao_numero: number | null
   readonly proposicao_ano: number | null
   readonly proposicao_ementa: string | null
+  readonly proposicao_descricao_tipo?: string | null
+  readonly proposicao_url_inteiro_teor?: string | null
   readonly voto: string | null                 // "Sim", "Não", "Obstrução", "Abstenção"...
   readonly aprovacao: number | null            // 1 aprovada, 0 rejeitada, -1 indefinido
   readonly tipo_votacao: string | null
   readonly sigla_orgao: string | null
+  readonly temas?: string[]
 }
 
 /** Proposição da qual o parlamentar é autor ou coautor */
@@ -431,6 +437,9 @@ export interface AtividadeLegislativaResponse {
   readonly total_proposicoes: number
   readonly total_proponente: number
   readonly total_coautor: number
+  readonly total_votos_sim?: number
+  readonly total_votos_nao?: number
+  readonly total_votos_outros?: number
   readonly limit_votacoes: number
   readonly limit_proposicoes: number
   readonly offset_votacoes: number

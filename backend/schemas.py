@@ -579,15 +579,19 @@ class VotacaoResumida(BaseModel):
     data: Optional[date] = None
 
     proposicao_id: Optional[int] = None
+    proposicao_id_camara: Optional[int] = None
     proposicao_sigla: Optional[str] = None
     proposicao_numero: Optional[int] = None
     proposicao_ano: Optional[int] = None
     proposicao_ementa: Optional[str] = None
+    proposicao_descricao_tipo: Optional[str] = None
+    proposicao_url_inteiro_teor: Optional[str] = None
 
     voto: Optional[str] = None
     aprovacao: Optional[int] = None
     tipo_votacao: Optional[str] = None
     sigla_orgao: Optional[str] = None
+    temas: List[str] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -638,6 +642,9 @@ class AtividadeLegislativaResponse(BaseModel):
     total_proposicoes: int
     total_proponente: int = 0
     total_coautor: int = 0
+    total_votos_sim: int = 0
+    total_votos_nao: int = 0
+    total_votos_outros: int = 0
     limit_votacoes: int
     limit_proposicoes: int
     offset_votacoes: int
