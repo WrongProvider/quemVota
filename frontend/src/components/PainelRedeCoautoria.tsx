@@ -10,7 +10,7 @@
  *  - Rastreabilidade de proposições com sigla, número, ano e autoria.
  */
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Link } from "react-router-dom"
 import {
   GitFork,
@@ -24,6 +24,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { usePoliticoCoautoria } from "../hooks/usePoliticos"
+import { useIsMobile } from "../hooks/useIsMobile"
 import type { ParceiroCoautoria, ProposicaoParceriaResumo } from "../api/politicos.api"
 import InfoDica from "./InfoDica"
 
@@ -62,16 +63,25 @@ function FotoPolitico({ id, nome, urlFoto }: FotoPoliticoProps) {
   )
 }
 
+interface PainelRedeCoautoriaProps {
+  politicoId: number | string
+}
+
 export default function PainelRedeCoautoria({
   politicoId,
 }: PainelRedeCoautoriaProps) {
+  const isMobile = useIsMobile()
   const { data, isLoading, isError } = usePoliticoCoautoria(politicoId, {
     limit: 20,
   })
 
-  const [itensVisiveis, setItensVisiveis] = useState(6)
+  const [itensVisiveis, setItensVisiveis] = useState(isMobile ? 2 : 6)
   const [parceiroExpandido, setParceiroExpandido] = useState<number | null>(null)
   const [filtroTexto, setFiltroTexto] = useState("")
+
+  useEffect(() => {
+    setItensVisiveis(isMobile ? 2 : 6)
+  }, [isMobile])
 
   const toggleExpandirParceiro = (id: number) => {
     setParceiroExpandido((prev) => (prev === id ? null : id))
@@ -243,7 +253,7 @@ export default function PainelRedeCoautoria({
             value={filtroTexto}
             onChange={(e) => {
               setFiltroTexto(e.target.value)
-              setItensVisiveis(6)
+              setItensVisiveis(isMobile ? 2 : 6)
             }}
             className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-800 placeholder-slate-400 transition-all"
           />
@@ -410,8 +420,8 @@ export default function PainelRedeCoautoria({
         <div className="text-center pt-5">
           <button
             type="button"
-            onClick={() => setItensVisiveis((v) => v + 6)}
-            className="text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 px-4 py-2 rounded-xl transition-colors shadow-xs cursor-pointer"
+            onClick={() => setItensVisiveis((v) => v + (isMobile ? 2 : 6))}
+            className="w-full sm:w-auto text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 px-4 py-2.5 rounded-xl transition-colors shadow-xs cursor-pointer min-h-[44px]"
           >
             Mostrar mais parceiros ({parceirosFiltrados.length - itensVisiveis} restantes)
           </button>

@@ -26,9 +26,11 @@ import {
   CheckCircle2,
   Users,
   Award,
+  SlidersHorizontal,
 } from "lucide-react"
 import { usePoliticoAtividade } from "../hooks/usePoliticos"
 import { useDebounce } from "../hooks/useDebounce"
+import useIsMobile from "../hooks/useIsMobile"
 import ToolDica from "./InfoDica"
 import type { ProposicaoResumida } from "../api/politicos.api"
 
@@ -54,7 +56,8 @@ export default function HistoricoProjetos({
   politicoId,
   anoSelecionado,
 }: HistoricoProjetosProps) {
-  const PAGE_SIZE = 15
+  const isMobile = useIsMobile()
+  const PAGE_SIZE = isMobile ? 2 : 10
 
   // Estados dos filtros
   const [busca, setBusca] = useState("")
@@ -63,13 +66,14 @@ export default function HistoricoProjetos({
   const [dataInicio, setDataInicio] = useState("")
   const [dataFim, setDataFim] = useState("")
   const [offset, setOffset] = useState(0)
+  const [filtrosAvancadosAbertos, setFiltrosAvancadosAbertos] = useState(false)
 
   const buscaDebounced = useDebounce(busca.trim(), 400)
 
-  // Reseta offset quando qualquer filtro mudar
+  // Reseta offset quando qualquer filtro ou tamanho de tela mudar
   useEffect(() => {
     setOffset(0)
-  }, [buscaDebounced, tipoAutoria, siglaTipo, dataInicio, dataFim, anoSelecionado])
+  }, [buscaDebounced, tipoAutoria, siglaTipo, dataInicio, dataFim, anoSelecionado, isMobile])
 
   const proponenteParam =
     tipoAutoria === "proponente" ? true : tipoAutoria === "coautor" ? false : undefined
@@ -262,8 +266,35 @@ export default function HistoricoProjetos({
           </div>
         </div>
 
+        {/* Botão de Toggle para Filtros Avançados no Mobile */}
+        <div className="md:hidden pt-2 border-t border-slate-100 flex items-center justify-between">
+          <button
+            type="button"
+            data-testid="btn-toggle-filtros-projetos"
+            onClick={() => setFiltrosAvancadosAbertos((v) => !v)}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 py-1 cursor-pointer"
+          >
+            <SlidersHorizontal size={13} />
+            <span>{filtrosAvancadosAbertos ? "Recolher filtros detalhados" : "Mais filtros (Tipo, Período)"}</span>
+            {[siglaTipo, dataInicio, dataFim].filter(Boolean).length > 0 && (
+              <span className="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                {[siglaTipo, dataInicio, dataFim].filter(Boolean).length}
+              </span>
+            )}
+          </button>
+          {temFiltroAtivo && (
+            <button
+              type="button"
+              onClick={limparFiltros}
+              className="text-xs text-rose-600 hover:text-rose-800 font-medium cursor-pointer"
+            >
+              Limpar filtros
+            </button>
+          )}
+        </div>
+
         {/* Linha Inferior: Tipo de proposição, Intervalo de datas e Limpar */}
-        <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-slate-100 text-xs">
+        <div className={`${filtrosAvancadosAbertos ? "flex" : "hidden"} md:flex flex-wrap items-center gap-3 pt-1 border-t border-slate-100 text-xs`}>
           {/* Dropdown de Tipo */}
           <div className="flex items-center gap-1.5">
             <span className="text-slate-500 font-medium">Tipo:</span>

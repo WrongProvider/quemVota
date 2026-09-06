@@ -21,6 +21,7 @@ import {
   Filter,
 } from "lucide-react"
 import { usePoliticoAfinidades } from "../hooks/usePoliticos"
+import useIsMobile from "../hooks/useIsMobile"
 import type { PoliticoAfinidadeItem } from "../api/politicos.api"
 import InfoDica from "./InfoDica"
 
@@ -43,6 +44,7 @@ function FotoPolitico({ id, nome, urlFoto }: FotoPoliticoProps) {
   const candidatas = [
     `${PATH_FOTOS}${id}.jpg`,
     ...(urlFoto ? [urlFoto] : []),
+    `https://www.camara.leg.br/internet/deputado/bandep/${id}.jpg`,
   ]
 
   if (tentativa >= candidatas.length) {
@@ -67,6 +69,9 @@ function FotoPolitico({ id, nome, urlFoto }: FotoPoliticoProps) {
 export default function PainelRadarAfinidades({
   politicoId,
 }: PainelRadarAfinidadesProps) {
+  const isMobile = useIsMobile()
+  const [limiteMobileAlinhados, setLimiteMobileAlinhados] = useState(2)
+  const [limiteMobileDivergentes, setLimiteMobileDivergentes] = useState(2)
   const [minVotacoes, setMinVotacoes] = useState(10)
   const [apenasOutrosPartidos, setApenasOutrosPartidos] = useState(false)
 
@@ -113,6 +118,14 @@ export default function PainelRadarAfinidades({
   if (!data) return null
 
   const idPoliticoBase = data.politico_base.slug || data.politico_base.id
+
+  const alinhadosExibidos = isMobile
+    ? data.mais_alinhados.slice(0, limiteMobileAlinhados)
+    : data.mais_alinhados
+
+  const divergentesExibidos = isMobile
+    ? data.mais_divergentes.slice(0, limiteMobileDivergentes)
+    : data.mais_divergentes
 
   return (
     <section
@@ -220,7 +233,7 @@ export default function PainelRadarAfinidades({
             </div>
           ) : (
             <div className="space-y-3">
-              {data.mais_alinhados.map((item: PoliticoAfinidadeItem) => {
+              {alinhadosExibidos.map((item: PoliticoAfinidadeItem) => {
                 const taxa = Math.min(Math.max(item.taxa_alinhamento, 0), 100)
                 const slugOrId = item.politico.slug || item.politico.id
 
@@ -301,6 +314,19 @@ export default function PainelRadarAfinidades({
                   </div>
                 )
               })}
+
+              {isMobile && data.mais_alinhados.length > limiteMobileAlinhados && (
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    data-testid="btn-mostrar-mais-alinhados"
+                    onClick={() => setLimiteMobileAlinhados((v) => v + 2)}
+                    className="w-full text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-4 py-2.5 rounded-xl transition-all shadow-2xs cursor-pointer min-h-[44px]"
+                  >
+                    Mostrar mais parlamentares ({data.mais_alinhados.length - limiteMobileAlinhados} restantes)
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -335,7 +361,7 @@ export default function PainelRadarAfinidades({
             </div>
           ) : (
             <div className="space-y-3">
-              {data.mais_divergentes.map((item: PoliticoAfinidadeItem) => {
+              {divergentesExibidos.map((item: PoliticoAfinidadeItem) => {
                 const taxa = Math.min(Math.max(item.taxa_alinhamento, 0), 100)
                 const slugOrId = item.politico.slug || item.politico.id
 
@@ -411,6 +437,19 @@ export default function PainelRadarAfinidades({
                   </div>
                 )
               })}
+
+              {isMobile && data.mais_divergentes.length > limiteMobileDivergentes && (
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    data-testid="btn-mostrar-mais-divergentes"
+                    onClick={() => setLimiteMobileDivergentes((v) => v + 2)}
+                    className="w-full text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-4 py-2.5 rounded-xl transition-all shadow-2xs cursor-pointer min-h-[44px]"
+                  >
+                    Mostrar mais divergências ({data.mais_divergentes.length - limiteMobileDivergentes} restantes)
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -10,7 +10,7 @@
  *  - Transparência metodológica documentada via tooltip.
  */
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Scale,
   CheckCircle2,
@@ -23,6 +23,7 @@ import {
   HelpCircle,
 } from "lucide-react"
 import { usePoliticoFidelidade } from "../hooks/usePoliticos"
+import { useIsMobile } from "../hooks/useIsMobile"
 import type { VotoDivergentePartido } from "../api/politicos.api"
 import InfoDica from "./InfoDica"
 
@@ -33,14 +34,19 @@ interface PainelFidelidadePartidariaProps {
 export default function PainelFidelidadePartidaria({
   politicoId,
 }: PainelFidelidadePartidariaProps) {
+  const isMobile = useIsMobile()
   const { data, isLoading, isError } = usePoliticoFidelidade(politicoId, {
     limit_divergencias: 50,
   })
 
   const [mostrarDivergencias, setMostrarDivergencias] = useState(false)
   const [filtroTexto, setFiltroTexto] = useState("")
-  const [itensVisiveis, setItensVisiveis] = useState(6)
+  const [itensVisiveis, setItensVisiveis] = useState(isMobile ? 2 : 6)
   const [ementasExpandidas, setEmentasExpandidas] = useState<Record<number, boolean>>({})
+
+  useEffect(() => {
+    setItensVisiveis(isMobile ? 2 : 6)
+  }, [isMobile])
 
   const toggleEmenta = (idVotacao: number) => {
     setEmentasExpandidas((prev) => ({
@@ -279,7 +285,7 @@ export default function PainelFidelidadePartidaria({
                     value={filtroTexto}
                     onChange={(e) => {
                       setFiltroTexto(e.target.value)
-                      setItensVisiveis(6)
+                      setItensVisiveis(isMobile ? 2 : 6)
                     }}
                     className="w-full pl-9 pr-4 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 placeholder-slate-400 transition-all"
                   />
@@ -365,8 +371,8 @@ export default function PainelFidelidadePartidaria({
                 <div className="text-center pt-2">
                   <button
                     type="button"
-                    onClick={() => setItensVisiveis((v) => v + 6)}
-                    className="text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2 rounded-lg transition-colors shadow-xs cursor-pointer"
+                    onClick={() => setItensVisiveis((v) => v + (isMobile ? 2 : 6))}
+                    className="w-full sm:w-auto text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2.5 rounded-xl transition-colors shadow-xs cursor-pointer min-h-[44px]"
                   >
                     Mostrar mais matérias ({divergenciasFiltradas.length - itensVisiveis} restantes)
                   </button>

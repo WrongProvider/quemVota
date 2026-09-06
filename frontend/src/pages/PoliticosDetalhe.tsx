@@ -18,6 +18,7 @@ import HistoricoProjetos from "../components/HistoricoProjetos"
 import InfoBotao from "../components/InfoDicaBotao"
 import ToolDica from "../components/InfoDica"
 import Header from "../components/Header"
+import useIsMobile from "../hooks/useIsMobile"
 import {
   MapPin,
   Users,
@@ -57,6 +58,7 @@ import {
   Compass,
   GitFork,
   Scale,
+  SlidersHorizontal,
 } from "lucide-react"
 import { useRegistrarBusca } from "../hooks/useBuscaPopular"
 import { useVotacao } from "../hooks/useProposicoes"
@@ -1474,7 +1476,8 @@ const TEMAS_DO_MOMENTO = [
 ]
 
 function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number; anoSelecionado: number | null }) {
-  const PAGE_SIZE = 15
+  const isMobile = useIsMobile()
+  const PAGE_SIZE = isMobile ? 2 : 10
   const [offset, setOffset] = useState(0)
   const [filtroVoto, setFiltroVoto] = useState<string>("")
   const [siglaTipo, setSiglaTipo] = useState<string>("")
@@ -1483,13 +1486,14 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
   const [dataInicio, setDataInicio] = useState<string>("")
   const [dataFim, setDataFim] = useState<string>("")
   const [votacaoAberta, setVotacaoAberta] = useState<{ id: number; voto: string } | null>(null)
+  const [filtrosAvancadosAbertos, setFiltrosAvancadosAbertos] = useState(false)
 
   const buscaDebounced = useDebounce(busca.trim(), 400)
 
-  // Reseta página ao trocar filtros ou ano
+  // Reseta página ao trocar filtros, ano ou modo de tela
   useEffect(() => {
     setOffset(0)
-  }, [anoSelecionado, filtroVoto, siglaTipo, tema, buscaDebounced, dataInicio, dataFim])
+  }, [anoSelecionado, filtroVoto, siglaTipo, tema, buscaDebounced, dataInicio, dataFim, isMobile])
 
   // Fecha painel ao trocar de página
   useEffect(() => {
@@ -1536,6 +1540,7 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
   const temProxima = offset + PAGE_SIZE < total
 
   const temFiltroAtivo = Boolean(busca || filtroVoto || siglaTipo || tema || dataInicio || dataFim)
+  const filtrosAvancadosCount = [siglaTipo, tema, dataInicio, dataFim].filter(Boolean).length
 
   const limparFiltros = () => {
     setBusca("")
@@ -1706,12 +1711,12 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
             </div>
           </div>
 
-          {/* Linha de Temas do Momento */}
-          <div className="flex items-center gap-2 pt-1 flex-wrap">
-            <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+          {/* Linha de Temas do Momento (com rolagem horizontal fluida no mobile) */}
+          <div className="flex items-center gap-2 pt-1 flex-wrap sm:flex-nowrap overflow-hidden">
+            <span className="text-xs font-semibold text-slate-500 flex items-center gap-1 shrink-0">
               <Flame size={13} className="text-amber-500" /> Temas em Alta:
             </span>
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-nowrap sm:flex-wrap w-full sm:w-auto">
               {TEMAS_DO_MOMENTO.map((item) => {
                 const isSelected = busca.toLowerCase() === item.query.toLowerCase()
                 return (
@@ -1719,7 +1724,7 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
                     key={item.query}
                     type="button"
                     onClick={() => setBusca(isSelected ? "" : item.query)}
-                    className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-all shrink-0 cursor-pointer whitespace-nowrap ${
                       isSelected
                         ? "bg-amber-100 border-amber-300 text-amber-900 font-semibold shadow-2xs"
                         : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-amber-50/60 hover:text-amber-800 hover:border-amber-200"
@@ -1732,8 +1737,35 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
             </div>
           </div>
 
+          {/* Botão de Toggle para Filtros Avançados no Mobile */}
+          <div className="sm:hidden pt-2 border-t border-slate-100 flex items-center justify-between">
+            <button
+              type="button"
+              data-testid="btn-toggle-filtros-avancados"
+              onClick={() => setFiltrosAvancadosAbertos((v) => !v)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 py-1 cursor-pointer"
+            >
+              <SlidersHorizontal size={13} />
+              <span>{filtrosAvancadosAbertos ? "Recolher filtros detalhados" : "Mais filtros (Tipo, Tema, Período)"}</span>
+              {filtrosAvancadosCount > 0 && (
+                <span className="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                  {filtrosAvancadosCount}
+                </span>
+              )}
+            </button>
+            {temFiltroAtivo && (
+              <button
+                type="button"
+                onClick={limparFiltros}
+                className="text-xs text-rose-600 hover:text-rose-800 font-medium cursor-pointer"
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
+
           {/* Linha Inferior: Dropdowns de Tipo, Tema, Voto, Datas e Limpar */}
-          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100 text-xs">
+          <div className={`${filtrosAvancadosAbertos ? "flex" : "hidden"} sm:flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100 text-xs`}>
             {/* Dropdown de Tipo */}
             <div className="flex items-center gap-1.5">
               <span className="text-slate-500 font-medium">Tipo:</span>
@@ -1815,7 +1847,7 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
                 data-testid="btn-limpar-filtros-votacoes"
                 type="button"
                 onClick={limparFiltros}
-                className="ml-auto inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium py-1 px-2"
+                className="ml-auto inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium py-1 px-2 cursor-pointer"
               >
                 <X size={12} /> Limpar filtros
               </button>
