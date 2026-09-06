@@ -249,6 +249,23 @@ async def test_api_comparador_politicos_filtro_tema(client):
         )
 
 
+async def test_api_comparador_politicos_filtro_busca_popular(client):
+    """Valida a filtragem de votações por busca de tema popular (ex: previdência, 6x1) no comparador."""
+    response = await client.get("/politicos/comparar/26/73?q=previdencia")
+    assert response.status_code == 200
+    data = response.json()
+    assert "busca_filtrada" in data
+    assert data["busca_filtrada"] == "previdencia"
+    assert "votos_alinhados" in data
+    assert "votos_divergentes" in data
+    assert data["votos_alinhados"] + data["votos_divergentes"] == data["total_votacoes_comuns"]
+    # Se houver divergências ou alinhamentos retornados, eles devem conter a estrutura esperada
+    for item in data.get("divergencias", []) + data.get("alinhamentos", []):
+        assert "id_votacao" in item
+        assert "voto_politico1" in item
+        assert "voto_politico2" in item
+
+
 async def test_api_rede_coautoria(client):
     """Valida o endpoint GET /politicos/{id}/grafo/coautoria."""
     response = await client.get("/politicos/26/grafo/coautoria")

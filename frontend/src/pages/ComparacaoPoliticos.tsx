@@ -7,6 +7,7 @@ import {
   usePoliticoPerformance,
   useComparacaoPoliticos,
 } from "../hooks/usePoliticos"
+import { useDebounce } from "../hooks/useDebounce"
 import Header from "../components/Header"
 import { useSeo } from "../hooks/useSeo"
 import {
@@ -31,6 +32,9 @@ import {
   XCircle,
   Tag,
   AlertCircle,
+  Search,
+  X,
+  Flame,
 } from "lucide-react"
 import {
   nomeParaSlug,
@@ -43,6 +47,19 @@ import type {
 } from "../api/politicos.api"
 
 const PATH_FOTOS = "/fotos_politicos/"
+
+const PRINCIPAIS_VOTACOES_DESTAQUE = [
+  { label: "Escala 6x1 (PEC 221)", query: "6x1" },
+  { label: "Previdência", query: "previdencia" },
+  { label: "Reforma Tributária", query: "reforma tributaria" },
+  { label: "Marco Temporal", query: "marco temporal" },
+  { label: "Apostas & Bets", query: "bets" },
+  { label: "Porte de Armas", query: "porte de armas" },
+  { label: "Desoneração da Folha", query: "desoneracao" },
+  { label: "Saúde", query: "saude" },
+  { label: "Educação", query: "educacao" },
+  { label: "Segurança Pública", query: "seguranca" },
+]
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -717,6 +734,8 @@ function BlocoAlinhamentoVotos({
   nomeB,
   temaFiltro,
   onSelectTema,
+  busca,
+  onBuscaChange,
 }: {
   comparacao?: ComparacaoPoliticosGrafoResponse
   loading: boolean
@@ -724,6 +743,8 @@ function BlocoAlinhamentoVotos({
   nomeB: string
   temaFiltro: string | null
   onSelectTema: (tema: string | null) => void
+  busca: string
+  onBuscaChange: (val: string) => void
 }) {
   const [abaAtiva, setAbaAtiva] = useState<"divergencias" | "alinhamentos">("divergencias")
 
@@ -736,7 +757,9 @@ function BlocoAlinhamentoVotos({
     )
   }
 
-  if (!comparacao || (comparacao.total_votacoes_comuns === 0 && !temaFiltro)) {
+  const temFiltroAtivo = Boolean(temaFiltro || busca.trim())
+
+  if (!comparacao || (comparacao.total_votacoes_comuns === 0 && !temFiltroAtivo)) {
     return (
       <section className="section-fade bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
         <Scale size={28} className="text-slate-300 mx-auto mb-2" />
@@ -784,83 +807,147 @@ function BlocoAlinhamentoVotos({
         </div>
       </div>
 
-      {/* Filtros de Tema Legislativo */}
-      {temasDisponiveis.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Tag size={15} className="text-blue-600" />
-              <span className="text-xs font-semibold text-slate-700">Filtro por Tema Legislativo</span>
-            </div>
-            {temaFiltro && (
-              <button
-                onClick={() => onSelectTema(null)}
-                className="text-[11px] font-medium text-blue-600 hover:text-blue-800 transition-colors"
-              >
-                Limpar filtro
-              </button>
-            )}
+      {/* Caixa de Busca e Filtros de Matérias de Grande Repercussão */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-3.5">
+        {/* Topo do bloco de filtros: Título e botão limpar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Flame size={16} className="text-amber-500 flex-shrink-0" />
+            <h3 className="text-xs sm:text-sm font-bold text-slate-800">
+              Principais Votações & Temas em Destaque
+            </h3>
           </div>
-
-          <div className="flex flex-wrap gap-2">
+          {temFiltroAtivo && (
             <button
-              onClick={() => onSelectTema(null)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                !temaFiltro
-                  ? "bg-slate-800 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
+              type="button"
+              onClick={() => {
+                onSelectTema(null)
+                onBuscaChange("")
+              }}
+              className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 self-start sm:self-auto"
             >
-              Todos os Temas
+              <X size={13} />
+              Limpar todos os filtros
             </button>
-            {temasDisponiveis.map((t) => {
-              const isSelected = temaFiltro?.toLowerCase() === t.tema.toLowerCase()
+          )}
+        </div>
+
+        {/* Input de Busca Textual Inteligente */}
+        <div className="relative flex items-center">
+          <Search size={15} className="absolute left-3.5 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={busca}
+            onChange={(e) => onBuscaChange(e.target.value)}
+            placeholder="Buscar por tema ou proposição (ex: escala 6x1, previdência, PEC 221, armas, reforma)..."
+            className="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all min-h-[42px]"
+          />
+          {busca && (
+            <button
+              type="button"
+              onClick={() => onBuscaChange("")}
+              className="absolute right-3 text-slate-400 hover:text-slate-600 p-1"
+              aria-label="Limpar busca"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Pílulas de Temas Populares com Rolagem Horizontal Touch no Mobile */}
+        <div>
+          <p className="text-[11px] font-medium text-slate-400 mb-1.5">
+            Matérias de alta repercussão:
+          </p>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none -mx-1 px-1 touch-pan-x flex-nowrap sm:flex-wrap">
+            {PRINCIPAIS_VOTACOES_DESTAQUE.map((item) => {
+              const isSelected = busca.toLowerCase().trim() === item.query.toLowerCase().trim()
               return (
                 <button
-                  key={t.tema}
-                  onClick={() => onSelectTema(isSelected ? null : t.tema)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
+                  key={item.query}
+                  type="button"
+                  onClick={() => onBuscaChange(isSelected ? "" : item.query)}
+                  className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border min-h-[38px] ${
                     isSelected
                       ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                      : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
                   }`}
                 >
-                  <span>{t.tema}</span>
-                  <span
-                    className={`px-1.5 py-0.2 rounded-md text-[10px] font-semibold ${
-                      isSelected
-                        ? "bg-blue-500/50 text-white"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {t.total_votacoes}
-                  </span>
-                  <span
-                    className={`text-[10px] font-mono font-semibold ${
-                      isSelected
-                        ? "text-blue-100"
-                        : t.taxa_alinhamento >= 70
-                        ? "text-emerald-600"
-                        : t.taxa_alinhamento >= 40
-                        ? "text-amber-600"
-                        : "text-red-500"
-                    }`}
-                  >
-                    {t.taxa_alinhamento.toFixed(0)}%
-                  </span>
+                  <span>{item.label}</span>
+                  {isSelected && <Check size={12} className="text-white ml-0.5" />}
                 </button>
               )
             })}
           </div>
         </div>
-      )}
+
+        {/* Filtros de Tema Legislativo Formal da Câmara */}
+        {temasDisponiveis.length > 0 && (
+          <div className="pt-2.5 border-t border-slate-100">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-medium">
+                <Tag size={13} className="text-slate-400" />
+                <span>Temas formais da Câmara:</span>
+              </div>
+              {temaFiltro && (
+                <button
+                  type="button"
+                  onClick={() => onSelectTema(null)}
+                  className="text-[10px] text-slate-400 hover:text-slate-600 underline"
+                >
+                  remover tema
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none -mx-1 px-1 touch-pan-x flex-nowrap sm:flex-wrap">
+              <button
+                type="button"
+                onClick={() => onSelectTema(null)}
+                className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                  !temaFiltro
+                    ? "bg-slate-800 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                Todos
+              </button>
+              {temasDisponiveis.map((t) => {
+                const isSelected = temaFiltro?.toLowerCase() === t.tema.toLowerCase()
+                return (
+                  <button
+                    key={t.tema}
+                    type="button"
+                    onClick={() => onSelectTema(isSelected ? null : t.tema)}
+                    className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all border ${
+                      isSelected
+                        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{t.tema}</span>
+                    <span
+                      className={`px-1 py-0.1 rounded text-[9px] font-semibold ${
+                        isSelected
+                          ? "bg-indigo-500/50 text-white"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {t.total_votacoes}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Cards de Métricas de Alinhamento */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Taxa de Alinhamento */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">
-            Taxa de Alinhamento {temaFiltro ? `(${temaFiltro})` : ""}
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 truncate">
+            Taxa de Alinhamento {busca ? `("${busca}")` : temaFiltro ? `(${temaFiltro})` : ""}
           </p>
           <div className="flex items-baseline gap-2">
             <span className="mono-font text-3xl font-bold text-slate-800">
@@ -917,6 +1004,7 @@ function BlocoAlinhamentoVotos({
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
         <div className="flex border-b border-slate-100 bg-slate-50/70 p-1.5 gap-1.5">
           <button
+            type="button"
             onClick={() => setAbaAtiva("divergencias")}
             className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold transition-all ${
               abaAtiva === "divergencias"
@@ -928,6 +1016,7 @@ function BlocoAlinhamentoVotos({
             Principais Divergências ({comparacao.votos_divergentes})
           </button>
           <button
+            type="button"
             onClick={() => setAbaAtiva("alinhamentos")}
             className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold transition-all ${
               abaAtiva === "alinhamentos"
@@ -943,10 +1032,27 @@ function BlocoAlinhamentoVotos({
         {/* Lista de Votações */}
         <div className="divide-y divide-slate-100 max-h-[520px] overflow-y-auto">
           {lista.length === 0 ? (
-            <div className="p-8 text-center text-xs text-slate-400">
-              {temaFiltro
-                ? `Nenhuma votação encontrada para o tema "${temaFiltro}" nesta categoria.`
-                : "Nenhuma votação nesta categoria."}
+            <div className="p-8 text-center text-xs text-slate-500 space-y-3">
+              <p>
+                {temFiltroAtivo
+                  ? `Nenhuma votação encontrada para os filtros selecionados ${
+                      busca ? `(busca: "${busca}")` : ""
+                    } ${temaFiltro ? `(tema: "${temaFiltro}")` : ""} nesta categoria.`
+                  : "Nenhuma votação nesta categoria."}
+              </p>
+              {temFiltroAtivo && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelectTema(null)
+                    onBuscaChange("")
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium transition-colors"
+                >
+                  <X size={13} />
+                  Limpar filtros de busca
+                </button>
+              )}
             </div>
           ) : (
             lista.map((item) => (
@@ -955,9 +1061,18 @@ function BlocoAlinhamentoVotos({
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
                       {item.proposicao ? (
-                        <span className="mono-font text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100">
-                          {item.proposicao}
-                        </span>
+                        <a
+                          href={`https://www.camara.leg.br/busca-portal?contextoBusca=BuscaProposicoes&termo=${encodeURIComponent(
+                            item.proposicao
+                          )}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Consultar proposição na Câmara dos Deputados"
+                          className="mono-font text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 inline-flex items-center gap-1 transition-colors"
+                        >
+                          <span>{item.proposicao}</span>
+                          <ExternalLink size={10} className="text-blue-500" />
+                        </a>
                       ) : (
                         <span className="mono-font text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
                           Votação #{item.id_votacao}
@@ -1008,6 +1123,8 @@ export default function ComparacaoPoliticos() {
   const navigate = useNavigate()
   const { slug1: slugA, slug2: slugB } = useParams<{ slug1: string; slug2: string }>()
   const [temaFiltro, setTemaFiltro] = useState<string | null>(null)
+  const [buscaVotacao, setBuscaVotacao] = useState<string>("")
+  const buscaDebounced = useDebounce(buscaVotacao.trim(), 400)
   const [trocandoLado, setTrocandoLado] = useState<"A" | "B" | null>(null)
 
   const isSlugAInvalido = !slugA || slugA === "null" || slugA === "undefined"
@@ -1031,7 +1148,10 @@ export default function ComparacaoPoliticos() {
   const { data: compData, isLoading: loadComp } = useComparacaoPoliticos(
     dataA && dataB ? idOrSlug1 : undefined,
     dataA && dataB ? idOrSlug2 : undefined,
-    temaFiltro ? { tema: temaFiltro } : undefined
+    {
+      tema: temaFiltro || undefined,
+      q: buscaDebounced || undefined,
+    }
   )
 
   if (loadA || loadB) return <LoadingScreen />
@@ -1214,6 +1334,8 @@ export default function ComparacaoPoliticos() {
             nomeB={primeiroNomeB}
             temaFiltro={temaFiltro}
             onSelectTema={setTemaFiltro}
+            busca={buscaVotacao}
+            onBuscaChange={setBuscaVotacao}
           />
 
           {/* ── ESTATÍSTICAS ── */}

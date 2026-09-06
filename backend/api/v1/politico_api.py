@@ -156,6 +156,13 @@ async def comparar_politicos(
     tema: Annotated[
         Optional[str], Query(max_length=100, description="Filtro por tema legislativo")
     ] = None,
+    q: Annotated[
+        Optional[str],
+        Query(
+            max_length=100,
+            description="Filtro de busca textual ou temas populares (ex: 6x1, previdência, reforma tributária)",
+        ),
+    ] = None,
     limit_divergencias: Annotated[
         int, Query(ge=1, le=100, description="Limite de divergências a exibir")
     ] = 50,
@@ -165,10 +172,11 @@ async def comparar_politicos(
     service: PoliticoService = Depends(_politico_service),
 ):
     logger.info(
-        "Comparando politicos | %s vs %s | tema=%s | lim_div=%s lim_aln=%s",
+        "Comparando politicos | %s vs %s | tema=%s | q=%s | lim_div=%s lim_aln=%s",
         id_or_slug1,
         id_or_slug2,
         tema,
+        q,
         limit_divergencias,
         limit_alinhamentos,
     )
@@ -176,6 +184,7 @@ async def comparar_politicos(
         id_or_slug1=id_or_slug1,
         id_or_slug2=id_or_slug2,
         tema=tema,
+        q=q,
         limit_divergencias=limit_divergencias,
         limit_alinhamentos=limit_alinhamentos,
     )
@@ -204,6 +213,13 @@ async def comparar_politicos_alias(
     tema: Annotated[
         Optional[str], Query(max_length=100, description="Filtro por tema legislativo")
     ] = None,
+    q: Annotated[
+        Optional[str],
+        Query(
+            max_length=100,
+            description="Filtro de busca textual ou temas populares (ex: 6x1, previdência, reforma tributária)",
+        ),
+    ] = None,
     limit_divergencias: Annotated[
         int, Query(ge=1, le=100, description="Limite de divergências a exibir")
     ] = 50,
@@ -213,10 +229,11 @@ async def comparar_politicos_alias(
     service: PoliticoService = Depends(_politico_service),
 ):
     logger.info(
-        "Comparando politicos (alias) | %s vs %s | tema=%s | lim_div=%s lim_aln=%s",
+        "Comparando politicos (alias) | %s vs %s | tema=%s | q=%s | lim_div=%s lim_aln=%s",
         politico_id,
         outro_politico_id,
         tema,
+        q,
         limit_divergencias,
         limit_alinhamentos,
     )
@@ -224,6 +241,7 @@ async def comparar_politicos_alias(
         id_or_slug1=politico_id,
         id_or_slug2=outro_politico_id,
         tema=tema,
+        q=q,
         limit_divergencias=limit_divergencias,
         limit_alinhamentos=limit_alinhamentos,
     )

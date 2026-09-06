@@ -70,6 +70,12 @@ POPULAR_TOPIC_SYNONYMS: dict[str, list[str]] = {
     "desoneracao": ["desoneração", "folha de pagamento", "PL 334/2023"],
     "desoneracao da folha": ["desoneração", "folha de pagamento", "PL 334/2023"],
     "combustiveis": ["gasolina", "diesel", "etanol", "combustíveis", "PLP 18"],
+    "previdencia": ["previdência", "previdencia", "reforma da previdência", "PEC 6/2019", "aposentadoria", "seguridade social", "benefício previdenciário"],
+    "reforma da previdencia": ["previdência", "previdencia", "PEC 6/2019", "aposentadoria", "seguridade social"],
+    "saude": ["saúde", "saude", "SUS", "médico", "vacina", "medicamento", "hospital"],
+    "educacao": ["educação", "educacao", "ensino", "escola", "FUNDEB", "universidade"],
+    "seguranca": ["segurança", "seguranca", "polícia", "penal", "crime", "segurança pública"],
+    "trabalho": ["trabalho", "trabalhador", "jornada", "emprego", "CLT"],
 }
 
 
@@ -948,11 +954,15 @@ class PoliticoRepository:
     # ------------------------------------------------------------------
 
     async def get_comparacao_votos_relacional_repo(
-        self, id_dep1: int, id_dep2: int, tema: str | None = None
+        self,
+        id_dep1: int,
+        id_dep2: int,
+        tema: str | None = None,
+        q: str | None = None,
     ) -> list[dict]:
         """
         Busca comparativa de todas as votações comuns entre dois deputados via PostgreSQL relacional,
-        com suporte a agregação e filtro por tema legislativo.
+        com suporte a agregação, filtro por tema legislativo e busca textual / temas populares.
         """
         v2 = aliased(Voto)
         stmt = (
@@ -982,6 +992,21 @@ class PoliticoRepository:
             stmt = stmt.where(
                 Proposicao.temas.any(Tema.tema.ilike(f"%{tema.strip()}%"))
             )
+
+        if q and q.strip():
+            termos_expandidos = expand_popular_query(q)
+            or_conditions = []
+            for t_str in termos_expandidos:
+                termo = f"%{t_str.strip()}%"
+                or_conditions.extend(
+                    [
+                        Proposicao.ementa.ilike(termo),
+                        Proposicao.siglaTipo.ilike(termo),
+                        cast(Proposicao.numero, String).ilike(termo),
+                        Votacao.descricao.ilike(termo),
+                    ]
+                )
+            stmt = stmt.where(or_(*or_conditions))
 
         stmt = stmt.group_by(
             Voto.idVotacao,

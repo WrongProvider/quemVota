@@ -476,10 +476,11 @@ async def cypher_sample_alinhamento_votos_async(
     id_dep1: int,
     id_dep2: int,
     tema: Optional[str] = None,
+    q: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Versão assíncrona para consultar alinhamento de votos no Apache AGE via AsyncSession,
-    com suporte a filtro opcional por tema legislativo.
+    com suporte a filtro opcional por tema legislativo e busca textual / termos populares.
     """
     if tema:
         cypher = f"""
@@ -528,7 +529,21 @@ async def cypher_sample_alinhamento_votos_async(
             if tema_val and tema_val not in votes_map[id_vot]["temas"]:
                 votes_map[id_vot]["temas"].append(tema_val)
 
-    return list(votes_map.values())
+    results = list(votes_map.values())
+    if q and q.strip():
+        try:
+            from backend.repositories.politico_repository import expand_popular_query
+            terms = [t.lower().strip() for t in expand_popular_query(q) if t.strip()]
+            filtered = []
+            for v in results:
+                text_corpus = f"{v.get('descricao', '')} {v.get('ementa', '')} {v.get('proposicao', '')}".lower()
+                if any(term in text_corpus for term in terms):
+                    filtered.append(v)
+            return filtered
+        except Exception:
+            pass
+
+    return results
 
 
 async def cypher_rede_coautoria_async(

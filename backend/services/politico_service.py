@@ -460,6 +460,7 @@ class PoliticoService:
         id_or_slug1: str,
         id_or_slug2: str,
         tema: str | None = None,
+        q: str | None = None,
         limit_divergencias: int = 50,
         limit_alinhamentos: int = 20,
     ) -> ComparacaoPoliticosGrafoResponse:
@@ -494,14 +495,15 @@ class PoliticoService:
             from shared.graph import cypher_sample_alinhamento_votos_async
 
             votos_comparados = await cypher_sample_alinhamento_votos_async(
-                self._db, pol1.id, pol2.id, tema=tema
+                self._db, pol1.id, pol2.id, tema=tema, q=q
             )
         except Exception as e:
             logger.warning(
-                "Falha ao consultar alinhamento no Apache AGE (%s vs %s, tema=%s): %s",
+                "Falha ao consultar alinhamento no Apache AGE (%s vs %s, tema=%s, q=%s): %s",
                 pol1.id,
                 pol2.id,
                 tema,
+                q,
                 e,
             )
             votos_comparados = []
@@ -510,7 +512,7 @@ class PoliticoService:
         if not votos_comparados:
             fonte = "relacional"
             votos_comparados = await self._repo.get_comparacao_votos_relacional_repo(
-                pol1.id, pol2.id, tema=tema
+                pol1.id, pol2.id, tema=tema, q=q
             )
 
         # 5. Agrega estatísticas e divide em alinhamentos e divergências
@@ -572,6 +574,7 @@ class PoliticoService:
             alinhamentos=alinhamentos_list[:safe_lim_aln],
             fonte_dados=fonte,
             tema_filtrado=tema,
+            busca_filtrada=q,
             temas_disponiveis=temas_disponiveis,
         )
 

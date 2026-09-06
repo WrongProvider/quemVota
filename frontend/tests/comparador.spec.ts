@@ -122,4 +122,72 @@ test.describe("Comparador Direto de Parlamentares", () => {
     await linkComparar.click()
     await expect(page).toHaveURL(/.*\/comparar\/.+/)
   })
+
+  test("deve filtrar votações nominais por pílulas populares e busca textual inteligente", async ({
+    page,
+  }) => {
+    const consoleErrors: string[] = []
+    page.on("console", (msg) => {
+      if (msg.type() === "error") {
+        consoleErrors.push(msg.text())
+      }
+    })
+
+    // Acessa a comparação entre dois deputados com votações comuns
+    await page.goto("/comparar/alice-portugal/arthur-lira")
+
+    // Aguarda o bloco de alinhamento em votações
+    await expect(page.locator("text=Alinhamento em Votações")).toBeVisible({ timeout: 15000 })
+
+    // Valida que o bloco de Principais Votações & Temas em Destaque está visível
+    await expect(page.locator("text=Principais Votações & Temas em Destaque")).toBeVisible()
+    await expect(page.locator("text=Matérias de alta repercussão:")).toBeVisible()
+
+    // Valida presença do input de busca
+    const inputBusca = page.locator('input[placeholder*="Buscar por tema ou proposição"]')
+    await expect(inputBusca).toBeVisible()
+
+    // Valida presença de pílulas populares
+    const btn6x1 = page.locator('button:has-text("Escala 6x1")').first()
+    const btnPrevidencia = page.locator('button:has-text("Previdência")').first()
+    await expect(btn6x1).toBeVisible()
+    await expect(btnPrevidencia).toBeVisible()
+
+    // 1. Clica na pílula 'Previdência'
+    await btnPrevidencia.click()
+    // O input de busca deve ser preenchido ou a busca ativada
+    await expect(inputBusca).toHaveValue("previdencia")
+    // Botão de limpar filtros deve aparecer
+    const btnLimpar = page.locator('button:has-text("Limpar todos os filtros")').first()
+    await expect(btnLimpar).toBeVisible()
+
+    // 2. Limpa o filtro
+    await btnLimpar.click()
+    await expect(inputBusca).toHaveValue("")
+
+    // 3. Testa digitação no campo de busca com debounce
+    await inputBusca.fill("educação")
+    // Aguarda debounce
+    await page.waitForTimeout(500)
+    await expect(page.locator('button:has-text("Limpar todos os filtros")').first()).toBeVisible()
+
+    // 4. Valida em viewport mobile (390x844) sem overflow horizontal
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.waitForTimeout(300)
+
+    const isOverflowing = await page.evaluate(() => {
+      return document.body.scrollWidth > window.innerWidth
+    })
+    expect(isOverflowing).toBeFalsy()
+
+    // Captura screenshot mobile do comparador com filtro
+    await page.screenshot({ path: "test-results/comparador-mobile-filtro-popular.png" })
+
+    // Valida ausência de erros graves de console
+    const criticalErrors = consoleErrors.filter(
+      (e) => !e.includes("favicon") && !e.includes("404")
+    )
+    expect(criticalErrors).toHaveLength(0)
+  })
 })
+

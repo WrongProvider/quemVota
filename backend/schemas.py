@@ -713,6 +713,7 @@ class ComparacaoPoliticosGrafoResponse(BaseModel):
     alinhamentos: List[VotoComparado]
     fonte_dados: str
     tema_filtrado: Optional[str] = None
+    busca_filtrada: Optional[str] = None
     temas_disponiveis: List[TemaComparadoResumo] = []
 
     model_config = ConfigDict(from_attributes=True)

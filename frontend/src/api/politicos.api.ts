@@ -521,11 +521,13 @@ export interface ComparacaoPoliticosGrafoResponse {
   readonly alinhamentos: VotoComparado[]
   readonly fonte_dados: string
   readonly tema_filtrado?: string | null
+  readonly busca_filtrada?: string | null
   readonly temas_disponiveis?: TemaComparadoResumo[]
 }
 
 export interface CompararPoliticosParams {
   readonly tema?: string | null
+  readonly q?: string | null
   readonly limit_divergencias?: number
   readonly limit_alinhamentos?: number
 }
