@@ -190,6 +190,7 @@ def run_etl(
     backfill_deputados: bool = False,
     backfill_force: bool = False,
     backfill_slug_only: bool = False,
+    backfill_legislatura: int | None = None,
     workers: int = DEFAULT_DOWNLOAD_WORKERS,
     backfill_workers: int = DEFAULT_BACKFILL_WORKERS,
     leg_atual: int = 57,
@@ -269,8 +270,8 @@ def run_etl(
                     pbar.update(1)
 
         if (
-            deputados_processado
-            and not dry_run
+            group_id == 0
+            and deputados_processado
             and (backfill_deputados or backfill_force or backfill_slug_only)
         ):
             deputados_processado = False
@@ -280,6 +281,7 @@ def run_etl(
                 engine,
                 force=backfill_force,
                 slug_only=backfill_slug_only,
+                legislatura=backfill_legislatura,
                 workers=backfill_workers,
                 client=client,
             )
@@ -313,6 +315,11 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=False)
     mode.add_argument(
         "--full", action="store_true", help="Carga histórica completa (2008–hoje)"
+    )
+    mode.add_argument(
+        "--historico",
+        action="store_true",
+        help="Carga histórica incremental pré-2026 (2008 até ANO_ATUAL-1, Legislaturas 51 a leg_atual-1)",
     )
     mode.add_argument(
         "--update",
@@ -370,6 +377,12 @@ def main():
         help="Preenche detalhes dos deputados incompletos",
     )
     backfill_grp.add_argument(
+        "--backfill-legislatura",
+        type=int,
+        default=None,
+        help="Filtra o backfill por legislatura final de deputado (ex: 57)",
+    )
+    backfill_grp.add_argument(
         "--backfill-force",
         action="store_true",
         default=False,
@@ -390,7 +403,7 @@ def main():
 
     args = parser.parse_args()
 
-    has_mode = any([args.full, args.update, args.dataset, args.dry_run])
+    has_mode = any([args.full, args.historico, args.update, args.dataset, args.dry_run])
     has_standalone_action = any(
         [
             args.reconcile_orfas,
@@ -401,7 +414,7 @@ def main():
     )
     if not has_mode and not has_standalone_action:
         parser.error(
-            "Informe um modo de execução (--full, --update, --dataset, --dry-run) "
+            "Informe um modo de execução (--full, --historico, --update, --dataset, --dry-run) "
             "ou uma ação autônoma (--reconcile-orfas, --backfill-deputados, --backfill-slug-only)."
         )
 
@@ -432,6 +445,7 @@ def main():
                 engine,
                 force=args.backfill_force,
                 slug_only=args.backfill_slug_only,
+                legislatura=args.backfill_legislatura,
                 workers=args.backfill_workers,
                 client=client,
             )
@@ -451,6 +465,11 @@ def main():
         skip_historical = False
         disponiveis = get_legislaturas_disponiveis(engine) if engine else [56, 57]
         legislaturas = [leg for leg in disponiveis if leg >= 51]
+    elif args.historico:
+        anos = args.anos or list(range(2008, ANO_ATUAL))
+        skip_historical = False
+        disponiveis = get_legislaturas_disponiveis(engine) if engine else [56, 57]
+        legislaturas = [leg for leg in disponiveis if 51 <= leg < leg_atual]
     elif args.update:
         anos = args.anos or [ANO_ATUAL]
         skip_historical = not args.force
@@ -494,6 +513,7 @@ def main():
         backfill_deputados=args.backfill_deputados,
         backfill_force=args.backfill_force,
         backfill_slug_only=args.backfill_slug_only,
+        backfill_legislatura=args.backfill_legislatura,
         workers=args.workers,
         backfill_workers=args.backfill_workers,
         leg_atual=leg_atual,

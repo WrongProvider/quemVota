@@ -105,6 +105,7 @@ def run_backfill_deputados(
     *,
     force: bool = False,
     slug_only: bool = False,
+    legislatura: Optional[int] = None,
     workers: int = DEFAULT_BACKFILL_WORKERS,
     client: Optional[CamaraClient] = None,
 ) -> None:
@@ -116,27 +117,30 @@ def run_backfill_deputados(
     semaphore = Semaphore(workers)
 
     log.info(
-        "🚀 Backfill de deputados iniciado [force=%s | slug_only=%s | workers=%d]",
+        "🚀 Backfill de deputados iniciado [force=%s | slug_only=%s | legislatura=%s | workers=%d]",
         force,
         slug_only,
+        legislatura or "Todas",
         workers,
     )
 
+    query_sql = (
+        'SELECT id, "idCamara", nome, "nomeCivil", "urlFoto", "escolaridade", '
+        '"situacao", "emailGabinete", slug, cpf, "idLegislaturaFinal" FROM deputados '
+    )
+    query_params: dict[str, Any] = {}
+    if legislatura:
+        query_sql += 'WHERE "idLegislaturaFinal" = :leg '
+        query_params["leg"] = legislatura
+    query_sql += (
+        'ORDER BY "idLegislaturaFinal" DESC NULLS LAST, "idCamara" DESC, id ASC'
+    )
+
     with engine.begin() as conn:
-        rows = (
-            conn.execute(
-                text(
-                    'SELECT id, "idCamara", nome, "nomeCivil", "urlFoto", "escolaridade", '
-                    '"situacao", "emailGabinete", slug, cpf, "idLegislaturaFinal" FROM deputados '
-                    'ORDER BY "idLegislaturaFinal" DESC NULLS LAST, "idCamara" DESC, id ASC'
-                )
-            )
-            .mappings()
-            .all()
-        )
+        rows = conn.execute(text(query_sql), query_params).mappings().all()
 
     todos = [dict(r) for r in rows]
-    log.info("📋 Total de deputados no banco: %d", len(todos))
+    log.info("📋 Total de deputados no escopo: %d", len(todos))
 
     slugs_lock = Lock()
     slugs_em_uso: set[str] = {d["slug"] for d in todos if d.get("slug")}

@@ -21,10 +21,10 @@ with DAG(
     catchup=False,
     tags=["quemvota", "backfill", "ia"],
 ) as dag:
-    # Task A: Preenche campos detalhados e slugs únicos via novo módulo modular (backfill.py)
+    # Task A: Preenche campos detalhados e slugs únicos dos deputados da legislatura atual (57)
     task_backfill_politicos = BashOperator(
         task_id="backfill_politicos_detalhes",
-        bash_command="uv run python etl_camara.py --backfill-deputados --backfill-workers 4",
+        bash_command="uv run python etl_camara.py --backfill-deputados --backfill-legislatura 57 --backfill-workers 4",
         cwd="/opt/airflow/injest_banco",
     )
 

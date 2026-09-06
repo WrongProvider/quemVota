@@ -487,6 +487,13 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--limit-proposicoes", type=int, default=None)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--legislatura", type=int, default=LEGISLATURA_DEFAULT)
+    parser.add_argument(
+        "--legislaturas",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Lista de legislaturas a processar sequencialmente (ex: 56 55)",
+    )
     parser.add_argument("--deputado-id", type=int, default=None)
     parser.add_argument(
         "--force",
@@ -498,12 +505,24 @@ def _parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = _parse_args()
-    classificar_temas(
-        limit_deputados=args.limit_deputados,
-        limit_proposicoes=args.limit_proposicoes,
-        dry_run=args.dry_run,
-        id_legislatura=args.legislatura,
-        deputado_id=args.deputado_id,
-        force=args.force,
-    )
+    if args.legislaturas:
+        for leg in args.legislaturas:
+            logger.info("=== Processando temas para Legislatura %d ===", leg)
+            classificar_temas(
+                limit_deputados=args.limit_deputados,
+                limit_proposicoes=args.limit_proposicoes,
+                dry_run=args.dry_run,
+                id_legislatura=leg,
+                deputado_id=args.deputado_id,
+                force=args.force,
+            )
+    else:
+        classificar_temas(
+            limit_deputados=args.limit_deputados,
+            limit_proposicoes=args.limit_proposicoes,
+            dry_run=args.dry_run,
+            id_legislatura=args.legislatura,
+            deputado_id=args.deputado_id,
+            force=args.force,
+        )
     sys.exit(0)

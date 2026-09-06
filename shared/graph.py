@@ -20,7 +20,14 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from shared.models import Deputado, Proposicao, Tema, Votacao, ProposicaoAutor
+from shared.models import (
+    Deputado,
+    Legislatura,
+    Proposicao,
+    ProposicaoAutor,
+    Tema,
+    Votacao,
+)
 from shared.vector_search import vector_knn_search
 
 logger = logging.getLogger(__name__)
@@ -38,6 +45,31 @@ EDGE_VOTED_IN = "VOTED_IN"
 EDGE_PROPOSED = "PROPOSED"
 EDGE_BELONGS_TO_THEME = "BELONGS_TO_THEME"
 EDGE_REGARDING = "REGARDING"
+
+
+def ensure_graph_indexes(session: Session) -> None:
+    """Garante que índices GIN existam nas propriedades dos vértices do Apache AGE para alta performance."""
+    tables = [LABEL_POLITICO, LABEL_PROPOSICAO, LABEL_TEMA, LABEL_VOTACAO]
+    for table in tables:
+        try:
+            chk = session.execute(
+                text(
+                    "SELECT 1 FROM information_schema.tables "
+                    "WHERE table_schema = :sch AND table_name = :tbl"
+                ),
+                {"sch": GRAPH_NAME, "tbl": table},
+            ).scalar()
+            if chk:
+                session.execute(
+                    text(
+                        f'CREATE INDEX IF NOT EXISTS "idx_{table.lower()}_properties_gin" '
+                        f'ON {GRAPH_NAME}."{table}" USING gin (properties);'
+                    )
+                )
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            logger.debug("Aviso ao verificar/criar índice GIN para %s: %s", table, e)
 
 
 def init_age_extension(session: Session) -> bool:
@@ -153,19 +185,42 @@ def sync_relational_to_graph(
     session: Session,
     batch_limit: Optional[int] = None,
     legislatura: Optional[int] = None,
+    ano_inicio: Optional[int] = None,
+    ano_fim: Optional[int] = None,
     apenas_com_votacoes: bool = False,
 ) -> Dict[str, int]:
     """
     Sincroniza registros relacionais do PostgreSQL para o grafo Apache AGE.
     Cria vértices (:Politico), (:Votacao), (:Proposicao), (:Tema)
     e relacionamentos (:VOTED_IN), (:PROPOSED), (:BELONGS_TO_THEME), (:REGARDING).
-    Permite filtrar por legislatura (ex: 57 para 2023-2027) para sincronização ágil.
+    Permite filtrar por legislatura (ex: 57) ou recorte temporal (ano_inicio, ano_fim).
     """
     ensure_age_loaded(session)
+    ensure_graph_indexes(session)
     counts = {"politicos": 0, "proposicoes": 0, "votacoes": 0, "temas": 0, "arestas": 0}
+
+    # Resolução de intervalo de datas a partir da legislatura (se informada)
+    leg_data_inicio = None
+    leg_data_fim = None
+    if legislatura:
+        leg_obj = (
+            session.query(Legislatura)
+            .filter(Legislatura.idLegislatura == legislatura)
+            .first()
+        )
+        if leg_obj and leg_obj.dataInicio and leg_obj.dataFim:
+            leg_data_inicio = leg_obj.dataInicio
+            leg_data_fim = leg_obj.dataFim
+            ano_inicio = ano_inicio or leg_data_inicio.year
+            ano_fim = ano_fim or leg_data_fim.year
+        else:
+            ano_base = 2023 + (legislatura - 57) * 4
+            ano_inicio = ano_inicio or ano_base
+            ano_fim = ano_fim or (ano_base + 3)
 
     # 1. Sincroniza Temas
     temas = session.query(Tema).all()
+    logger.info("Sincronizando %d temas para o Apache AGE...", len(temas))
     for t in temas:
         cypher = f"""
         MERGE (tm:{LABEL_TEMA} {{id: {t.id}}})
@@ -177,16 +232,21 @@ def sync_relational_to_graph(
         except Exception:
             pass
     session.commit()
+    ensure_graph_indexes(session)
 
     # 2. Sincroniza Deputados (Políticos)
     q_dep = session.query(Deputado)
     if legislatura:
-        q_dep = q_dep.filter(Deputado.idLegislaturaFinal == legislatura)
+        q_dep = q_dep.filter(
+            (Deputado.idLegislaturaInicial <= legislatura)
+            & (Deputado.idLegislaturaFinal >= legislatura)
+        )
     if batch_limit:
         q_dep = q_dep.limit(batch_limit)
     deputados = q_dep.all()
     dep_ids_set = {d.id for d in deputados}
 
+    logger.info("Sincronizando %d deputados para o Apache AGE...", len(deputados))
     for d in deputados:
         cypher = f"""
         MERGE (p:{LABEL_POLITICO} {{id: {d.id}}})
@@ -202,13 +262,14 @@ def sync_relational_to_graph(
         except Exception:
             pass
     session.commit()
+    ensure_graph_indexes(session)
 
     # 3. Sincroniza Proposições & Relação com Temas
     q_prop = session.query(Proposicao)
-    if legislatura == 57:
-        q_prop = q_prop.filter(Proposicao.ano >= 2023)
-    elif legislatura == 56:
-        q_prop = q_prop.filter(Proposicao.ano.between(2019, 2022))
+    if ano_inicio:
+        q_prop = q_prop.filter(Proposicao.ano >= ano_inicio)
+    if ano_fim:
+        q_prop = q_prop.filter(Proposicao.ano <= ano_fim)
 
     if apenas_com_votacoes:
         q_prop = q_prop.filter(Proposicao.votacoes.any())
@@ -218,6 +279,13 @@ def sync_relational_to_graph(
     if batch_limit:
         q_prop = q_prop.limit(batch_limit)
     proposicoes = q_prop.all()
+    total_props = len(proposicoes)
+    logger.info(
+        "Sincronizando %d proposições (anos: %s a %s)...",
+        total_props,
+        ano_inicio or "início",
+        ano_fim or "atual",
+    )
 
     for idx, pr in enumerate(proposicoes, 1):
         cypher_pr = f"""
@@ -248,7 +316,15 @@ def sync_relational_to_graph(
 
         if idx % 200 == 0:
             session.commit()
+        if idx % 2000 == 0 or idx == total_props:
+            logger.info(
+                "  Progresso Proposições: %d/%d (%.1f%%)",
+                idx,
+                total_props,
+                (idx / total_props) * 100,
+            )
     session.commit()
+    ensure_graph_indexes(session)
 
     # 4. Sincroniza Autoria de Proposições (:PROPOSED)
     q_aut = session.query(ProposicaoAutor).filter(
@@ -256,9 +332,19 @@ def sync_relational_to_graph(
     )
     if dep_ids_set:
         q_aut = q_aut.filter(ProposicaoAutor.idDeputadoAutor.in_(dep_ids_set))
+    if ano_inicio or ano_fim:
+        q_aut = q_aut.join(Proposicao, ProposicaoAutor.idProposicao == Proposicao.id)
+        if ano_inicio:
+            q_aut = q_aut.filter(Proposicao.ano >= ano_inicio)
+        if ano_fim:
+            q_aut = q_aut.filter(Proposicao.ano <= ano_fim)
+
     if batch_limit:
         q_aut = q_aut.limit(batch_limit)
     autores = q_aut.all()
+    total_autores = len(autores)
+    logger.info("Sincronizando %d relações de autoria (:PROPOSED)...", total_autores)
+
     for idx, aut in enumerate(autores, 1):
         prop_bool = "true" if aut.proponente else "false"
         cypher_aut = f"""
@@ -272,17 +358,35 @@ def sync_relational_to_graph(
             pass
         if idx % 200 == 0:
             session.commit()
+        if idx % 5000 == 0 or idx == total_autores:
+            logger.info(
+                "  Progresso Autores: %d/%d (%.1f%%)",
+                idx,
+                total_autores,
+                (idx / total_autores) * 100,
+            )
     session.commit()
 
     # 5. Sincroniza Votações & Votos (:VOTED_IN, :REGARDING)
     q_vot = session.query(Votacao)
-    if legislatura == 57:
-        q_vot = q_vot.filter(Votacao.data >= "2023-02-01")
-    elif legislatura == 56:
-        q_vot = q_vot.filter(Votacao.data.between("2019-02-01", "2023-01-31"))
+    if leg_data_inicio and leg_data_fim:
+        q_vot = q_vot.filter(Votacao.data.between(leg_data_inicio, leg_data_fim))
+    elif ano_inicio and ano_fim:
+        q_vot = q_vot.filter(
+            Votacao.data.between(f"{ano_inicio}-01-01", f"{ano_fim}-12-31")
+        )
+    elif ano_inicio:
+        q_vot = q_vot.filter(Votacao.data >= f"{ano_inicio}-01-01")
+    elif ano_fim:
+        q_vot = q_vot.filter(Votacao.data <= f"{ano_fim}-12-31")
+
     if batch_limit:
         q_vot = q_vot.limit(batch_limit)
     votacoes = q_vot.all()
+    total_vots = len(votacoes)
+    logger.info(
+        "Sincronizando %d votações e seus respectivos votos nominais...", total_vots
+    )
 
     for idx, v in enumerate(votacoes, 1):
         cypher_v = f"""
@@ -352,8 +456,17 @@ def sync_relational_to_graph(
 
         if idx % 100 == 0:
             session.commit()
+        if idx % 1000 == 0 or idx == total_vots:
+            logger.info(
+                "  Progresso Votações: %d/%d (%.1f%%)",
+                idx,
+                total_vots,
+                (idx / total_vots) * 100,
+            )
 
     session.commit()
+    ensure_graph_indexes(session)
+    logger.info("Sincronização para Apache AGE concluída com sucesso: %s", counts)
     return counts
 
 

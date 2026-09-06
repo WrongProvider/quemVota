@@ -10,6 +10,8 @@ import argparse
 import hashlib
 import logging
 import os
+from pathlib import Path
+import sys
 from typing import List, Optional
 
 from sentence_transformers import SentenceTransformer
@@ -18,9 +20,13 @@ from sqlalchemy.dialects.postgresql import insert
 import torch
 from tqdm import tqdm
 
-from shared.database import SessionLocal
-from shared.models import Proposicao, Votacao
-from shared.models_vetorial import DocumentEmbedding, TipoEntidadeDocumento
+_repo_root = Path(__file__).resolve().parent.parent
+if str(_repo_root) not in sys.path:
+    sys.path.insert(0, str(_repo_root))
+
+from shared.database import SessionLocal  # noqa: E402
+from shared.models import Legislatura, Proposicao, Votacao  # noqa: E402
+from shared.models_vetorial import DocumentEmbedding, TipoEntidadeDocumento  # noqa: E402
 
 # Limitar concorrência de threads matemáticas (PyTorch/BLAS/OpenMP) para não estrangular vCPUs
 os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -232,7 +238,12 @@ def main():
         "--legislatura",
         type=int,
         default=None,
-        help="Número da legislatura (57 = 2023..2026, 56 = 2019..2022)",
+        help="Número da legislatura (ex: 57, 56, 55)",
+    )
+    parser.add_argument(
+        "--pre-2026",
+        action="store_true",
+        help="Processa acervo pré-2026 (ano_fim=2025)",
     )
     parser.add_argument(
         "--apenas-votadas",
@@ -266,12 +277,26 @@ def main():
     ano_inicio = args.ano_inicio
     ano_fim = args.ano_fim
 
-    if args.legislatura == 57:
-        ano_inicio = ano_inicio or 2023
-        ano_fim = ano_fim or 2026
-    elif args.legislatura == 56:
-        ano_inicio = ano_inicio or 2019
-        ano_fim = ano_fim or 2022
+    if args.pre_2026:
+        ano_fim = ano_fim or 2025
+
+    if args.legislatura:
+        session_tmp = SessionLocal()
+        try:
+            leg_obj = (
+                session_tmp.query(Legislatura)
+                .filter_by(idLegislatura=args.legislatura)
+                .first()
+            )
+            if leg_obj and leg_obj.dataInicio and leg_obj.dataFim:
+                ano_inicio = ano_inicio or leg_obj.dataInicio.year
+                ano_fim = ano_fim or leg_obj.dataFim.year
+            else:
+                ano_base = 2023 + (args.legislatura - 57) * 4
+                ano_inicio = ano_inicio or ano_base
+                ano_fim = ano_fim or (ano_base + 3)
+        finally:
+            session_tmp.close()
 
     executar_geracao_embeddings(
         ano_inicio=ano_inicio,

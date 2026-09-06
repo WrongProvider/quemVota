@@ -29,6 +29,7 @@ default_args = {
 ETL_BASH_TEMPLATE = (
     "uv run python etl_camara.py "
     "{% if params.modo == 'full' %}--full "
+    "{% elif params.modo == 'historico' %}--historico "
     "{% elif params.modo == 'dry-run' %}--dry-run "
     "{% elif params.modo == 'dataset' and params.dataset %}--dataset {{ params.dataset }} "
     "{% else %}--update {% endif %}"
@@ -51,7 +52,10 @@ ALEMBIC_BASH_TEMPLATE = (
 
 SYNC_GRAPH_BASH_TEMPLATE = (
     "{% if params.sync_graph %}"
-    "uv run python /opt/airflow/tasks/sync_graph.py --legislatura 57 "
+    "uv run python /opt/airflow/tasks/sync_graph.py "
+    "{% if params.modo == 'historico' %}--pre-2026 "
+    "{% elif params.modo == 'full' %}--todas-legislaturas "
+    "{% else %}--legislatura 57 {% endif %}"
     "{% else %}"
     "echo 'Sincronização de grafo AGE ignorada por parâmetro' "
     "{% endif %}"
@@ -78,10 +82,11 @@ with DAG(
         "modo": Param(
             "update",
             type="string",
-            enum=["update", "full", "dry-run", "dataset"],
+            enum=["update", "historico", "full", "dry-run", "dataset"],
             description=(
                 "Modo de execução do ETL: "
                 "'update' (apenas ano corrente 2026), "
+                "'historico' (dados pré-2026, anos 2008 a 2025 e L51 a L56), "
                 "'full' (histórico completo 2008-hoje), "
                 "'dry-run' (validação e contagem sem escrita no banco) ou "
                 "'dataset' (apenas o prefixo informado em 'dataset')"
