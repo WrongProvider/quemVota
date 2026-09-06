@@ -141,10 +141,10 @@ function FichaDeputadoCard({
         <div>
           {/* Topo da ficha: Badge de Partido/UF e Rank de consultas */}
           <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50/80 border border-blue-200/60 text-[10px] font-bold text-blue-900 tracking-wide">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50/80 border border-blue-200/60 text-[10px] font-bold text-blue-900 tracking-wide truncate">
               {partidoUfTexto}
             </span>
-            <span className="text-[10px] font-mono text-slate-400 font-medium whitespace-nowrap">
+            <span className="text-[10px] font-mono text-slate-400 font-medium whitespace-nowrap flex-shrink-0">
               #{rank} em consultas
             </span>
           </div>
@@ -168,17 +168,18 @@ function FichaDeputadoCard({
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
           <Link
             to={`/politicos/${slug}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg no-underline transition-colors shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-900 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg no-underline transition-colors shadow-2xs flex-shrink-0"
           >
-            <span>Auditar Mandato</span>
-            <ArrowRight className="w-3 h-3" />
+            <span className="hidden sm:inline">Auditar Mandato</span>
+            <span className="sm:hidden">Auditar</span>
+            <ArrowRight className="w-3 h-3 flex-shrink-0" />
           </Link>
 
           <Link
             to={`/comparar?p1=${slug}`}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-medium rounded-lg border border-slate-200/80 no-underline transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-medium rounded-lg border border-slate-200/80 no-underline transition-colors flex-shrink-0"
           >
-            <Scale className="w-3 h-3 text-slate-500" />
+            <Scale className="w-3 h-3 text-slate-500 flex-shrink-0" />
             <span>Comparar</span>
           </Link>
         </div>
@@ -247,7 +248,7 @@ function SecaoPlenarioRecente() {
 
   return (
     <div className="lg:col-span-2 space-y-4">
-      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+      <div className="flex flex-wrap items-end sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
         <div>
           <div className="flex items-center gap-1.5 text-blue-700 mb-0.5">
             <Calendar className="w-3.5 h-3.5" />
@@ -262,9 +263,10 @@ function SecaoPlenarioRecente() {
 
         <Link
           to="/proposicoes"
-          className="text-xs font-semibold text-blue-700 hover:underline"
+          className="text-xs font-semibold text-blue-700 hover:underline flex-shrink-0"
         >
-          Ver histórico completo →
+          <span className="hidden sm:inline">Ver histórico completo →</span>
+          <span className="sm:hidden">Ver todas →</span>
         </Link>
       </div>
 
@@ -375,8 +377,8 @@ export default function Home() {
       <div className="min-h-screen bg-[#f8fafc]">
 
         {/* ── HERO SECTION CÍVICA EDITORIAL ── */}
-        <section className="relative bg-white border-b border-slate-200/80 pt-28 pb-14">
-          <div className="max-w-4xl mx-auto px-6 text-center">
+        <section className="relative bg-white border-b border-slate-200/80 pt-24 sm:pt-28 pb-12 sm:pb-14">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
 
             {/* Badge Institucional */}
             <motion.div
@@ -396,7 +398,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.05 }}
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 mb-4 max-w-3xl mx-auto leading-tight"
+              className="text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 mb-3 sm:mb-4 max-w-3xl mx-auto leading-tight"
             >
               Acompanhe votos, gastos e a atuação dos deputados no Congresso Nacional
             </motion.h1>
@@ -406,7 +408,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto mb-8 leading-relaxed"
+              className="text-sm sm:text-lg text-slate-600 max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed"
             >
               Presença oficial em plenário, histórico de votações nominais, notas fiscais da cota e
               autoria de proposições consolidadas diretamente da Câmara dos Deputados. Sem notas ou viés político.
@@ -423,23 +425,25 @@ export default function Home() {
                   onSubmit={handleSearch}
                   className="flex items-center bg-white border border-slate-300 rounded-xl shadow-xs overflow-hidden focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/20 transition-all"
                 >
-                  <div className="flex items-center pl-4 text-slate-400">
+                  <div className="flex items-center pl-3.5 sm:pl-4 text-slate-400 flex-shrink-0">
                     <Search className="w-4 h-4" />
                   </div>
                   <input
                     type="text"
                     data-testid="input-busca-home"
-                    placeholder="Pesquise pelo nome do deputado (ex: Tabata, Nikolas, Arthur)..."
+                    placeholder="Pesquise por deputado (ex: Tabata, Nikolas)..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    className="flex-1 px-3 py-3 text-sm text-slate-800 bg-transparent outline-none placeholder:text-slate-400"
+                    className="flex-1 min-w-0 px-2.5 sm:px-3 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-800 bg-transparent outline-none placeholder:text-slate-400"
                   />
                   <button
                     type="submit"
-                    className="m-1 px-4 py-2 bg-slate-900 hover:bg-blue-700 text-white text-sm font-medium rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                    data-testid="btn-consultar-home"
+                    className="m-1 px-3 sm:px-4 py-2 bg-slate-900 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold rounded-lg flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer flex-shrink-0 min-h-[38px]"
                   >
-                    <span>Consultar</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Consultar</span>
+                    <span className="sm:hidden">Buscar</span>
+                    <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
                   </button>
                 </form>
 
@@ -475,7 +479,7 @@ export default function Home() {
 
         {/* ── FAIXA DE INDICADORES CÍVICOS GLOBAIS (TICKER TABULAR) ── */}
         <section className="bg-slate-900 border-y border-slate-800 text-white">
-          <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 sm:grid-cols-4">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 grid grid-cols-2 sm:grid-cols-4">
             {[
               { num: "513",     suffix: "",    label: "Deputados Federais", sub: "57ª Legislatura" },
               { num: "78.4",    suffix: "%",   label: "Presença Média", sub: "sessões deliberativas" },
@@ -484,15 +488,17 @@ export default function Home() {
             ].map((s, i) => (
               <div
                 key={i}
-                className="py-6 px-4 text-center border-r border-slate-800 last:border-r-0"
+                className={`py-4 sm:py-6 px-2 sm:px-4 text-center ${
+                  i % 2 === 0 ? "border-r border-slate-800" : ""
+                } ${i < 2 ? "border-b sm:border-b-0 border-slate-800" : ""} sm:border-r sm:border-slate-800 sm:last:border-r-0`}
               >
-                <div className="text-2xl sm:text-3xl font-mono font-bold text-white tabular-nums mb-1">
-                  {s.num}<span className="text-blue-400 text-xl font-normal ml-0.5">{s.suffix}</span>
+                <div className="text-xl sm:text-3xl font-mono font-bold text-white tabular-nums mb-1">
+                  {s.num}<span className="text-blue-400 text-lg sm:text-xl font-normal ml-0.5">{s.suffix}</span>
                 </div>
                 <div className="text-xs font-semibold text-slate-200">
                   {s.label}
                 </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">
+                <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">
                   {s.sub}
                 </div>
               </div>
@@ -501,7 +507,7 @@ export default function Home() {
         </section>
 
         {/* ── SEÇÃO: PLENÁRIO EM TEMPO REAL + FERRAMENTAS CÍVICAS ── */}
-        <section className="max-w-6xl mx-auto px-6 py-14">
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             {/* 2/3: Feed do Plenário com Votações Recentes */}
             <SecaoPlenarioRecente />

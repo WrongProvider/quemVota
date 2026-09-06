@@ -133,26 +133,26 @@ export default function Politicos() {
 
       {/* ── Cabeçalho da página ── */}
       <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 py-8 pt-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-20 sm:pt-24">
           <p className="text-xs font-semibold tracking-wider uppercase text-blue-700 mb-1">
             Câmara dos Deputados
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mb-1">
             Diretório de Parlamentares
           </h1>
-          <p className="text-slate-600 text-sm">
+          <p className="text-slate-600 text-xs sm:text-sm">
             Consulte o registro factual de atuação, gastos de cota e presenças dos 513 deputados federais.
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6 pb-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 pb-16">
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
 
           {/* ── Barra de busca e filtros ── */}
-          <div className="px-5 py-3.5 border-b border-slate-200/80 bg-slate-50/40">
-            <div className="flex gap-3 items-center">
-              <div className="relative flex-1">
+          <div className="px-3.5 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200/80 bg-slate-50/40">
+            <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-3 items-center">
+              <div className="relative flex-1 min-w-[180px] sm:min-w-0">
                 <Search
                   size={14}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -162,39 +162,41 @@ export default function Politicos() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar por nome do deputado..."
-                  className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all text-slate-800 placeholder-slate-400"
+                  className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all text-slate-800 placeholder-slate-400 min-w-0"
                 />
               </div>
 
-              <button
-                onClick={() => setShowFilters((v) => !v)}
-                className={`flex items-center gap-2 px-3.5 py-1.5 border rounded-lg text-sm font-medium flex-shrink-0 transition-all ${
-                  showFilters
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                }`}
-              >
-                <SlidersHorizontal size={13} />
-                Filtros
-                {(selectedUF || selectedPartido) && (
-                  <span className={`flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none ${
-                    showFilters ? "bg-white text-slate-900" : "bg-blue-600 text-white"
-                  }`}>
-                    {[selectedUF, selectedPartido].filter(Boolean).length}
-                  </span>
-                )}
-              </button>
+              <div className="flex items-center gap-2 flex-shrink-0 ml-auto sm:ml-0">
+                <button
+                  onClick={() => setShowFilters((v) => !v)}
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 border rounded-lg text-xs sm:text-sm font-medium flex-shrink-0 transition-all cursor-pointer ${
+                    showFilters
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  <SlidersHorizontal size={13} />
+                  Filtros
+                  {(selectedUF || selectedPartido) && (
+                    <span className={`flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none ${
+                      showFilters ? "bg-white text-slate-900" : "bg-blue-600 text-white"
+                    }`}>
+                      {[selectedUF, selectedPartido].filter(Boolean).length}
+                    </span>
+                  )}
+                </button>
 
-              {/* Contador */}
-              {!showLoading && allPoliticos.length > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg flex-shrink-0">
-                  <Users size={13} className="text-slate-500" />
-                  <span className="font-mono font-semibold text-sm text-slate-800 tabular-nums">
-                    {allPoliticos.length}
-                  </span>
-                  <span className="text-xs text-slate-500 hidden sm:inline">registros</span>
-                </div>
-              )}
+                {/* Contador */}
+                {!showLoading && allPoliticos.length > 0 && (
+                  <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-white border border-slate-200 rounded-lg flex-shrink-0">
+                    <Users size={13} className="text-slate-500" />
+                    <span className="font-mono font-semibold text-xs sm:text-sm text-slate-800 tabular-nums">
+                      {allPoliticos.length}
+                    </span>
+                    <span className="text-xs text-slate-500 hidden sm:inline">registros</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* ── Painel de filtros ── */}
@@ -336,7 +338,7 @@ export default function Politicos() {
                     <Link
                       key={p.id}
                       to={`/politicos/${p.slug ?? p.id}`}
-                      className="group flex items-center gap-3.5 px-5 py-3.5 hover:bg-slate-50/80 transition-colors border-b border-slate-100 sm:border-b sm:border-r last:border-0 no-underline"
+                      className="group flex items-center gap-3 sm:gap-3.5 px-3.5 sm:px-5 py-3 sm:py-3.5 hover:bg-slate-50/80 transition-colors border-b border-slate-100 sm:border-b sm:border-r last:border-0 no-underline"
                     >
                       {/* Foto */}
                       <div className="w-[50px] h-[50px] rounded-lg overflow-hidden bg-slate-100 border border-slate-200 group-hover:border-slate-300 flex-shrink-0 transition-colors">
