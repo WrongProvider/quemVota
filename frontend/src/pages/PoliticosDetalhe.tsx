@@ -26,6 +26,7 @@ import {
   Mail,
   Phone,
   BarChart2,
+  Layers,
   TrendingUp,
   Receipt,
   Wallet,
@@ -327,12 +328,20 @@ export default function PoliticoDetalhe() {
 
   const [anoSelecionado, setAnoSelecionado] = useState<number | null>(null)
   const [abaAtiva, setAbaAtiva] = useState<"visao-geral" | "votacoes" | "projetos" | "gastos" | "atuacao">("visao-geral")
+  const [subAbaLegislativa, setSubAbaLegislativa] = useState<"votacoes" | "projetos">("votacoes")
   const [avisoSaidaAberto, setAvisoSaidaAberto] = useState(false)
   const [modalCompararAberto, setModalCompararAberto] = useState(false)
 
   const scrollParaSecao = (id: string, aba: "visao-geral" | "votacoes" | "projetos" | "gastos" | "atuacao") => {
     setAbaAtiva(aba)
-    const el = document.querySelector(`[data-testid="${id}"]`) || document.getElementById(id)
+    if (aba === "votacoes") {
+      setSubAbaLegislativa("votacoes")
+    } else if (aba === "projetos") {
+      setSubAbaLegislativa("projetos")
+    }
+
+    const targetId = (aba === "votacoes" || aba === "projetos") ? "section-atividade-legislativa" : id
+    const el = document.querySelector(`[data-testid="${targetId}"]`) || document.getElementById(targetId) || document.querySelector(`[data-testid="${id}"]`) || document.getElementById(id)
     if (el) {
       const topOffset = 130
       const elementPosition = el.getBoundingClientRect().top + window.pageYOffset
@@ -346,10 +355,9 @@ export default function PoliticoDetalhe() {
   useEffect(() => {
     const secoes = [
       { id: "section-stats", aba: "visao-geral" as const },
-      { id: "section-votacoes", aba: "votacoes" as const },
-      { id: "section-projetos", aba: "projetos" as const },
       { id: "section-historico-de-gastos", aba: "gastos" as const },
       { id: "section-atuacao", aba: "atuacao" as const },
+      { id: "section-atividade-legislativa", aba: (subAbaLegislativa === "projetos" ? "projetos" : "votacoes") as const },
     ]
 
     const handleScroll = () => {
@@ -365,7 +373,7 @@ export default function PoliticoDetalhe() {
 
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+  }, [subAbaLegislativa])
 
   // Busca por ID numérico (legado) ou por slug (canônico)
   const porId   = usePoliticoDetalhe(isNumerico ? Number(idOuSlug) : 0)
@@ -922,23 +930,98 @@ export default function PoliticoDetalhe() {
             <LinhaDoTempo politicoId={data.id} />
           </section>
 
-          {/* ── HISTÓRICO DE VOTAÇÕES E POSICIONAMENTO ── */}
-          <div id="section-votacoes-container" className="space-y-10">
+          {/* ── POSICIONAMENTO E ALINHAMENTO POLÍTICO ── */}
+          <div id="section-posicionamento-container" className="space-y-10">
             {/* ── FIDELIDADE PARTIDÁRIA NAS VOTAÇÕES ── */}
             <PainelFidelidadePartidaria politicoId={data.slug || data.id} />
 
             {/* ── RADAR DE AFINIDADES E DIVERGÊNCIAS DE VOTO ── */}
             <PainelRadarAfinidades politicoId={data.slug || data.id} />
-
-            {/* ── HISTÓRICO DE VOTAÇÕES ── */}
-            <section id="section-votacoes" data-testid="section-votacoes">
-              <HistoricoVotacoes politicoId={data.id} anoSelecionado={anoSelecionado} />
-            </section>
           </div>
 
-          {/* ── PROJETOS E PROPOSIÇÕES DO PARLAMENTAR ── */}
-          <section id="section-projetos" data-testid="section-projetos">
-            <HistoricoProjetos politicoId={data.id} anoSelecionado={anoSelecionado} />
+          {/* ── ATIVIDADE LEGISLATIVA (VOTAÇÕES & PROPOSIÇÕES EM ABAS) ── */}
+          <section
+            id="section-atividade-legislativa"
+            data-testid="section-atividade-legislativa"
+            className="space-y-6 pt-2"
+          >
+            {/* Cabeçalho Unificado com Segmented Control */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Layers size={20} className="text-blue-500" />
+                  <h2 className="display-font text-xl font-bold text-slate-800">
+                    Atividade Legislativa
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Posicionamentos nominais em plenário e projetos apresentados pelo parlamentar à Câmara.
+                </p>
+              </div>
+
+              {/* Seletor de Abas (Segmented Control touch-friendly) */}
+              <div
+                className="inline-flex p-1 bg-slate-100 rounded-2xl border border-slate-200 self-start sm:self-auto w-full sm:w-auto"
+                role="tablist"
+                aria-label="Alternar entre votações e proposições"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={subAbaLegislativa === "votacoes"}
+                  data-testid="tab-sub-votacoes"
+                  onClick={() => {
+                    setSubAbaLegislativa("votacoes")
+                    setAbaAtiva("votacoes")
+                  }}
+                  className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all min-h-[44px] cursor-pointer ${
+                    subAbaLegislativa === "votacoes"
+                      ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                  }`}
+                >
+                  <Vote size={15} className={subAbaLegislativa === "votacoes" ? "text-blue-600" : "text-slate-400"} />
+                  <span>Votações em Plenário</span>
+                </button>
+
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={subAbaLegislativa === "projetos"}
+                  data-testid="tab-sub-projetos"
+                  onClick={() => {
+                    setSubAbaLegislativa("projetos")
+                    setAbaAtiva("projetos")
+                  }}
+                  className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all min-h-[44px] cursor-pointer ${
+                    subAbaLegislativa === "projetos"
+                      ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                  }`}
+                >
+                  <FileText size={15} className={subAbaLegislativa === "projetos" ? "text-blue-600" : "text-slate-400"} />
+                  <span>Projetos e Proposições</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Painel da Aba 1: Histórico de Votações */}
+            <div
+              id="section-votacoes"
+              data-testid="section-votacoes"
+              className={subAbaLegislativa === "votacoes" ? "block" : "hidden"}
+            >
+              <HistoricoVotacoes politicoId={data.id} anoSelecionado={anoSelecionado} />
+            </div>
+
+            {/* Painel da Aba 2: Projetos e Proposições */}
+            <div
+              id="section-projetos"
+              data-testid="section-projetos"
+              className={subAbaLegislativa === "projetos" ? "block" : "hidden"}
+            >
+              <HistoricoProjetos politicoId={data.id} anoSelecionado={anoSelecionado} />
+            </div>
           </section>
         </div>
       </div>

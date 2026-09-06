@@ -51,9 +51,19 @@ test.describe("Filtros de Votações e Seção de Projetos do Parlamentar", () =
     await btnLimparProjetos.click()
     await expect(kpiTotal).toContainText("1.654")
 
-    // 6. Testa Filtros no Histórico de Votações
+    // 6. Testa alternância para a aba de Votações e seus Filtros
+    const tabVotacoes = page.getByTestId("tab-votacoes")
+    await tabVotacoes.click()
+
+    // Valida alternância através do seletor de sub-abas do contêiner de Atividade Legislativa
+    const subTabProjetos = page.getByTestId("tab-sub-projetos")
+    await subTabProjetos.click()
+    await expect(sectionProjetos).toBeVisible()
+
+    const subTabVotacoes = page.getByTestId("tab-sub-votacoes")
+    await subTabVotacoes.click()
+
     const sectionVotacoes = page.getByTestId("section-votacoes")
-    await sectionVotacoes.scrollIntoViewIfNeeded()
     await expect(sectionVotacoes).toBeVisible()
 
     const inputBuscaVotacoes = page.getByTestId("input-busca-votacoes")
