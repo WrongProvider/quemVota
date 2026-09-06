@@ -63,11 +63,6 @@ export default function PainelFidelidadePartidaria({
     )
   }, [data?.divergencias, filtroTexto])
 
-  // Não renderiza em erro 404/400 ou quando não houver votações com orientação registradas
-  if (isError || (!isLoading && (!data || data.total_votacoes_orientadas === 0))) {
-    return null
-  }
-
   // Skeleton de carregamento sutil
   if (isLoading) {
     return (
@@ -86,7 +81,32 @@ export default function PainelFidelidadePartidaria({
     )
   }
 
-  if (!data) return null
+  // Estado vazio quando não houver votações com orientação registradas ou houver erro
+  if (isError || !data || data.total_votacoes_orientadas === 0) {
+    return (
+      <section
+        data-testid="section-fidelidade-partidaria"
+        className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm mt-8 transition-all"
+      >
+        <div className="flex items-center gap-2.5 mb-4 border-b border-slate-100 pb-4">
+          <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
+            <Scale size={20} />
+          </div>
+          <div>
+            <h2 className="display-font text-lg sm:text-xl font-bold text-slate-800">
+              Fidelidade Partidária nas Votações
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Alinhamento entre votos nominais e as orientações oficiais de bancada.
+            </p>
+          </div>
+        </div>
+        <div className="text-center py-10 text-xs text-slate-500 bg-slate-50/50 rounded-xl border border-slate-100 px-4">
+          Não constam votações nominais com orientação formal registrada pela bancada partidária para este parlamentar.
+        </div>
+      </section>
+    )
+  }
 
   const taxaAlinhamento = Math.min(Math.max(data.taxa_fidelidade, 0), 100)
 

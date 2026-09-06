@@ -1413,40 +1413,88 @@ class PoliticoRepository:
     # Fidelidade Partidária (Relacional)
     # ------------------------------------------------------------------
 
+    # Mapeamento oficial de partidos para siglas de bancadas e federações na Câmara
+    MAPA_BANCADAS_PARTIDO: dict[str, list[str]] = {
+        "PSOL": ["PSOL", "Fdr PSOL-REDE"],
+        "REDE": ["REDE", "Fdr PSOL-REDE"],
+        "PT": ["PT", "Fdr PT-PCdoB-PV"],
+        "PCDOB": ["PCDOB", "Fdr PT-PCdoB-PV"],
+        "PV": ["PV", "Fdr PT-PCdoB-PV"],
+        "PSDB": ["PSDB", "Fdr PSDB-CIDADANIA", "Fdr PSDB-CIDADAN"],
+        "CIDADANIA": ["CIDADANIA", "Fdr PSDB-CIDADANIA", "Fdr PSDB-CIDADAN", "PPS"],
+        "SOLIDARIEDADE": ["SOLIDARIEDADE", "SOLIDARIED", "SD", "SDD"],
+        "PODE": ["PODE", "PODEMOS", "PTN"],
+        "PODEMOS": ["PODE", "PODEMOS", "PTN"],
+        "REPUBLICANOS": ["REPUBLICANOS", "REPUBLICAN", "PRB"],
+        "UNIÃO": ["UNIÃO", "UNIAO"],
+        "UNIAO": ["UNIÃO", "UNIAO"],
+        "PRD": ["PRD", "PATRIOTA", "PATRI", "PTB"],
+        "PATRIOTA": ["PATRIOTA", "PATRI", "PRD"],
+        "MDB": ["MDB", "PMDB"],
+        "PL": ["PL", "PR"],
+        "NOVO": ["NOVO"],
+        "AVANTE": ["AVANTE"],
+        "PDT": ["PDT"],
+        "PSB": ["PSB"],
+        "PP": ["PP"],
+        "PSD": ["PSD"],
+    }
+
+    @classmethod
+    def _obter_bancadas_equivalentes(cls, partido_sigla: str) -> list[str]:
+        norm = (partido_sigla or "").strip().upper()
+        bancadas = cls.MAPA_BANCADAS_PARTIDO.get(norm, [norm])
+        s = {b.upper() for b in bancadas}
+        if norm:
+            s.add(norm)
+        return list(s)
+
     async def get_fidelidade_partidaria_relacional_repo(
         self, politico_id: int, partido_sigla: str, limit_divergencias: int = 50
     ) -> dict:
         """
-        Compara cada voto do deputado com a orientação oficial da bancada do seu partido.
+        Compara cada voto do deputado com a orientação oficial da bancada do seu partido
+        ou da federação partidária a que pertence na Câmara dos Deputados.
         """
+        bancadas_upper = self._obter_bancadas_equivalentes(partido_sigla)
+
+        # Subquery deduplicada: agrupa por votação para evitar duplicações de órgãos/registros
+        sub_orient = (
+            select(
+                VotacaoOrientacao.idVotacao,
+                func.max(VotacaoOrientacao.orientacao).label("orientacao_partido"),
+            )
+            .where(
+                func.upper(VotacaoOrientacao.siglaBancada).in_(bancadas_upper),
+                VotacaoOrientacao.orientacao.isnot(None),
+                ~func.lower(VotacaoOrientacao.orientacao).in_(
+                    ["libera", "liberado", ""]
+                ),
+            )
+            .group_by(VotacaoOrientacao.idVotacao)
+            .subquery("vo_dedup")
+        )
+
         stmt = (
             select(
                 Voto.idVotacao,
                 Votacao.data,
                 Votacao.descricao,
                 Voto.voto.label("voto_politico"),
-                VotacaoOrientacao.orientacao.label("orientacao_partido"),
+                sub_orient.c.orientacao_partido,
                 Proposicao.siglaTipo,
                 Proposicao.numero,
                 Proposicao.ano,
                 Proposicao.ementa,
             )
             .join(
-                VotacaoOrientacao,
-                (VotacaoOrientacao.idVotacao == Voto.idVotacao)
-                & (
-                    func.upper(VotacaoOrientacao.siglaBancada)
-                    == func.upper(partido_sigla)
-                ),
+                sub_orient,
+                sub_orient.c.idVotacao == Voto.idVotacao,
             )
             .join(Votacao, Votacao.id == Voto.idVotacao)
             .outerjoin(Proposicao, Proposicao.id == Votacao.idProposicao)
             .where(
                 Voto.idDeputado == politico_id,
-                VotacaoOrientacao.orientacao.isnot(None),
-                ~func.lower(VotacaoOrientacao.orientacao).in_(
-                    ["libera", "liberado", ""]
-                ),
             )
             .order_by(desc(Votacao.data).nullslast(), desc(Voto.idVotacao))
         )
