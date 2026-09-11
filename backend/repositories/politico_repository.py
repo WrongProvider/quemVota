@@ -11,15 +11,19 @@ Segurança (OWASP):
 
 from datetime import date
 import logging
+import re
+from typing import Any, Dict, List, Optional, Tuple
 
 from shared.models import (
     Deputado,
     Despesa,
+    Discurso,
     Proposicao,
     ProposicaoAutor,
     Tema,
     VerbaGabinete,
     Votacao,
+    VotacaoObjeto,
     VotacaoOrientacao,
     Voto,
     proposicoesTemas,
@@ -53,12 +57,31 @@ _MAX_LIMIT_RESUMO = 60
 
 POPULAR_TOPIC_SYNONYMS: dict[str, list[str]] = {
     "6x1": ["jornada de trabalho", "36 horas", "escala 6x1", "PEC 221", "221/2019"],
-    "escala 6x1": ["jornada de trabalho", "36 horas", "escala 6x1", "PEC 221", "221/2019"],
+    "escala 6x1": [
+        "jornada de trabalho",
+        "36 horas",
+        "escala 6x1",
+        "PEC 221",
+        "221/2019",
+    ],
     "escala 6 por 1": ["jornada de trabalho", "36 horas", "PEC 221"],
     "fim da escala 6x1": ["jornada de trabalho", "36 horas", "PEC 221"],
-    "reforma tributaria": ["tributária", "tributario", "PLP 68", "PEC 45/2019", "IBS", "CBS"],
+    "reforma tributaria": [
+        "tributária",
+        "tributario",
+        "PLP 68",
+        "PEC 45/2019",
+        "IBS",
+        "CBS",
+    ],
     "tributaria": ["tributária", "tributario", "impostos"],
-    "marco temporal": ["terras indígenas", "indígena", "demarcação", "PL 2903", "14701"],
+    "marco temporal": [
+        "terras indígenas",
+        "indígena",
+        "demarcação",
+        "PL 2903",
+        "14701",
+    ],
     "aborto": ["interrupção de gravidez", "gestação", "PL 1904"],
     "pl do aborto": ["interrupção de gravidez", "PL 1904"],
     "bets": ["apostas", "quota fixa", "jogos de azar", "cassino", "PL 3626"],
@@ -70,11 +93,32 @@ POPULAR_TOPIC_SYNONYMS: dict[str, list[str]] = {
     "desoneracao": ["desoneração", "folha de pagamento", "PL 334/2023"],
     "desoneracao da folha": ["desoneração", "folha de pagamento", "PL 334/2023"],
     "combustiveis": ["gasolina", "diesel", "etanol", "combustíveis", "PLP 18"],
-    "previdencia": ["previdência", "previdencia", "reforma da previdência", "PEC 6/2019", "aposentadoria", "seguridade social", "benefício previdenciário"],
-    "reforma da previdencia": ["previdência", "previdencia", "PEC 6/2019", "aposentadoria", "seguridade social"],
+    "previdencia": [
+        "previdência",
+        "previdencia",
+        "reforma da previdência",
+        "PEC 6/2019",
+        "aposentadoria",
+        "seguridade social",
+        "benefício previdenciário",
+    ],
+    "reforma da previdencia": [
+        "previdência",
+        "previdencia",
+        "PEC 6/2019",
+        "aposentadoria",
+        "seguridade social",
+    ],
     "saude": ["saúde", "saude", "SUS", "médico", "vacina", "medicamento", "hospital"],
     "educacao": ["educação", "educacao", "ensino", "escola", "FUNDEB", "universidade"],
-    "seguranca": ["segurança", "seguranca", "polícia", "penal", "crime", "segurança pública"],
+    "seguranca": [
+        "segurança",
+        "seguranca",
+        "polícia",
+        "penal",
+        "crime",
+        "segurança pública",
+    ],
     "trabalho": ["trabalho", "trabalhador", "jornada", "emprego", "CLT"],
 }
 
@@ -663,7 +707,9 @@ class PoliticoRepository:
         if sigla_tipo and sigla_tipo.strip():
             base_filter.append(Proposicao.siglaTipo.ilike(sigla_tipo.strip()))
         if tema and tema.strip():
-            base_filter.append(Proposicao.temas.any(Tema.tema.ilike(f"%{tema.strip()}%")))
+            base_filter.append(
+                Proposicao.temas.any(Tema.tema.ilike(f"%{tema.strip()}%"))
+            )
         if data_inicio is not None:
             base_filter.append(Votacao.data >= data_inicio)
         if data_fim is not None:
@@ -687,12 +733,12 @@ class PoliticoRepository:
         stmt_counts = (
             select(
                 func.count().label("total"),
-                func.count(
-                    case((Voto.voto.ilike("Sim"), 1), else_=None)
-                ).label("total_sim"),
-                func.count(
-                    case((Voto.voto.ilike("Não"), 1), else_=None)
-                ).label("total_nao"),
+                func.count(case((Voto.voto.ilike("Sim"), 1), else_=None)).label(
+                    "total_sim"
+                ),
+                func.count(case((Voto.voto.ilike("Não"), 1), else_=None)).label(
+                    "total_nao"
+                ),
                 func.count(
                     case(
                         (~Voto.voto.ilike("Sim") & ~Voto.voto.ilike("Não"), 1),
@@ -816,9 +862,13 @@ class PoliticoRepository:
         if sigla_tipo and sigla_tipo.strip():
             base_filter_common.append(Proposicao.siglaTipo.ilike(sigla_tipo.strip()))
         if data_inicio is not None:
-            base_filter_common.append(func.date(Proposicao.dataApresentacao) >= data_inicio)
+            base_filter_common.append(
+                func.date(Proposicao.dataApresentacao) >= data_inicio
+            )
         if data_fim is not None:
-            base_filter_common.append(func.date(Proposicao.dataApresentacao) <= data_fim)
+            base_filter_common.append(
+                func.date(Proposicao.dataApresentacao) <= data_fim
+            )
         if q and q.strip():
             termos_expandidos = expand_popular_query(q)
             or_conditions = []
@@ -840,7 +890,10 @@ class PoliticoRepository:
                 func.count(
                     func.distinct(
                         case(
-                            (ProposicaoAutor.proponente.is_(True), ProposicaoAutor.idProposicao),
+                            (
+                                ProposicaoAutor.proponente.is_(True),
+                                ProposicaoAutor.idProposicao,
+                            ),
                             else_=None,
                         )
                     )
@@ -848,7 +901,10 @@ class PoliticoRepository:
                 func.count(
                     func.distinct(
                         case(
-                            (ProposicaoAutor.proponente.is_(False), ProposicaoAutor.idProposicao),
+                            (
+                                ProposicaoAutor.proponente.is_(False),
+                                ProposicaoAutor.idProposicao,
+                            ),
                             else_=None,
                         )
                     )
@@ -1664,3 +1720,246 @@ class PoliticoRepository:
             "temas": temas,
             "votacoes": votacoes,
         }
+
+    async def get_politico_discursos_atuacao_repo(
+        self,
+        deputado_id: int,
+        limit: int = 20,
+        offset: int = 0,
+        q: Optional[str] = None,
+        tipo_discurso: Optional[str] = None,
+    ) -> Tuple[int, List[Dict[str, Any]]]:
+        """
+        Retorna a lista de discursos do deputado correlacionados com proposições
+        de sua autoria/coautoria e votações nominais registradas.
+        """
+        limit = max(1, min(limit, 50))
+        offset = max(0, offset)
+
+        base_stmt = select(Discurso).where(Discurso.idDeputado == deputado_id)
+
+        if tipo_discurso:
+            base_stmt = base_stmt.where(Discurso.tipoDiscurso == tipo_discurso)
+
+        if q and q.strip():
+            termo = f"%{q.strip()}%"
+            base_stmt = base_stmt.where(
+                or_(
+                    Discurso.sumario.ilike(termo),
+                    Discurso.keywords.ilike(termo),
+                    Discurso.transcricao.ilike(termo),
+                )
+            )
+
+        # Contagem total
+        count_stmt = select(func.count()).select_from(base_stmt.subquery())
+        total_result = await self.db.execute(count_stmt)
+        total = total_result.scalar_one() or 0
+
+        if total == 0:
+            return 0, []
+
+        # Busca discursos paginados
+        discursos_stmt = (
+            base_stmt.order_by(desc(Discurso.dataHoraInicio))
+            .limit(limit)
+            .offset(offset)
+        )
+        res_discursos = await self.db.execute(discursos_stmt)
+        discursos = res_discursos.scalars().all()
+
+        num_pattern = r"(\d{1,3}(?:\.\d{3})+|\d+)"
+        pattern_extenso = re.compile(
+            rf"\b(?:Projeto de Lei Complementar|PLP)\s*(?:n[º°oª]?\.?\s*)?{num_pattern}[,\s]+de\s+(\d{{4}})\b",
+            re.IGNORECASE,
+        )
+        pattern_pl = re.compile(
+            rf"\b(?:Projeto de Lei Ordin[aá]ria|Projeto de Lei|PL)\s*(?:n[º°oª]?\.?\s*)?{num_pattern}[,\s]+de\s+(\d{{4}})\b",
+            re.IGNORECASE,
+        )
+        pattern_pec = re.compile(
+            rf"\b(?:Proposta de Emenda [aà] Constitui[cç][aã]o|PEC)\s*(?:n[º°oª]?\.?\s*)?{num_pattern}[,\s]+de\s+(\d{{4}})\b",
+            re.IGNORECASE,
+        )
+        pattern_mpv = re.compile(
+            rf"\b(?:Medida Provis[oó]ria|MPV)\s*(?:n[º°oª]?\.?\s*)?{num_pattern}[,\s]+de\s+(\d{{4}})\b",
+            re.IGNORECASE,
+        )
+        pattern_sigla = re.compile(
+            rf"\b(PEC|PLP|PL|MPV|REQ|PDL|PDC|PRC|RIC)\s*(?:n[º°oª]?\.?\s*)?{num_pattern}[/\-](\d{{2,4}})\b",
+            re.IGNORECASE,
+        )
+
+        def _parse_num(val: str) -> int:
+            return int(val.replace(".", ""))
+
+        def extrair_proposicoes(texto: str) -> set[Tuple[str, int, int]]:
+            encontradas: set[Tuple[str, int, int]] = set()
+            if not texto:
+                return encontradas
+
+            for m in pattern_extenso.finditer(texto):
+                encontradas.add(("PLP", _parse_num(m.group(1)), int(m.group(2))))
+            for m in pattern_pl.finditer(texto):
+                encontradas.add(("PL", _parse_num(m.group(1)), int(m.group(2))))
+            for m in pattern_pec.finditer(texto):
+                encontradas.add(("PEC", _parse_num(m.group(1)), int(m.group(2))))
+            for m in pattern_mpv.finditer(texto):
+                encontradas.add(("MPV", _parse_num(m.group(1)), int(m.group(2))))
+            for m in pattern_sigla.finditer(texto):
+                sigla = m.group(1).upper()
+                num = _parse_num(m.group(2))
+                ano = int(m.group(3))
+                if ano < 100:
+                    ano += 2000 if ano <= 30 else 1900
+                encontradas.add((sigla, num, ano))
+            return encontradas
+
+        # Mapeamento discurso -> proposicoes citadas
+        discurso_props_map: Dict[int, set[Tuple[str, int, int]]] = {}
+        todas_citadas: set[Tuple[str, int, int]] = set()
+
+        for d in discursos:
+            texto_busca = f"{d.sumario or ''} {d.transcricao or ''}"
+            props = extrair_proposicoes(texto_busca)
+            discurso_props_map[d.id] = props
+            todas_citadas.update(props)
+
+        proposicoes_db_map: Dict[Tuple[str, int, int], Proposicao] = {}
+        autores_map: Dict[int, str] = {}
+        votacoes_por_prop_camara: Dict[int, List[Dict[str, Any]]] = {}
+
+        if todas_citadas:
+            conds = [
+                (Proposicao.siglaTipo == sigla)
+                & (Proposicao.numero == num)
+                & (Proposicao.ano == ano)
+                for sigla, num, ano in todas_citadas
+            ]
+            stmt_props = select(Proposicao).where(or_(*conds))
+            res_props = await self.db.execute(stmt_props)
+            props_encontradas = res_props.scalars().all()
+
+            for p in props_encontradas:
+                proposicoes_db_map[(p.siglaTipo, p.numero, p.ano)] = p
+
+            prop_ids = [p.id for p in props_encontradas]
+            id_camaras = [p.idCamara for p in props_encontradas if p.idCamara]
+
+            if prop_ids:
+                stmt_autoria = select(
+                    ProposicaoAutor.idProposicao,
+                    ProposicaoAutor.proponente,
+                    ProposicaoAutor.ordemAssinatura,
+                ).where(
+                    ProposicaoAutor.idProposicao.in_(prop_ids),
+                    ProposicaoAutor.idDeputadoAutor == deputado_id,
+                )
+                res_autoria = await self.db.execute(stmt_autoria)
+                for r in res_autoria.all():
+                    prop_id_val, proponente, ordem = r[0], r[1], r[2]
+                    if proponente and (ordem == 1 or ordem is None):
+                        autores_map[prop_id_val] = "Autoria"
+                    elif proponente:
+                        autores_map[prop_id_val] = "Coautoria"
+                    else:
+                        autores_map[prop_id_val] = "Coautoria"
+
+            if id_camaras:
+                stmt_votacoes = (
+                    select(
+                        VotacaoObjeto.proposicao_id,
+                        VotacaoObjeto.idVotacao,
+                        Votacao.idCamara,
+                        Votacao.data,
+                        Votacao.siglaOrgao,
+                        VotacaoObjeto.descricao,
+                        VotacaoObjeto.proposicao_ementa,
+                        Voto.voto,
+                        Votacao.aprovacao,
+                    )
+                    .join(Votacao, Votacao.id == VotacaoObjeto.idVotacao)
+                    .outerjoin(
+                        Voto,
+                        (Voto.idVotacao == VotacaoObjeto.idVotacao)
+                        & (Voto.idDeputado == deputado_id),
+                    )
+                    .where(VotacaoObjeto.proposicao_id.in_(id_camaras))
+                    .order_by(VotacaoObjeto.idVotacao, desc(Votacao.data))
+                )
+                res_votacoes = await self.db.execute(stmt_votacoes)
+                votacoes_rows = res_votacoes.all()
+
+                votacoes_vistas_por_prop: Dict[int, set[int]] = {}
+                for v in votacoes_rows:
+                    p_camara_id = v[0]
+                    v_id = v[1]
+                    if p_camara_id not in votacoes_vistas_por_prop:
+                        votacoes_vistas_por_prop[p_camara_id] = set()
+                    if v_id in votacoes_vistas_por_prop[p_camara_id]:
+                        continue
+                    votacoes_vistas_por_prop[p_camara_id].add(v_id)
+
+                    item_vot = {
+                        "id": v_id,
+                        "id_votacao_camara": v[2],
+                        "data": str(v[3]) if v[3] else None,
+                        "sigla_orgao": v[4],
+                        "descricao": v[5] or "Votação em plenário",
+                        "proposicao_ementa": v[6],
+                        "voto_registrado": v[7] or "Não registrado",
+                        "aprovacao": v[8],
+                    }
+                    votacoes_por_prop_camara.setdefault(p_camara_id, []).append(
+                        item_vot
+                    )
+
+        itens: List[Dict[str, Any]] = []
+        for d in discursos:
+            citadas = discurso_props_map.get(d.id, set())
+            props_correlatas: List[Dict[str, Any]] = []
+            votacoes_correlatas: List[Dict[str, Any]] = []
+            vistos_vots: set[int] = set()
+
+            for key in sorted(citadas):
+                if key in proposicoes_db_map:
+                    p = proposicoes_db_map[key]
+                    tipo_part = autores_map.get(p.id, "Matéria Citada")
+                    url_camara = (
+                        f"https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao={p.idCamara}"
+                        if p.idCamara
+                        else None
+                    )
+                    props_correlatas.append(
+                        {
+                            "id": p.id,
+                            "sigla_tipo": p.siglaTipo,
+                            "numero": p.numero,
+                            "ano": p.ano,
+                            "ementa": p.ementa,
+                            "tipo_participacao": tipo_part,
+                            "url_camara": url_camara,
+                        }
+                    )
+
+                    if p.idCamara and p.idCamara in votacoes_por_prop_camara:
+                        for vt in votacoes_por_prop_camara[p.idCamara]:
+                            if vt["id"] not in vistos_vots:
+                                vistos_vots.add(vt["id"])
+                                votacoes_correlatas.append(vt)
+
+            itens.append(
+                {
+                    "id": d.id,
+                    "data_hora_inicio": d.dataHoraInicio,
+                    "tipo_discurso": d.tipoDiscurso,
+                    "fase_evento_titulo": d.faseEventoTitulo,
+                    "sumario": d.sumario,
+                    "keywords": d.keywords,
+                    "url_texto": d.urlTexto,
+                    "proposicoes_correlatas": props_correlatas,
+                    "votacoes_correlatas": votacoes_correlatas,
+                }
+            )
+
+        return total, itens

@@ -834,3 +834,92 @@ export async function fetchRedeCoautoria(
     throw err
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPEC-007: Discursos & Atuação Legislativa
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ProposicaoCorrelataDiscurso {
+  readonly id: number
+  readonly sigla_tipo: string
+  readonly numero: number
+  readonly ano: number
+  readonly ementa: string | null
+  readonly tipo_participacao: string
+  readonly url_camara: string | null
+}
+
+export interface VotacaoCorrelataDiscurso {
+  readonly id: number
+  readonly id_votacao_camara: string | null
+  readonly data: string | null
+  readonly sigla_orgao: string | null
+  readonly descricao: string
+  readonly proposicao_ementa: string | null
+  readonly voto_registrado: string
+  readonly aprovacao: number | null
+}
+
+export interface DiscursoAtuacaoItem {
+  readonly id: number
+  readonly data_hora_inicio: string
+  readonly tipo_discurso: string | null
+  readonly fase_evento_titulo: string | null
+  readonly sumario: string | null
+  readonly keywords: string | null
+  readonly url_texto: string | null
+  readonly proposicoes_correlatas: ProposicaoCorrelataDiscurso[]
+  readonly votacoes_correlatas: VotacaoCorrelataDiscurso[]
+}
+
+export interface PoliticoDiscursosAtuacaoResponse {
+  readonly id_deputado: number
+  readonly nome_deputado: string
+  readonly total_discursos: number
+  readonly itens: DiscursoAtuacaoItem[]
+}
+
+export interface PoliticoDiscursosAtuacaoParams {
+  readonly limit?: number
+  readonly offset?: number
+  readonly q?: string
+  readonly tipo_discurso?: string
+}
+
+/**
+ * GET /politicos/{idOrSlug}/discursos-atuacao
+ *
+ * Retorna os pronunciamentos do parlamentar na Câmara dos Deputados,
+ * correlacionados com proposições e votações nominais.
+ * Retorna null em caso de 404 (deputado não encontrado).
+ */
+export async function fetchPoliticoDiscursosAtuacao(
+  idOrSlug: string | number,
+  params?: PoliticoDiscursosAtuacaoParams,
+  signal?: AbortSignal,
+): Promise<PoliticoDiscursosAtuacaoResponse | null> {
+  try {
+    const { data } = await api.get<PoliticoDiscursosAtuacaoResponse>(
+      `/politicos/${idOrSlug}/discursos-atuacao`,
+      {
+        params: {
+          limit: 20,
+          offset: 0,
+          ...params,
+        },
+        signal,
+      },
+    )
+    return data
+  } catch (err: unknown) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "response" in err &&
+      (err as { response?: { status?: number } }).response?.status === 404
+    ) {
+      return null
+    }
+    throw err
+  }
+}

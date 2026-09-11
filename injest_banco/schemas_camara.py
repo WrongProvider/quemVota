@@ -644,3 +644,55 @@ class DeputadoMandatoExternoSchema(BaseCamaraSchema):
     @classmethod
     def clean_ints(cls, v: Any) -> Optional[int]:
         return parse_flexible_int(v)
+
+
+class DiscursoCamaraSchema(BaseCamaraSchema):
+    """Validação e sanitização de pronunciamentos e discursos de tribuna."""
+
+    idDeputadoCamara: int
+    dataHoraInicio: datetime
+    dataHoraFim: Optional[datetime] = None
+    tipoDiscurso: Optional[str] = None
+    faseEventoTitulo: Optional[str] = None
+    sumario: Optional[str] = None
+    transcricao: Optional[str] = None
+    keywords: Optional[str] = None
+    urlTexto: Optional[str] = None
+    urlAudio: Optional[str] = None
+    urlVideo: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def extrair_fase_evento(cls, values: Any) -> Any:
+        if isinstance(values, dict):
+            fase = values.get("faseEvento")
+            if isinstance(fase, dict) and "titulo" in fase:
+                values.setdefault("faseEventoTitulo", fase.get("titulo"))
+            elif isinstance(fase, str) and not values.get("faseEventoTitulo"):
+                values["faseEventoTitulo"] = fase
+        return values
+
+    @field_validator(
+        "tipoDiscurso",
+        "faseEventoTitulo",
+        "sumario",
+        "transcricao",
+        "keywords",
+        "urlTexto",
+        "urlAudio",
+        "urlVideo",
+        mode="before",
+    )
+    @classmethod
+    def clean_strings(cls, v: Any) -> Optional[str]:
+        return sanitize_text(v)
+
+    @field_validator("idDeputadoCamara", mode="before")
+    @classmethod
+    def clean_ints(cls, v: Any) -> Optional[int]:
+        return parse_flexible_int(v)
+
+    @field_validator("dataHoraInicio", "dataHoraFim", mode="before")
+    @classmethod
+    def clean_datetimes(cls, v: Any) -> Optional[datetime]:
+        return parse_flexible_datetime(v)

@@ -25,6 +25,7 @@ import {
   obterFidelidadePartidariaService,
   obterPoliticoAfinidadesService,
   obterRedeCoautoriaService,
+  obterPoliticoDiscursosAtuacaoService,
   PoliticoServiceError,
 } from "../services/politicos.service"
 import type {
@@ -46,6 +47,8 @@ import type {
   AfinidadesPoliticoParams,
   RedeCoautoriaResponse,
   RedeCoautoriaParams,
+  PoliticoDiscursosAtuacaoResponse,
+  PoliticoDiscursosAtuacaoParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -109,6 +112,8 @@ export const politicoKeys = {
     [...politicoKeys.all, "afinidades", String(idOrSlug), params ?? {}] as const,
   coautoria:    (idOrSlug: string | number, limit?: number) =>
     [...politicoKeys.all, "coautoria", String(idOrSlug), limit ?? 20] as const,
+  discursos:    (idOrSlug: string | number, params?: PoliticoDiscursosAtuacaoParams) =>
+    [...politicoKeys.all, "discursos", String(idOrSlug), params ?? {}] as const,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -424,5 +429,27 @@ export function usePoliticoCoautoria(
     staleTime: 10 * 60 * 1_000,
     gcTime: 15 * 60 * 1_000,
     retry: false, // 404/400 gracioso
+  })
+}
+
+/**
+ * Retorna os pronunciamentos do parlamentar correlacionados com proposições e votações.
+ *
+ * Cache de 10 min. Retorna null se não houver dados (404 gracioso).
+ */
+export function usePoliticoDiscursosAtuacao(
+  idOrSlug?: string | number,
+  params?: PoliticoDiscursosAtuacaoParams,
+): UseQueryResult<PoliticoDiscursosAtuacaoResponse | null, PoliticoServiceError> {
+  const s = String(idOrSlug ?? "").trim()
+  const enabled = Boolean(s && s !== "null" && s !== "undefined")
+
+  return useQuery({
+    queryKey: politicoKeys.discursos(idOrSlug ?? "", params),
+    queryFn: ({ signal }) => obterPoliticoDiscursosAtuacaoService(idOrSlug!, params, signal),
+    enabled,
+    staleTime: 10 * 60 * 1_000,
+    gcTime: 15 * 60 * 1_000,
+    retry: false, // 404 gracioso
   })
 }

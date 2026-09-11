@@ -1109,6 +1109,15 @@ class Discurso(Base):
     deputado = relationship("Deputado", back_populates="discursos")
     evento = relationship("Evento", back_populates="discursos")
 
+    __table_args__ = (
+        UniqueConstraint(
+            "idDeputado",
+            "dataHoraInicio",
+            "tipoDiscurso",
+            name="uq_discursos_dep_inicio_tipo",
+        ),
+    )
+
 
 # ===========================================================================
 # DESPESAS (CEAP)

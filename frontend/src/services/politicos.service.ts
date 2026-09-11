@@ -48,6 +48,9 @@ import {
   fetchRedeCoautoria,
   type RedeCoautoriaResponse,
   type RedeCoautoriaParams,
+  fetchPoliticoDiscursosAtuacao,
+  type PoliticoDiscursosAtuacaoResponse,
+  type PoliticoDiscursosAtuacaoParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -353,5 +356,17 @@ export async function obterRedeCoautoriaService(
     return await fetchRedeCoautoria(idOrSlug, params, signal)
   } catch (error) {
     throw normalizeError(error, "obterRedeCoautoriaService")
+  }
+}
+
+export async function obterPoliticoDiscursosAtuacaoService(
+  idOrSlug: string | number,
+  params?: PoliticoDiscursosAtuacaoParams,
+  signal?: AbortSignal,
+): Promise<PoliticoDiscursosAtuacaoResponse | null> {
+  try {
+    return await fetchPoliticoDiscursosAtuacao(idOrSlug, params, signal)
+  } catch (error) {
+    throw normalizeError(error, "obterPoliticoDiscursosAtuacaoService")
   }
 }

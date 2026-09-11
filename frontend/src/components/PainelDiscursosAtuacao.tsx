@@ -1,0 +1,423 @@
+/**
+ * PainelDiscursosAtuacao.tsx — Pronunciamentos × Atuação Legislativa (SPEC-007).
+ *
+ * Apresenta os discursos oficiais do parlamentar na Câmara dos Deputados,
+ * correlacionados com proposições de sua autoria e votações nominais em que
+ * participou. Cada discurso pode ser expandido para revelar as correlações.
+ *
+ * Princípio da Neutralidade Factual (AGENTS.md):
+ *  - Linguagem 100% descritiva e factual.
+ *  - Sem juízos de valor sobre coerência entre discurso e voto.
+ *  - Rastreabilidade com links para o Diário da Câmara e ficha de tramitação.
+ */
+
+import { useState, useMemo } from "react"
+import {
+  Mic,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Vote,
+  ExternalLink,
+  Search,
+  Calendar,
+  Tag,
+  Loader2,
+  AlertCircle,
+  MessageSquareText,
+} from "lucide-react"
+import { usePoliticoDiscursosAtuacao } from "../hooks/usePoliticos"
+import type {
+  DiscursoAtuacaoItem,
+  ProposicaoCorrelataDiscurso,
+  VotacaoCorrelataDiscurso,
+  PoliticoDiscursosAtuacaoParams,
+} from "../api/politicos.api"
+
+interface PainelDiscursosAtuacaoProps {
+  politicoId: string | number
+}
+
+// ── Formatador de data ──────────────────────────────────────────────────────
+function formatarData(iso: string): string {
+  try {
+    const d = new Date(iso)
+    return d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+  } catch {
+    return iso
+  }
+}
+
+function formatarDataHora(iso: string): string {
+  try {
+    const d = new Date(iso)
+    return d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  } catch {
+    return iso
+  }
+}
+
+// ── Badge do voto ───────────────────────────────────────────────────────────
+function VotoBadge({ voto }: { voto: string }) {
+  const lower = voto.toLowerCase()
+  let className = "px-2 py-0.5 rounded-md text-[11px] font-semibold "
+  if (lower === "sim") {
+    className += "bg-emerald-100 text-emerald-700"
+  } else if (lower.includes("não") || lower === "nao") {
+    className += "bg-red-100 text-red-700"
+  } else if (lower.includes("obstrução") || lower === "obstrucao") {
+    className += "bg-amber-100 text-amber-700"
+  } else if (lower.includes("abstenção") || lower === "abstencao") {
+    className += "bg-slate-100 text-slate-600"
+  } else {
+    className += "bg-slate-100 text-slate-500"
+  }
+  return <span className={className}>{voto}</span>
+}
+
+// ── Card de proposição correlata ────────────────────────────────────────────
+function ProposicaoCard({ prop }: { prop: ProposicaoCorrelataDiscurso }) {
+  return (
+    <div className="flex items-start gap-3 p-3 bg-blue-50/60 rounded-xl border border-blue-100/80">
+      <FileText size={16} className="text-blue-500 mt-0.5 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-sm text-slate-800">
+            {prop.sigla_tipo} {prop.numero}/{prop.ano}
+          </span>
+          <span className="text-[10px] font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
+            {prop.tipo_participacao}
+          </span>
+        </div>
+        {prop.ementa && (
+          <p className="text-xs text-slate-600 mt-1 line-clamp-2">{prop.ementa}</p>
+        )}
+        {prop.url_camara && (
+          <a
+            href={prop.url_camara}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 mt-1.5 font-medium"
+          >
+            <ExternalLink size={11} />
+            Ver na Câmara
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Card de votação correlata ───────────────────────────────────────────────
+function VotacaoCard({ vot }: { vot: VotacaoCorrelataDiscurso }) {
+  return (
+    <div className="flex items-start gap-3 p-3 bg-amber-50/60 rounded-xl border border-amber-100/80">
+      <Vote size={16} className="text-amber-600 mt-0.5 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-sm text-slate-800 line-clamp-1">
+            {vot.descricao}
+          </span>
+          <VotoBadge voto={vot.voto_registrado} />
+        </div>
+        {vot.data && (
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            {formatarData(vot.data)}
+            {vot.sigla_orgao && ` · ${vot.sigla_orgao}`}
+          </p>
+        )}
+        {vot.proposicao_ementa && (
+          <p className="text-xs text-slate-600 mt-1 line-clamp-2">
+            {vot.proposicao_ementa}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Item de discurso (colapsável) ───────────────────────────────────────────
+function DiscursoItem({ item }: { item: DiscursoAtuacaoItem }) {
+  const [aberto, setAberto] = useState(false)
+  const temCorrelacoes =
+    item.proposicoes_correlatas.length > 0 || item.votacoes_correlatas.length > 0
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      {/* Cabeçalho — sempre visível */}
+      <button
+        type="button"
+        data-testid={`discurso-toggle-${item.id}`}
+        onClick={() => setAberto(!aberto)}
+        className="w-full text-left p-4 sm:p-5 flex items-start gap-3 hover:bg-slate-50/50 transition-colors cursor-pointer min-h-[44px]"
+        aria-expanded={aberto}
+      >
+        <Mic size={18} className="text-indigo-500 mt-0.5 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+              <Calendar size={11} />
+              {formatarDataHora(item.data_hora_inicio)}
+            </span>
+            {item.tipo_discurso && (
+              <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                {item.tipo_discurso}
+              </span>
+            )}
+            {item.fase_evento_titulo && (
+              <span className="text-[10px] text-slate-400">
+                {item.fase_evento_titulo}
+              </span>
+            )}
+          </div>
+          {item.sumario && (
+            <p className={`text-sm text-slate-700 leading-relaxed ${aberto ? "" : "line-clamp-3"}`}>
+              {item.sumario}
+            </p>
+          )}
+          {item.keywords && (
+            <div className="flex items-center gap-1 mt-2 flex-wrap">
+              <Tag size={10} className="text-slate-400" />
+              {item.keywords
+                .split(",")
+                .slice(0, 5)
+                .map((kw) => (
+                  <span
+                    key={kw.trim()}
+                    className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"
+                  >
+                    {kw.trim()}
+                  </span>
+                ))}
+            </div>
+          )}
+          {/* Indicadores de correlação */}
+          {temCorrelacoes && !aberto && (
+            <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-400">
+              {item.proposicoes_correlatas.length > 0 && (
+                <span className="flex items-center gap-1">
+                  <FileText size={11} />
+                  {item.proposicoes_correlatas.length} proposiç{item.proposicoes_correlatas.length === 1 ? "ão" : "ões"}
+                </span>
+              )}
+              {item.votacoes_correlatas.length > 0 && (
+                <span className="flex items-center gap-1">
+                  <Vote size={11} />
+                  {item.votacoes_correlatas.length} votaç{item.votacoes_correlatas.length === 1 ? "ão" : "ões"}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="shrink-0 mt-1">
+          {aberto ? (
+            <ChevronUp size={18} className="text-slate-400" />
+          ) : (
+            <ChevronDown size={18} className="text-slate-400" />
+          )}
+        </div>
+      </button>
+
+      {/* Conteúdo expandido */}
+      {aberto && (
+        <div
+          data-testid={`discurso-expandido-${item.id}`}
+          className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-4 border-t border-slate-100 pt-4"
+        >
+          {/* Link para texto completo */}
+          {item.url_texto && (
+            <a
+              href={item.url_texto}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium bg-indigo-50 px-3 py-1.5 rounded-lg"
+            >
+              <ExternalLink size={12} />
+              Ler texto taquigráfico no Diário da Câmara
+            </a>
+          )}
+
+          {/* Proposições correlatas */}
+          {item.proposicoes_correlatas.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <FileText size={12} className="text-blue-500" />
+                Proposições Apresentadas ({item.proposicoes_correlatas.length})
+              </h4>
+              <div className="space-y-2">
+                {item.proposicoes_correlatas.map((prop) => (
+                  <ProposicaoCard key={prop.id} prop={prop} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Votações correlatas */}
+          {item.votacoes_correlatas.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Vote size={12} className="text-amber-600" />
+                Votações em Plenário ({item.votacoes_correlatas.length})
+              </h4>
+              <div className="space-y-2">
+                {item.votacoes_correlatas.map((vot) => (
+                  <VotacaoCard key={vot.id} vot={vot} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sem correlações */}
+          {!temCorrelacoes && (
+            <p className="text-xs text-slate-400 italic">
+              Nenhuma proposição ou votação correlata identificada para este pronunciamento.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Componente principal ────────────────────────────────────────────────────
+export default function PainelDiscursosAtuacao({
+  politicoId,
+}: PainelDiscursosAtuacaoProps) {
+  const [busca, setBusca] = useState("")
+  const [pagina, setPagina] = useState(0)
+  const ITENS_POR_PAGINA = 10
+
+  const params = useMemo<PoliticoDiscursosAtuacaoParams>(
+    () => ({
+      limit: ITENS_POR_PAGINA,
+      offset: pagina * ITENS_POR_PAGINA,
+      ...(busca.trim() ? { q: busca.trim() } : {}),
+    }),
+    [busca, pagina],
+  )
+
+  const { data, isLoading, isError } = usePoliticoDiscursosAtuacao(
+    politicoId,
+    params,
+  )
+
+  // Se sem dados (404) ou erro, não polui a página
+  if (isError || (!isLoading && (!data || data.total_discursos === 0))) {
+    return null
+  }
+
+  // Skeleton shimmer durante carregamento
+  if (isLoading) {
+    return (
+      <section
+        data-testid="section-discursos"
+        className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm animate-pulse"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="h-6 w-56 bg-slate-200 rounded-md" />
+          <div className="h-5 w-24 bg-slate-100 rounded-full" />
+        </div>
+        <div className="space-y-3 mt-6">
+          <div className="h-24 bg-slate-100 rounded-xl w-full" />
+          <div className="h-24 bg-slate-100 rounded-xl w-full" />
+          <div className="h-24 bg-slate-100 rounded-xl w-5/6" />
+        </div>
+      </section>
+    )
+  }
+
+  const totalPaginas = Math.ceil(data!.total_discursos / ITENS_POR_PAGINA)
+
+  return (
+    <section data-testid="section-discursos" className="space-y-5">
+      {/* ── Cabeçalho ── */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          <MessageSquareText size={18} className="text-indigo-500" />
+          <h2 className="display-font text-xl font-bold text-slate-800">
+            Discursos & Atuação
+          </h2>
+          <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+            {data!.total_discursos} pronunc.
+          </span>
+        </div>
+
+        {/* Campo de busca */}
+        <div className="relative w-full sm:w-64">
+          <Search
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+          />
+          <input
+            type="text"
+            value={busca}
+            onChange={(e) => {
+              setBusca(e.target.value)
+              setPagina(0)
+            }}
+            placeholder="Buscar nos discursos..."
+            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
+            data-testid="discursos-search"
+          />
+        </div>
+      </div>
+
+      {/* ── Lista de discursos ── */}
+      <div className="space-y-3">
+        {data!.itens.map((item) => (
+          <DiscursoItem key={item.id} item={item} />
+        ))}
+      </div>
+
+      {/* ── Sem resultados na busca ── */}
+      {data!.itens.length === 0 && busca.trim() && (
+        <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+          <AlertCircle size={32} className="mb-2" />
+          <p className="text-sm">Nenhum pronunciamento encontrado para "{busca}".</p>
+        </div>
+      )}
+
+      {/* ── Paginação ── */}
+      {totalPaginas > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <button
+            type="button"
+            onClick={() => setPagina(Math.max(0, pagina - 1))}
+            disabled={pagina === 0}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer"
+          >
+            ← Anterior
+          </button>
+          <span className="text-xs text-slate-500 font-medium tabular-nums">
+            {pagina + 1} / {totalPaginas}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPagina(Math.min(totalPaginas - 1, pagina + 1))}
+            disabled={pagina >= totalPaginas - 1}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer"
+          >
+            Próximo →
+          </button>
+        </div>
+      )}
+
+      {/* ── Loading inline ao paginar ── */}
+      {isLoading && data && (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 size={20} className="animate-spin text-indigo-400" />
+        </div>
+      )}
+    </section>
+  )
+}

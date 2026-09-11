@@ -11,6 +11,7 @@ import {
 import PoliticoGraficos from "../components/PoliticoGraficos"
 import LinhaDoTempo from "../components/LinhaDoTempo"
 import PainelTemasAtuacao from "../components/PainelTemasAtuacao"
+import PainelDiscursosAtuacao from "../components/PainelDiscursosAtuacao"
 import PainelFidelidadePartidaria from "../components/PainelFidelidadePartidaria"
 import PainelRadarAfinidades from "../components/PainelRadarAfinidades"
 import PainelRedeCoautoria from "../components/PainelRedeCoautoria"
@@ -59,6 +60,7 @@ import {
   GitFork,
   Scale,
   SlidersHorizontal,
+  MessageSquareText,
 } from "lucide-react"
 import { useRegistrarBusca } from "../hooks/useBuscaPopular"
 import { useVotacao } from "../hooks/useProposicoes"
@@ -324,7 +326,7 @@ export default function PoliticoDetalhe() {
   const isNumerico = /^\d+$/.test(idOuSlug ?? "")
 
   const [anoSelecionado, setAnoSelecionado] = useState<number | null>(null)
-  const [abaAtiva, setAbaAtiva] = useState<"visao-geral" | "votacoes" | "projetos" | "conexoes" | "gastos" | "atuacao">("visao-geral")
+  const [abaAtiva, setAbaAtiva] = useState<"visao-geral" | "votacoes" | "projetos" | "conexoes" | "gastos" | "atuacao" | "discursos">("visao-geral")
   const [subAbaLegislativa, setSubAbaLegislativa] = useState<"votacoes" | "projetos">("votacoes")
   const [subAbaConexoes, setSubAbaConexoes] = useState<"afinidades" | "coautoria" | "fidelidade">(() => {
     if (typeof window !== "undefined") {
@@ -338,7 +340,7 @@ export default function PoliticoDetalhe() {
   const [avisoSaidaAberto, setAvisoSaidaAberto] = useState(false)
   const [modalCompararAberto, setModalCompararAberto] = useState(false)
 
-  const scrollParaSecao = (id: string, aba: "visao-geral" | "votacoes" | "projetos" | "conexoes" | "gastos" | "atuacao") => {
+  const scrollParaSecao = (id: string, aba: "visao-geral" | "votacoes" | "projetos" | "conexoes" | "gastos" | "atuacao" | "discursos") => {
     setAbaAtiva(aba)
     if (aba === "votacoes") {
       setSubAbaLegislativa("votacoes")
@@ -372,6 +374,7 @@ export default function PoliticoDetalhe() {
       { id: "section-conexoes", aba: "conexoes" as const },
       { id: "section-historico-de-gastos", aba: "gastos" as const },
       { id: "section-atuacao", aba: "atuacao" as const },
+      { id: "section-discursos", aba: "discursos" as const },
     ]
 
     const handleScroll = () => {
@@ -753,6 +756,18 @@ export default function PoliticoDetalhe() {
                 <TrendingUp size={14} />
                 <span>Atuação & Temas</span>
               </button>
+              <button
+                data-testid="tab-discursos"
+                onClick={() => scrollParaSecao("section-discursos", "discursos")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                  abaAtiva === "discursos"
+                    ? "bg-slate-900 text-white font-semibold shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+              >
+                <MessageSquareText size={14} />
+                <span>Discursos</span>
+              </button>
             </nav>
           </div>
         </div>
@@ -1132,6 +1147,11 @@ export default function PoliticoDetalhe() {
 
             {/* ── FOCO TEMÁTICO DA ATUAÇÃO (SPEC-001) ── */}
             <PainelTemasAtuacao politicoId={data.slug || data.id} />
+          </div>
+
+          {/* ── 5. DISCURSOS & ATUAÇÃO (SPEC-007) ── */}
+          <div id="section-discursos" className="mt-10">
+            <PainelDiscursosAtuacao politicoId={data.slug || data.id} />
           </div>
         </div>
       </div>

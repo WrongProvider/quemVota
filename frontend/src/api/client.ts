@@ -53,6 +53,10 @@ export const api: AxiosInstance = axios.create({
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError) => {
+    if (axios.isCancel(error)) {
+      return Promise.reject(error)
+    }
+
     /**
      * Em produção não expomos stack traces nem detalhes internos no console.
      * Logamos apenas o mínimo útil para monitoramento sem vazar dados sensíveis.

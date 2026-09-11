@@ -19,11 +19,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.repositories.politico_repository import PoliticoRepository
 from backend.repositories.ranking_repository import RankingRepository
+from typing import Optional
+
 from backend.schemas import (
     AfinidadesPoliticoResponse,
     AtividadeLegislativaResponse,
     ComparacaoPoliticosGrafoResponse,
     FidelidadePartidariaResponse,
+    PoliticoDiscursosAtuacaoResponse,
     PoliticoResumoComparacao,
     PoliticoResponse,
     ProposicaoGrafoResponse,
@@ -408,21 +411,30 @@ class PoliticoService:
 
         # Queries sequenciais na mesma sessão — evita concorrência na mesma
         # conexão asyncpg (InterfaceError: "another operation is in progress")
-        votacoes, total_v, total_sim, total_nao, total_outros = (
-            await self._repo.get_atividade_votacoes_repo(
-                deputado_id,
-                q=term_votacao,
-                voto=voto,
-                sigla_tipo=sigla_tipo_votacao,
-                tema=tema_votacao,
-                data_inicio=data_inicio_votacao,
-                data_fim=data_fim_votacao,
-                ano=ano,
-                limit=safe_lv,
-                offset=safe_ov,
-            )
+        (
+            votacoes,
+            total_v,
+            total_sim,
+            total_nao,
+            total_outros,
+        ) = await self._repo.get_atividade_votacoes_repo(
+            deputado_id,
+            q=term_votacao,
+            voto=voto,
+            sigla_tipo=sigla_tipo_votacao,
+            tema=tema_votacao,
+            data_inicio=data_inicio_votacao,
+            data_fim=data_fim_votacao,
+            ano=ano,
+            limit=safe_lv,
+            offset=safe_ov,
         )
-        proposicoes, total_p, total_prop, total_coaut = await self._repo.get_atividade_proposicoes_repo(
+        (
+            proposicoes,
+            total_p,
+            total_prop,
+            total_coaut,
+        ) = await self._repo.get_atividade_proposicoes_repo(
             deputado_id,
             ano=ano,
             q=term_proposicao,
@@ -799,4 +811,36 @@ class PoliticoService:
             temas=data["temas"],
             votacoes=data["votacoes"],
             fonte_dados=fonte,
+        )
+
+    async def get_politico_discursos_atuacao_service(
+        self,
+        id_or_slug: str,
+        limit: int = 20,
+        offset: int = 0,
+        q: Optional[str] = None,
+        tipo_discurso: Optional[str] = None,
+    ) -> PoliticoDiscursosAtuacaoResponse:
+        """
+        Retorna os discursos do parlamentar correlacionados com proposições
+        e votações nominais.
+        """
+        pol = await self.get_politico_by_id_or_slug_service(id_or_slug)
+
+        limit_sanitizado = max(1, min(limit, 50))
+        offset_sanitizado = max(0, offset)
+
+        total, itens = await self._repo.get_politico_discursos_atuacao_repo(
+            deputado_id=pol.id,
+            limit=limit_sanitizado,
+            offset=offset_sanitizado,
+            q=q,
+            tipo_discurso=tipo_discurso,
+        )
+
+        return PoliticoDiscursosAtuacaoResponse(
+            id_deputado=pol.id,
+            nome_deputado=pol.nome,
+            total_discursos=total,
+            itens=itens,
         )

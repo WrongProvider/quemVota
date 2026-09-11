@@ -33,6 +33,7 @@ from backend.schemas import (
     PoliticoDespesaDetalhe,
     PoliticoDespesaResumo,
     PoliticoDespesaResumoCompleto,
+    PoliticoDiscursosAtuacaoResponse,
     PoliticoEstatisticasResponse,
     PoliticoResponse,
     PoliticoVoto,
@@ -543,11 +544,17 @@ async def atividade_legislativa(
     ] = None,
     voto: Annotated[
         Optional[str],
-        Query(max_length=50, description="Filtrar por voto (ex: Sim, Não, Abstenção, Obstrução)"),
+        Query(
+            max_length=50,
+            description="Filtrar por voto (ex: Sim, Não, Abstenção, Obstrução)",
+        ),
     ] = None,
     sigla_tipo_votacao: Annotated[
         Optional[str],
-        Query(max_length=20, description="Sigla do tipo de proposição na votação (ex: PL, PEC)"),
+        Query(
+            max_length=20,
+            description="Sigla do tipo de proposição na votação (ex: PL, PEC)",
+        ),
     ] = None,
     tema_votacao: Annotated[
         Optional[str],
@@ -568,7 +575,9 @@ async def atividade_legislativa(
     ] = None,
     sigla_tipo_proposicao: Annotated[
         Optional[str],
-        Query(max_length=20, description="Sigla do tipo de proposição (ex: PL, PEC, REQ)"),
+        Query(
+            max_length=20, description="Sigla do tipo de proposição (ex: PL, PEC, REQ)"
+        ),
     ] = None,
     proponente: Annotated[
         Optional[bool],
@@ -678,4 +687,59 @@ async def temas_atuacao(
         id_or_slug=politico_id,
         id_legislatura=id_legislatura,
         limit=limit,
+    )
+
+
+@router.get(
+    "/{politico_id}/discursos-atuacao",
+    response_model=PoliticoDiscursosAtuacaoResponse,
+    summary="Discursos & Atuação Legislativa (SPEC-007)",
+    description=(
+        "Retorna os pronunciamentos oficiais do parlamentar na tribuna da Câmara dos Deputados, "
+        "correlacionados factualmente com proposições de sua autoria/coautoria e com votações nominais "
+        "registradas em plenário."
+    ),
+    responses={
+        404: {"description": "Parlamentar não encontrado"},
+    },
+)
+@cache(expire=3600, key_builder=politico_key_builder)
+async def discursos_atuacao(
+    politico_id: DeputadoSlugPath,
+    limit: Annotated[
+        int,
+        Query(ge=1, le=50, description="Número máximo de discursos a retornar"),
+    ] = 20,
+    offset: Annotated[
+        int,
+        Query(ge=0, description="Deslocamento de paginação"),
+    ] = 0,
+    q: Annotated[
+        Optional[str],
+        Query(
+            max_length=150, description="Busca textual em sumário/keywords/transcrição"
+        ),
+    ] = None,
+    tipo_discurso: Annotated[
+        Optional[str],
+        Query(
+            max_length=100,
+            description="Filtro por tipo de discurso (ex: COMO LÍDER, PELA ORDEM)",
+        ),
+    ] = None,
+    service: PoliticoService = Depends(_politico_service),
+):
+    logger.info(
+        "Discursos e Atuação | politico=%s | limit=%s | offset=%s | q=%s",
+        politico_id,
+        limit,
+        offset,
+        q,
+    )
+    return await service.get_politico_discursos_atuacao_service(
+        id_or_slug=politico_id,
+        limit=limit,
+        offset=offset,
+        q=q,
+        tipo_discurso=tipo_discurso,
     )

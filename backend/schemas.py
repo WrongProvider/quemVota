@@ -896,3 +896,56 @@ class PoliticoTemasResponse(BaseModel):
     temas: List[TemaAtuacaoItemResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ===========================================================================
+# SPEC-007 — Discursos e Atuação Legislativa
+# ===========================================================================
+
+
+class ProposicaoCorrelataDiscurso(BaseModel):
+    id: int
+    sigla_tipo: str
+    numero: int
+    ano: int
+    ementa: Optional[str] = None
+    tipo_participacao: str = "Autoria"
+    url_camara: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class VotacaoCorrelataDiscurso(BaseModel):
+    id: int
+    id_votacao_camara: Optional[str] = None
+    data: Optional[str] = None
+    sigla_orgao: Optional[str] = None
+    descricao: str
+    proposicao_ementa: Optional[str] = None
+    voto_registrado: str = "Não registrado"
+    aprovacao: Optional[int] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DiscursoAtuacaoItemResponse(BaseModel):
+    id: int
+    data_hora_inicio: datetime
+    tipo_discurso: Optional[str] = None
+    fase_evento_titulo: Optional[str] = None
+    sumario: Optional[str] = None
+    keywords: Optional[str] = None
+    url_texto: Optional[str] = None
+    proposicoes_correlatas: List[ProposicaoCorrelataDiscurso] = []
+    votacoes_correlatas: List[VotacaoCorrelataDiscurso] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PoliticoDiscursosAtuacaoResponse(BaseModel):
+    id_deputado: int
+    nome_deputado: str
+    total_discursos: int
+    itens: List[DiscursoAtuacaoItemResponse]
+
+    model_config = ConfigDict(from_attributes=True)
