@@ -5,10 +5,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from sqlalchemy import text
 
-from shared.database import SessionLocal
 from injest_banco.api_camara import camara_get
+from shared.database import SessionLocal
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 SLEEP_BETWEEN_REQUESTS = 0.3
@@ -50,7 +52,7 @@ def _buscar_proposicao(camara_id: str):
         resposta = camara_get(f"/proposicoes/{camara_id}")
         dados = (resposta or {}).get("dados")
         return camara_id, dados, None
-    except Exception as e:  # noqa: BLE001 - queremos reportar, não abortar a run
+    except Exception as e:  # noqa: BLE001  # noqa: BLE001 - queremos reportar, não abortar a run
         return camara_id, None, e
     finally:
         time.sleep(SLEEP_BETWEEN_REQUESTS)
@@ -67,7 +69,9 @@ def backfill_proposicoes(limit: int | None = None, workers: int = DEFAULT_WORKER
             logger.info("✅ Nenhuma proposição faltante encontrada.")
         else:
             total = len(missing_ids)
-            logger.info(f"📦 Encontrados {total} IDs da Câmara. Iniciando coleta na API ({workers} workers)...")
+            logger.info(
+                f"📦 Encontrados {total} IDs da Câmara. Iniciando coleta na API ({workers} workers)..."
+            )
 
             processadas = 0
             inseridas = 0
@@ -89,36 +93,53 @@ def backfill_proposicoes(limit: int | None = None, workers: int = DEFAULT_WORKER
 
                         if not dados:
                             nao_encontradas += 1
-                            logger.warning(f"[{processadas}/{total}] ⚠️ Proposição idCamara={camara_id} não encontrada na API.")
+                            logger.warning(
+                                f"[{processadas}/{total}] ⚠️ Proposição idCamara={camara_id} não encontrada na API."
+                            )
                             continue
 
                         if any(dados.get(campo) is None for campo in CAMPOS_ESSENCIAIS):
                             erros += 1
-                            logger.warning(f"[{processadas}/{total}] ⚠️ Proposição idCamara={camara_id} veio com campos essenciais "
-                                           f"faltando na API, pulando.")
+                            logger.warning(
+                                f"[{processadas}/{total}] ⚠️ Proposição idCamara={camara_id} veio com campos essenciais "
+                                f"faltando na API, pulando."
+                            )
                             continue
 
-                        session.execute(INSERT_PROPOSICAO, {
-                            "idCamara": int(dados["id"]),  # O id da API é o nosso idCamara
-                            "uri": dados["uri"],
-                            "sigla": dados["siglaTipo"],
-                            "num": dados["numero"],
-                            "ano": dados["ano"],
-                            "ementa": dados.get("ementa"),
-                        })
+                        session.execute(
+                            INSERT_PROPOSICAO,
+                            {
+                                "idCamara": int(
+                                    dados["id"]
+                                ),  # O id da API é o nosso idCamara
+                                "uri": dados["uri"],
+                                "sigla": dados["siglaTipo"],
+                                "num": dados["numero"],
+                                "ano": dados["ano"],
+                                "ementa": dados.get("ementa"),
+                            },
+                        )
                         session.commit()
                         inseridas += 1
-                        logger.info(f"[{processadas}/{total}] ✔️ Proposição idCamara={camara_id} processada.")
+                        logger.info(
+                            f"[{processadas}/{total}] ✔️ Proposição idCamara={camara_id} processada."
+                        )
 
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         session.rollback()
                         erros += 1
-                        logger.error(f"[{processadas}/{total}] ❌ Erro ao processar idCamara={camara_id}: {e}")
+                        logger.error(
+                            f"[{processadas}/{total}] ❌ Erro ao processar idCamara={camara_id}: {e}"
+                        )
 
                     if processadas % LOG_PROGRESS_EVERY == 0:
-                        logger.info(f"Progresso: {processadas}/{total} | {inseridas} inseridas | {erros} erros")
+                        logger.info(
+                            f"Progresso: {processadas}/{total} | {inseridas} inseridas | {erros} erros"
+                        )
 
-            logger.info(f"📊 Coleta concluída: {inseridas} inseridas | {nao_encontradas} não encontradas na API | {erros} erros")
+            logger.info(
+                f"📊 Coleta concluída: {inseridas} inseridas | {nao_encontradas} não encontradas na API | {erros} erros"
+            )
 
         # =====================================================================
         # A MÁGICA DO VÍNCULO ACONTECE AQUI
@@ -129,18 +150,30 @@ def backfill_proposicoes(limit: int | None = None, workers: int = DEFAULT_WORKER
         try:
             result = session.execute(UPDATE_VINCULO)
             session.commit()
-            logger.info(f"✅ Sucesso! {result.rowcount} votações foram vinculadas corretamente com os IDs locais.")
-        except Exception as e:
+            logger.info(
+                f"✅ Sucesso! {result.rowcount} votações foram vinculadas corretamente com os IDs locais."
+            )
+        except Exception as e:  # noqa: BLE001
             session.rollback()
             logger.error(f"❌ Erro ao atualizar votações: {e}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Backfill de proposições faltantes e vínculo com votações.")
-    parser.add_argument("--limit", type=int, default=None,
-                         help="Processa só os N primeiros IDs faltantes (útil pra testar).")
-    parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS,
-                         help="Número de threads buscando proposições na API em paralelo.")
+    parser = argparse.ArgumentParser(
+        description="Backfill de proposições faltantes e vínculo com votações."
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Processa só os N primeiros IDs faltantes (útil pra testar).",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=DEFAULT_WORKERS,
+        help="Número de threads buscando proposições na API em paralelo.",
+    )
     args = parser.parse_args()
 
     backfill_proposicoes(limit=args.limit, workers=args.workers)

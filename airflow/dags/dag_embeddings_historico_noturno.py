@@ -7,10 +7,11 @@ Pipeline noturno para geração de embeddings e classificação temática histó
 - Classificação temática dos parlamentares das legislaturas anteriores (Leg 56, 55...)
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
+
+from airflow.operators.bash import BashOperator
 
 from airflow import DAG
-from airflow.operators.bash import BashOperator
 
 default_args = {
     "owner": "embeddings",
@@ -25,8 +26,8 @@ with DAG(
     "dag_embeddings_historico_noturno",
     default_args=default_args,
     description="Pipeline noturno de geração de embeddings e classificação temática pré-2026",
-    schedule_interval=None,  # Disparado pela dag_enriquecimento_historico_noturno
-    start_date=datetime(2026, 1, 1),
+    schedule=None,  # Disparado pela dag_enriquecimento_historico_noturno
+    start_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
     catchup=False,
     tags=["quemvota", "embeddings", "historico", "noturno"],
 ) as dag:

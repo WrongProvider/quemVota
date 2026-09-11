@@ -11,20 +11,20 @@ Persiste idempotentemente na tabela 'verbasGabinete' via SQLAlchemy Core upsert.
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
-from decimal import Decimal
 import logging
 import re
-from typing import Any, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
+from decimal import Decimal
+from typing import Any
 
+import requests
 from bs4 import BeautifulSoup
 from pydantic import BaseModel, Field, field_validator
-import requests
 from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 from sqlalchemy import create_engine, select
 from sqlalchemy.dialects.postgresql import insert
+from urllib3.util.retry import Retry
 
 from shared.database import SYNC_URL
 from shared.models import Deputado, VerbaGabinete
@@ -79,7 +79,7 @@ class VerbaGabineteItem(BaseModel):
                 return Decimal("0.00")
             try:
                 return Decimal(clean)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 return Decimal("0.00")
         return Decimal("0.00")
 
@@ -159,7 +159,7 @@ def parse_verba_table(
                 valorGasto=cells[2],
             )
             items.append(item)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             log.debug(
                 "Linha ignorada para deputado %d (%s): %s", id_camara, mes_str, exc
             )
@@ -196,7 +196,7 @@ def fetch_deputado_verba(
         return parse_verba_table(
             resp.text, id_deputado=id_dep, id_camara=id_camara, ano=ano
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         log.error("Erro ao buscar verba do deputado %d ano %d: %s", id_camara, ano, exc)
         return []
 
@@ -273,7 +273,7 @@ def run_verba_gabinete(
     *,
     engine=None,
     workers: int = DEFAULT_WORKERS,
-    deputado_id_camara: Optional[int] = None,
+    deputado_id_camara: int | None = None,
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """
@@ -326,7 +326,7 @@ def run_verba_gabinete(
                     dep_items = future.result()
                     if dep_items:
                         items_ano.extend(dep_items)
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     log.error(
                         "Falha ao coletar dados para %s (%d): %s",
                         dep["nome"],
@@ -358,7 +358,7 @@ def main():
         "--anos",
         type=int,
         nargs="+",
-        default=[datetime.now().year],
+        default=[datetime.now(timezone.utc).year],
         help="Anos a serem processados (padrão: ano atual)",
     )
     parser.add_argument(

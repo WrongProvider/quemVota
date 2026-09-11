@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.dialects.postgresql import insert
@@ -34,8 +34,8 @@ logger = logging.getLogger("injest_discursos")
 def sincronizar_discursos(
     engine: Any,
     legislatura: int = 57,
-    deputado_id_filtro: Optional[int] = None,
-    limit: Optional[int] = None,
+    deputado_id_filtro: int | None = None,
+    limit: int | None = None,
     dry_run: bool = False,
     max_paginas: int = 10,
 ) -> dict[str, int]:
@@ -108,7 +108,7 @@ def sincronizar_discursos(
                         "urlVideo": validado.urlVideo,
                     }
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 metricas["descartados"] += 1
                 logger.debug(
                     "Item descartado por validação (deputado %s): %s", dep_id, e
@@ -187,8 +187,8 @@ def main() -> None:
             dry_run=args.dry_run,
             max_paginas=args.max_paginas,
         )
-    except Exception as exc:
-        logger.exception("Erro crítico no processo de ingestão de discursos: %s", exc)
+    except Exception:
+        logger.exception("Erro crítico no processo de ingestão de discursos: %s", )
         sys.exit(1)
 
 

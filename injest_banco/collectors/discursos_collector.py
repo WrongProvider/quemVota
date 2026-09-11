@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import re
 import time
-from typing import Any, Optional
+from typing import Any
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -108,7 +108,7 @@ class DiscursosCollector:
         Returns:
             Lista de dicts crus vindos da API, sanitizados nas strings.
         """
-        url: Optional[str] = f"{self.base_url}/deputados/{id_camara}/discursos"
+        url: str | None = f"{self.base_url}/deputados/{id_camara}/discursos"
         params: dict[str, Any] | None = {
             "idLegislatura": legislatura,
             "ordenarPor": "dataHoraInicio",
@@ -173,7 +173,7 @@ class DiscursosCollector:
                 todos.extend(itens)
 
                 # Próxima página via rel='next'
-                next_url: Optional[str] = None
+                next_url: str | None = None
                 for link in data.get("links", []):
                     if link.get("rel") == "next":
                         next_url = link.get("href")

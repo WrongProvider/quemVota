@@ -1,25 +1,28 @@
 # backend/repositories/politicos.py
-from datetime import date, datetime
-import re
 import logging
-from sqlalchemy.orm import Session
-from injest_banco.db.models import (
-    Orgao,
-    Partido,
-    Evento,
-    ProposicaoAutor,
-    Proposicao,
-    VerbaGabinete,
-    Votacao,
-    Voto,
-    Despesa,
-    Deputado
-)
+import re
+from datetime import date, datetime
 
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import Session
+
+from shared.models import (
+    Deputado,
+    Despesa,
+    Evento,
+    Orgao,
+    OrgaoDeputado,
+    Partido,
+    Proposicao,
+    ProposicaoAutor,
+    Votacao,
+    VotacaoOrientacao,
+    Voto,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def parse_datetime(valor: str | None) -> datetime | None:
     if not valor:
@@ -30,7 +33,7 @@ def parse_datetime(valor: str | None) -> datetime | None:
     except ValueError:
         return None
 
-    
+
 def carregar_por_id_camara(db: Session) -> dict[int, Deputado]:
     deputados = db.query(Deputado).all()
     return {d.idCamara: d for d in deputados}
@@ -54,16 +57,19 @@ def upsert_politico(db: Session, cache: dict, dep: dict, partido_obj: Partido = 
             uf=dep["siglaUf"],
             url_foto=dep.get("urlFoto"),
             partido_id=partido_obj.id if partido_obj else None,
-            partido_sigla=partido_obj.sigla if partido_obj else dep.get("siglaPartido")
+            partido_sigla=partido_obj.sigla if partido_obj else dep.get("siglaPartido"),
         )
         db.add(politico)
         db.flush()  # Garante que politico.id seja gerado para o cache
         cache[dep["id"]] = politico
-    
+
     return politico
+
+
 # -------------------------
 # Cache
 # -------------------------
+
 
 def carregar_orgaos_por_id_camara(db: Session) -> dict[int, Orgao]:
     return {o.id_camara: o for o in db.query(Orgao).all()}
@@ -72,6 +78,7 @@ def carregar_orgaos_por_id_camara(db: Session) -> dict[int, Orgao]:
 # -------------------------
 # Orgao
 # -------------------------
+
 
 def upsert_orgao(db: Session, cache: dict, d: dict) -> Orgao:
     orgao = cache.get(d["id"])
@@ -116,18 +123,15 @@ def enrich_orgao(orgao: Orgao, d: dict):
 # Membros
 # -------------------------
 
+
 def upsert_orgao_membro(db: Session, orgao: Orgao, d: dict):
-    politico = (
-        db.query(Deputado)
-        .filter(Deputado.idCamara == d["id"])
-        .first()
-    )
+    politico = db.query(Deputado).filter(Deputado.idCamara == d["id"]).first()
 
     if not politico:
         return  # não cria político fantasma
 
     existe = (
-        db.query(OrgaoMembro)
+        db.query(OrgaoDeputado)
         .filter_by(
             orgao_id=orgao.id,
             politico_id=politico.id,
@@ -138,7 +142,7 @@ def upsert_orgao_membro(db: Session, orgao: Orgao, d: dict):
     if existe:
         return
 
-    membro = OrgaoMembro(
+    membro = OrgaoDeputado(
         orgao_id=orgao.id,
         politico_id=politico.id,
         titulo=d.get("titulo"),
@@ -152,12 +156,9 @@ def upsert_orgao_membro(db: Session, orgao: Orgao, d: dict):
 # Eventos (N:N)
 # -------------------------
 
+
 def upsert_evento_minimo(db: Session, d: dict) -> Evento:
-    evento = (
-        db.query(Evento)
-        .filter(Evento.id_camara == d["id"])
-        .first()
-    )
+    evento = db.query(Evento).filter(Evento.id_camara == d["id"]).first()
 
     if evento:
         return evento
@@ -176,9 +177,11 @@ def upsert_evento_minimo(db: Session, d: dict) -> Evento:
     db.flush()  # garante evento.id
     return evento
 
+
 def carregar_eventos_indexados(db):
     eventos = db.query(Evento).all()
     return {e.id_camara: e for e in eventos}
+
 
 def upsert_evento_index(db, cache: dict, d: dict):
     id_camara = d["id"]
@@ -206,6 +209,7 @@ def upsert_evento_index(db, cache: dict, d: dict):
     db.add(evento)
     cache[id_camara] = evento
 
+
 def upsert_evento_detalhado(db, evento: Evento, d: dict):
     evento.uri = d.get("uri")
     evento.situacao = d.get("situacao")
@@ -221,23 +225,19 @@ def upsert_evento_detalhado(db, evento: Evento, d: dict):
     evento.local_camara_andar = local.get("andar")
 
     evento.data_hora_inicio = (
-        parse_datetime(d.get("dataHoraInicio"))
-        or evento.data_hora_inicio
+        parse_datetime(d.get("dataHoraInicio")) or evento.data_hora_inicio
     )
 
     evento.data_hora_fim = parse_datetime(d.get("dataHoraFim"))
 
     evento.detalhado = True
 
+
 def upsert_evento_deputados(db, evento: Evento, deputados: dict):
     dados = deputados.get("dados", [])
 
     for d in dados:
-        politico = (
-            db.query(Deputado)
-            .filter(Deputado.idCamara == d["id"])
-            .first()
-        )
+        politico = db.query(Deputado).filter(Deputado.idCamara == d["id"]).first()
 
         if not politico:
             continue
@@ -246,6 +246,7 @@ def upsert_evento_deputados(db, evento: Evento, deputados: dict):
             evento.deputados.append(politico)
 
     evento.participantes_importados = True
+
 
 # # def upsert_evento_pauta(db, evento: Evento, pauta: dict):
 #     itens = pauta.get("dados", [])
@@ -259,6 +260,7 @@ def upsert_evento_deputados(db, evento: Evento, deputados: dict):
 #         db.add(pauta_evento)
 
 #     evento.pauta_importada = True
+
 
 def upsert_evento_votacoes(db, evento: Evento, payload: dict):
     votacoes = payload.get("dados", [])
@@ -275,13 +277,10 @@ def upsert_evento_votacoes(db, evento: Evento, payload: dict):
     evento.votacoes_importadas = True
 
 
-
-def upsert_votacao_index(db: Session, evento: Evento | None, d: dict, proposicao_id: int = None):
-    votacao = (
-        db.query(Votacao)
-        .filter(Votacao.id_camara == d["id"])
-        .first()
-    )
+def upsert_votacao_index(
+    db: Session, evento: Evento | None, d: dict, proposicao_id: int | None = None
+):
+    votacao = db.query(Votacao).filter(Votacao.id_camara == d["id"]).first()
 
     if votacao:
         # Se a votação já existe mas está sem o vínculo, atualizamos agora
@@ -299,11 +298,12 @@ def upsert_votacao_index(db: Session, evento: Evento | None, d: dict, proposicao
         aprovacao=d.get("aprovacao"),
         uri=d.get("uri"),
         indexada=True,
-        tipo_votacao=d.get("tipoVotacao")
+        tipo_votacao=d.get("tipoVotacao"),
     )
 
     db.add(votacao)
     return votacao
+
 
 def upsert_votacao_detalhada(db: Session, votacao: Votacao, payload: dict):
     d = payload.get("dados", {})
@@ -316,12 +316,13 @@ def upsert_votacao_detalhada(db: Session, votacao: Votacao, payload: dict):
 
     votacao.votos_importados = True
 
+
 def upsert_votacao_orientacoes(db: Session, votacao: Votacao, payload: dict):
     dados = payload.get("dados", [])
 
     for d in dados:
         existe = (
-            db.query(OrientacaoVotacao)
+            db.query(VotacaoOrientacao)
             .filter_by(
                 votacao_id=votacao.id,
                 cod_partido_bloco=d["codPartidoBloco"],
@@ -332,7 +333,7 @@ def upsert_votacao_orientacoes(db: Session, votacao: Votacao, payload: dict):
         if existe:
             continue
 
-        orientacao = OrientacaoVotacao(
+        orientacao = VotacaoOrientacao(
             votacao_id=votacao.id,
             cod_partido_bloco=d["codPartidoBloco"],
             sigla_partido_bloco=d.get("siglaPartidoBloco"),
@@ -343,17 +344,18 @@ def upsert_votacao_orientacoes(db: Session, votacao: Votacao, payload: dict):
 
     votacao.orientacoes_importadas = True
 
-    
-def upsert_votacao_votos(db: Session, votacao: Votacao, payload: dict, cache_politicos: dict):
+
+def upsert_votacao_votos(
+    db: Session, votacao: Votacao, payload: dict, cache_politicos: dict
+):
     dados = payload.get("dados", [])
-    if not dados: 
+    if not dados:
         return
 
     # Otimização: Cache de IDs já inseridos no banco para esta votação
     votos_existentes = {
-        v[0] for v in db.query(Voto.politico_id)
-        .filter(Voto.votacao_id == votacao.id)
-        .all()
+        v[0]
+        for v in db.query(Voto.politico_id).filter(Voto.votacao_id == votacao.id).all()
     }
 
     votos_inseridos = 0
@@ -361,19 +363,19 @@ def upsert_votacao_votos(db: Session, votacao: Votacao, payload: dict, cache_pol
     for d in dados:
         # Tenta pegar "deputado_" (conforme seu JSON) ou "deputado" (padrão da API)
         dep_data = d.get("deputado_") or d.get("deputado")
-        
+
         if not dep_data:
             # Se não achar a chave, pula e avisa no log para debug
             # logger.debug(f"Estrutura de voto inesperada: {d.keys()}")
             continue
-            
+
         id_api_deputado = dep_data.get("id")
         if id_api_deputado is None:
             continue
 
         # Garante que o ID é int para bater com o cache_politicos
         politico = cache_politicos.get(int(id_api_deputado))
-        
+
         if not politico:
             # Se o político não estiver no banco, não conseguimos criar a FK do Voto
             continue
@@ -387,16 +389,19 @@ def upsert_votacao_votos(db: Session, votacao: Votacao, payload: dict, cache_pol
             tipo_voto=d.get("tipoVoto"),
             data_registro_voto=parse_datetime(d.get("dataRegistroVoto")),
             sigla_partido=dep_data.get("siglaPartido"),
-            sigla_uf=dep_data.get("siglaUf")
+            sigla_uf=dep_data.get("siglaUf"),
         )
         db.add(novo_voto)
-        votos_existentes.add(politico.id) # Evita duplicar no mesmo loop
+        votos_existentes.add(politico.id)  # Evita duplicar no mesmo loop
         votos_inseridos += 1
-    
+
     # Fazemos um flush para garantir que os erros de constraint apareçam aqui se houverem
     db.flush()
-    logger.info(f"📊 {votos_inseridos} votos inseridos para a votação {votacao.id_camara}")
+    logger.info(
+        f"📊 {votos_inseridos} votos inseridos para a votação {votacao.id_camara}"
+    )
     votacao.votos_importados = True
+
 
 def carregar_partidos_por_sigla(db: Session) -> dict[str, Partido]:
     """
@@ -416,9 +421,11 @@ def upsert_despesa(db: Session, politico_id: int, d: dict, cod_doc: str):
         despesa = Despesa(cod_documento=cod_doc, politico_id=politico_id)
         db.add(despesa)
         # Opcional: db.flush() aqui se você processa muitos duplicados no mesmo bloco
-    
+
     # Tratamento de campos
-    despesa.parcela = int(d.get("parcela") or 0) if str(d.get("parcela")).isdigit() else 0
+    despesa.parcela = (
+        int(d.get("parcela") or 0) if str(d.get("parcela")).isdigit() else 0
+    )
     despesa.num_ressarcimento = str(d.get("numRessarcimento") or "")
 
     # Tratamento para Num Ressarcimento
@@ -444,7 +451,6 @@ def upsert_despesa(db: Session, politico_id: int, d: dict, cod_doc: str):
     return True
 
 
-
 def upsert_proposicao(db: Session, d: dict) -> Proposicao:
     """Realiza o upsert da proposição básica."""
     id_camara = d.get("id")
@@ -453,7 +459,7 @@ def upsert_proposicao(db: Session, d: dict) -> Proposicao:
     if not prop:
         prop = Proposicao(id_camara=id_camara)
         db.add(prop)
-    
+
     prop.uri = d.get("uri")
     prop.sigla_tipo = d.get("siglaTipo")
     prop.cod_tipo = d.get("codTipo")
@@ -474,20 +480,22 @@ def upsert_proposicao(db: Session, d: dict) -> Proposicao:
 
     return prop
 
+
 def extract_id_from_uri(uri: str | None) -> int | None:
     """Extrai o número final de uma URL (ex: .../deputados/73492 -> 73492)"""
     if not uri:
         return None
-    match = re.search(r'/(\d+)$', uri)
+    match = re.search(r"/(\d+)$", uri)
     return int(match.group(1)) if match else None
 
-from sqlalchemy.dialects.postgresql import insert
 
 # faz o upsert dos autores de proposição
-def upsert_proposicao_autor(db: Session, prop_id: int, auth_data: dict, cache_politicos: dict):
+def upsert_proposicao_autor(
+    db: Session, prop_id: int, auth_data: dict, cache_politicos: dict
+):
     id_autor_camara = extract_id_from_uri(auth_data.get("uri"))
     politico = cache_politicos.get(id_autor_camara)
-    
+
     stmt = insert(ProposicaoAutor).values(
         proposicao_id=prop_id,
         politico_id=politico.id if politico else None,
@@ -496,7 +504,7 @@ def upsert_proposicao_autor(db: Session, prop_id: int, auth_data: dict, cache_po
         cod_tipo=auth_data.get("codTipo"),
         tipo=auth_data.get("tipo"),
         ordem_assinatura=auth_data.get("ordemAssinatura"),
-        proponente=bool(auth_data.get("proponente"))
+        proponente=bool(auth_data.get("proponente")),
     )
 
     # Em vez de index_elements, usamos o nome da CONSTRAINT que criamos no Passo 1
@@ -505,13 +513,16 @@ def upsert_proposicao_autor(db: Session, prop_id: int, auth_data: dict, cache_po
         set_={
             "uri_autor": stmt.excluded.uri_autor,
             "ordem_assinatura": stmt.excluded.ordem_assinatura,
-            "proponente": stmt.excluded.proponente
-        }
+            "proponente": stmt.excluded.proponente,
+        },
     )
-    
+
     db.execute(stmt)
 
-def vincular_votacao_a_proposicao(db: Session, votacao: Votacao, id_proposicao_camara: int):
+
+def vincular_votacao_a_proposicao(
+    db: Session, votacao: Votacao, id_proposicao_camara: int
+):
     """
     Busca a proposição pelo ID da Câmara e vincula à votação local.
     """
@@ -522,4 +533,3 @@ def vincular_votacao_a_proposicao(db: Session, votacao: Votacao, id_proposicao_c
     if prop:
         votacao.proposicao_id = prop.id
         # logger.info(f"🔗 Votação {votacao.id_camara} vinculada à Proposição {prop.sigla_tipo} {prop.numero}/{prop.ano}")
-

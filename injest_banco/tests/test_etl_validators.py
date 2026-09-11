@@ -46,7 +46,7 @@ class TestDataSanitization:
         assert parse_flexible_date("2026-03-15") == date(2026, 3, 15)
         assert parse_flexible_date("2026-03-15T14:30:00") == date(2026, 3, 15)
         assert parse_flexible_date(date(2026, 3, 15)) == date(2026, 3, 15)
-        assert parse_flexible_date(datetime(2026, 3, 15, 10, 0)) == date(2026, 3, 15)
+        assert parse_flexible_date(datetime(2026, 3, 15, 10, 0, tzinfo=timezone.utc)) == date(2026, 3, 15)
         # Anos espúrios
         assert parse_flexible_date("0001-01-01") is None
         assert parse_flexible_date("3500-01-01") is None
@@ -59,7 +59,7 @@ class TestDataSanitization:
         assert dt.hour == 10 and dt.minute == 30
 
         dt_simple = parse_flexible_datetime("2026-03-15")
-        assert dt_simple == datetime(2026, 3, 15, 0, 0)
+        assert dt_simple == datetime(2026, 3, 15, 0, 0, tzinfo=timezone.utc)
         assert parse_flexible_datetime(None) is None
         assert parse_flexible_datetime("invalido") is None
 
@@ -95,8 +95,8 @@ class TestSchemasValidation:
         assert prop.numero == 1234
         assert prop.ano == 2026
         assert prop.ementa == "Dispõe sobre transparência pública."
-        assert prop.dataApresentacao == datetime(2026, 2, 1, 10, 0)
-        assert prop.dataUltimaTramitacao == datetime(2026, 2, 15, 15, 0)
+        assert prop.dataApresentacao == datetime(2026, 2, 1, 10, 0, tzinfo=timezone.utc)
+        assert prop.dataUltimaTramitacao == datetime(2026, 2, 15, 15, 0, tzinfo=timezone.utc)
 
     def test_proposicao_coherence_adjustment(self):
         """Valida que se tramitação for anterior à apresentação, ajusta para não ficar incoerente."""
@@ -191,7 +191,7 @@ class TestSchemasValidation:
         ev = EventoCamaraSchema.model_validate(evento_data)
         assert ev.idCamara == 70000
         assert ev.situacao == "Encerrada"
-        assert ev.dataHoraInicio == datetime(2026, 3, 20, 14, 0)
+        assert ev.dataHoraInicio == datetime(2026, 3, 20, 14, 0, tzinfo=timezone.utc)
 
     def test_partido_schema(self):
         data = {
@@ -221,7 +221,7 @@ class TestSchemasValidation:
         tram = TramitacaoCamaraSchema.model_validate(data)
         assert tram.idProposicaoCamara == 2485383
         assert tram.sequencia == 15
-        assert tram.dataHora == datetime(2026, 3, 12, 10, 30)
+        assert tram.dataHora == datetime(2026, 3, 12, 10, 30, tzinfo=timezone.utc)
         assert tram.siglaOrgao == "CCJC"
         assert tram.codSituacao == 923
 

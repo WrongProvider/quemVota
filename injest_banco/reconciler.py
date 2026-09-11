@@ -10,7 +10,7 @@ Identifica e resolve:
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import text
 
@@ -21,8 +21,8 @@ log = logging.getLogger("etl_camara.reconciler")
 
 def reconcile_orphan_votacoes(
     engine: Any,
-    client: Optional[CamaraClient] = None,
-    limit: Optional[int] = None,
+    client: CamaraClient | None = None,
+    limit: int | None = None,
 ) -> dict[str, int]:
     """
     Localiza votações com 'idProposicao' nulo e tenta buscar na API REST
@@ -105,7 +105,7 @@ def reconcile_orphan_votacoes(
                             )
                             stats["vinculadas"] += 1
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             log.warning("Erro ao reconciliar votação %s: %s", id_camara, exc)
             stats["erros"] += 1
 

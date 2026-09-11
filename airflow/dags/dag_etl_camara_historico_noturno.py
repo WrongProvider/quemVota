@@ -7,11 +7,12 @@ e sincronização no grafo Apache AGE.
 Utiliza cache ETag para consultar a Câmara e transferir apenas arquivos atualizados.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
-from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+
+from airflow import DAG
 
 default_args = {
     "owner": "quemvota",
@@ -26,8 +27,8 @@ with DAG(
     "dag_etl_camara_historico_noturno",
     default_args=default_args,
     description="Pipeline noturno de ingestão de dados históricos pré-2026 e sincronização do grafo AGE",
-    schedule_interval="0 4 * * *",  # 01:00 BRT (04:00 UTC)
-    start_date=datetime(2026, 1, 1),
+    schedule="0 4 * * *",  # 01:00 BRT (04:00 UTC)
+    start_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
     catchup=False,
     tags=["quemvota", "etl", "camara", "historico", "noturno"],
 ) as dag:

@@ -1128,6 +1128,7 @@ def _escape(val: str) -> str:
         .replace("\x00", "")
         .replace("'", "''")
         .replace("\\", "\\\\")
+        .replace("'", "\\'")
         .replace("$$", " ")
         .replace("\n", " ")
         .replace("\r", "")

@@ -44,6 +44,7 @@ Uso:
     # Ajusta o número de threads buscando na API em paralelo
     python backfill_deputados_detalhes.py --workers 8
 """
+
 import argparse
 import logging
 import re
@@ -55,12 +56,13 @@ from datetime import date
 # SQLAlchemy Core (Substituindo o ORM)
 from sqlalchemy import MetaData, select, update
 
+# Mantém a importação da sua API
+from injest_banco.api_camara import camara_get
+
 # Reaproveita a MESMA engine/config usada pelo resto da aplicação, em vez de
 # recriar uma a partir de uma DATABASE_URL própria — evita o script apontar
 # silenciosamente para um banco diferente do resto do sistema.
 from shared.database import sync_engine
-# Mantém a importação da sua API
-from injest_banco.api_camara import camara_get
 
 logging.basicConfig(
     level=logging.INFO,
@@ -80,9 +82,16 @@ LOG_PROGRESS_EVERY = 50
 # para montar o UPDATE quanto para decidir quem está "incompleto" — mantendo
 # as duas coisas na mesma lista evita que elas se desalinhem com o tempo.
 CAMPOS_DETALHE = [
-    "nomeCivil", "dataNascimento", "escolaridade", "situacao",
-    "condicaoEleitoral", "urlFoto", "emailGabinete", "telefoneGabinete",
-    "cpf", "slug",
+    "nomeCivil",
+    "dataNascimento",
+    "escolaridade",
+    "situacao",
+    "condicaoEleitoral",
+    "urlFoto",
+    "emailGabinete",
+    "telefoneGabinete",
+    "cpf",
+    "slug",
 ]
 
 
@@ -102,7 +111,12 @@ def _parse_date(valor: str | None) -> date | None:
 def generate_slug(text: str | None) -> str | None:
     if not text:
         return None
-    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("utf-8").lower()
+    text = (
+        unicodedata.normalize("NFKD", text)
+        .encode("ascii", "ignore")
+        .decode("utf-8")
+        .lower()
+    )
     text = re.sub(r"[^a-z0-9]+", "-", text).strip("-")
     return text
 
@@ -135,7 +149,7 @@ def _buscar_detalhe(dep: dict) -> tuple[dict, dict | None, Exception | None]:
     try:
         resposta = camara_get(f"/deputados/{dep_id}")
         return dep, resposta, None
-    except Exception as e:  # noqa: BLE001 - queremos capturar e reportar, não abortar a run
+    except Exception as e:  # noqa: BLE001  # noqa: BLE001 - queremos capturar e reportar, não abortar a run
         return dep, None, e
     finally:
         time.sleep(SLEEP_BETWEEN_REQUESTS)
@@ -147,7 +161,9 @@ def _montar_update(dep: dict, resposta_api: dict, slugger: SlugDeduper) -> dict:
     gabinete = status.get("gabinete") or {}
 
     return {
-        "id": dep["id"],  # PK — necessária para o SQLAlchemy montar o WHERE do executemany
+        "id": dep[
+            "id"
+        ],  # PK — necessária para o SQLAlchemy montar o WHERE do executemany
         "nomeCivil": dados.get("nomeCivil"),
         "dataNascimento": _parse_date(dados.get("dataNascimento")),
         "siglaSexo": dados.get("sexo"),
@@ -173,7 +189,7 @@ def _flush_batch(conn, tabela, batch: list[dict]) -> int:
         conn.execute(update(tabela), batch)
         conn.commit()
         return len(batch)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(f"Lote de {len(batch)} falhou ({e}); tentando linha-a-linha...")
         conn.rollback()
         ok = 0
@@ -182,7 +198,7 @@ def _flush_batch(conn, tabela, batch: list[dict]) -> int:
                 conn.execute(update(tabela), [row])
                 conn.commit()
                 ok += 1
-            except Exception as e_row:
+            except Exception as e_row:  # noqa: BLE001
                 conn.rollback()
                 logger.error(f"Falha isolada no deputado id={row['id']}: {e_row}")
         return ok
@@ -209,8 +225,10 @@ def run_backfill(force: bool, limit: int | None, workers: int):
             alvo = alvo[:limit]
 
         logger.info("═" * 60)
-        logger.info(f"Iniciando Backfill: {len(alvo)} deputados na fila "
-                     f"({workers} workers em paralelo).")
+        logger.info(
+            f"Iniciando Backfill: {len(alvo)} deputados na fila "
+            f"({workers} workers em paralelo)."
+        )
 
         batch_updates: list[dict] = []
 
@@ -229,8 +247,10 @@ def run_backfill(force: bool, limit: int | None, workers: int):
                 else:
                     try:
                         batch_updates.append(_montar_update(dep, resposta_api, slugger))
-                    except Exception as e:
-                        logger.error(f"Erro ao montar update pro deputado id={dep.get('id')}: {e}")
+                    except Exception as e:  # noqa: BLE001
+                        logger.error(
+                            f"Erro ao montar update pro deputado id={dep.get('id')}: {e}"
+                        )
                         erros += 1
 
                 if len(batch_updates) >= BATCH_SIZE:
@@ -238,8 +258,10 @@ def run_backfill(force: bool, limit: int | None, workers: int):
                     batch_updates = []
 
                 if processados % LOG_PROGRESS_EVERY == 0:
-                    logger.info(f"Progresso: {processados}/{len(alvo)} processados, "
-                                f"{atualizados} atualizados, {erros} erros")
+                    logger.info(
+                        f"Progresso: {processados}/{len(alvo)} processados, "
+                        f"{atualizados} atualizados, {erros} erros"
+                    )
 
         atualizados += _flush_batch(conn, tabela_deputados, batch_updates)
 
@@ -255,11 +277,21 @@ def run_backfill(force: bool, limit: int | None, workers: int):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Backfill dos campos de detalhe.")
-    parser.add_argument("--force", action="store_true", default=False, help="Atualiza todos.")
-    parser.add_argument("--limit", type=int, default=None,
-                         help="Processa só os N primeiros do alvo (útil pra testar).")
-    parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS,
-                         help="Número de threads buscando na API em paralelo.")
+    parser.add_argument(
+        "--force", action="store_true", default=False, help="Atualiza todos."
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Processa só os N primeiros do alvo (útil pra testar).",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=DEFAULT_WORKERS,
+        help="Número de threads buscando na API em paralelo.",
+    )
     args = parser.parse_args()
 
     run_backfill(force=args.force, limit=args.limit, workers=args.workers)

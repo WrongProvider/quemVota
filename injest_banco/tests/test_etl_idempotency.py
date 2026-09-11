@@ -7,6 +7,7 @@ não gere duplicatas, erros de unicidade ou divergências de dados.
 """
 
 from unittest.mock import MagicMock
+
 import numpy as np
 import pandas as pd
 from sqlalchemy import Column, Integer, MetaData, String, Table

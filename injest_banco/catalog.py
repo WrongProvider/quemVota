@@ -8,8 +8,8 @@ para garantir que tabelas pai existam antes da carga de tabelas filhas.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional
 
 from injest_banco.client import BASE_ARQUIVOS_URL, COTAS_BASE_URL
 from injest_banco.transformers import (
@@ -61,9 +61,9 @@ class Dataset:
         str  # prefixo "_raw_" indica que requer resolução de FKs antes de inserir
     )
     conflict_cols: list[str]
-    ano_ref: Optional[int] = None  # ano dos dados; None = dataset atemporal
-    leg_ref: Optional[int] = None  # legislatura dos dados; None = atemporal
-    preserve_cols: Optional[list[str]] = None  # colunas a não sobrescrever no upsert
+    ano_ref: int | None = None  # ano dos dados; None = dataset atemporal
+    leg_ref: int | None = None  # legislatura dos dados; None = atemporal
+    preserve_cols: list[str] | None = None  # colunas a não sobrescrever no upsert
     dep_group: int = 0  # onda de dependência de execução (0 -> 1 -> 2)
 
 

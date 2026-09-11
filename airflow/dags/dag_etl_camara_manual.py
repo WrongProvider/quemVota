@@ -7,14 +7,15 @@ flags de cache e reconciliação) diretamente pela interface do Airflow
 (Trigger DAG w/ config).
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
-from airflow import DAG
 from airflow.models.param import Param
 from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import BranchPythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+
+from airflow import DAG
 
 default_args = {
     "owner": "quemvota",
@@ -74,8 +75,8 @@ with DAG(
     "dag_etl_camara_manual",
     default_args=default_args,
     description="Execução sob demanda do ETL da Câmara com parâmetros configuráveis na UI",
-    schedule_interval=None,  # Apenas execução manual
-    start_date=datetime(2026, 1, 1),
+    schedule=None,  # Apenas execução manual
+    start_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
     catchup=False,
     tags=["quemvota", "etl", "camara", "manual"],
     params={

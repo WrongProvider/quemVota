@@ -8,7 +8,7 @@ Converte DataFrames brutos em listas de dicionários padronizados para carga.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -51,21 +51,21 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def to_date_series(s: Optional[pd.Series]) -> pd.Series:
+def to_date_series(s: pd.Series | None) -> pd.Series:
     """Converte série para date (YYYY-MM-DD)."""
     if s is None or s.empty:
         return pd.Series(dtype="object")
     return pd.to_datetime(s, errors="coerce").dt.date
 
 
-def to_datetime_series(s: Optional[pd.Series]) -> pd.Series:
+def to_datetime_series(s: pd.Series | None) -> pd.Series:
     """Converte série para datetime com segurança."""
     if s is None or s.empty:
         return pd.Series(dtype="datetime64[ns]")
     return pd.to_datetime(s, errors="coerce")
 
 
-def to_numeric_series(s: Optional[pd.Series]) -> pd.Series:
+def to_numeric_series(s: pd.Series | None) -> pd.Series:
     """Converte série para numérico suportando vírgula como decimal."""
     if s is None or s.empty:
         return pd.Series(dtype="float64")
@@ -78,7 +78,7 @@ def to_numeric_series(s: Optional[pd.Series]) -> pd.Series:
     )
 
 
-def to_boolean_series(s: Optional[pd.Series]) -> pd.Series:
+def to_boolean_series(s: pd.Series | None) -> pd.Series:
     """Converte série para booleano a partir de texto."""
     if s is None or s.empty:
         return pd.Series(dtype="boolean")

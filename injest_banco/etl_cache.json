@@ -1,59 +1,59 @@
 {
   "http://dadosabertos.camara.leg.br/arquivos/legislaturas/csv/legislaturas.csv": {
-    "etag": "\"6a9b8cb8-16d3\"",
-    "last_modified": "Sat, 05 Sep 2026 03:30:00 GMT"
+    "etag": "\"6aa375b8-16d3\"",
+    "last_modified": "Fri, 11 Sep 2026 03:30:00 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/orgaos/csv/orgaos.csv": {
-    "etag": "\"6a9b91e0-1a60f2\"",
-    "last_modified": "Sat, 05 Sep 2026 03:52:00 GMT"
+    "etag": "\"6aa37ae0-1a6282\"",
+    "last_modified": "Fri, 11 Sep 2026 03:52:00 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/deputados/csv/deputados.csv": {
-    "etag": "\"6a9b93c0-14ee65\"",
-    "last_modified": "Sat, 05 Sep 2026 04:00:00 GMT"
+    "etag": "\"6aa37cc0-14ee6f\"",
+    "last_modified": "Fri, 11 Sep 2026 04:00:00 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/deputadosOcupacoes/csv/deputadosOcupacoes.csv": {
-    "etag": "\"6a9b94ed-4edd57\"",
-    "last_modified": "Sat, 05 Sep 2026 04:05:01 GMT"
+    "etag": "\"6aa37ded-4edd57\"",
+    "last_modified": "Fri, 11 Sep 2026 04:05:01 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/deputadosProfissoes/csv/deputadosProfissoes.csv": {
-    "etag": "\"6a9b9744-1456a6\"",
-    "last_modified": "Sat, 05 Sep 2026 04:15:00 GMT"
+    "etag": "\"6aa38044-1456a6\"",
+    "last_modified": "Fri, 11 Sep 2026 04:15:00 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/frentes/csv/frentes.csv": {
-    "etag": "\"6a9b8840-15fb49\"",
-    "last_modified": "Sat, 05 Sep 2026 03:10:56 GMT"
+    "etag": "\"6aa37144-15fb49\"",
+    "last_modified": "Fri, 11 Sep 2026 03:11:00 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/frentesDeputados/csv/frentesDeputados.csv": {
-    "etag": "\"6a9b897b-5de92c3\"",
-    "last_modified": "Sat, 05 Sep 2026 03:16:11 GMT"
+    "etag": "\"6aa37272-5de92c3\"",
+    "last_modified": "Fri, 11 Sep 2026 03:16:02 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/legislaturasMesas/csv/legislaturasMesas.csv": {
-    "etag": "\"6a9b8d6c-bc93\"",
-    "last_modified": "Sat, 05 Sep 2026 03:33:00 GMT"
+    "etag": "\"6aa3766c-bc93\"",
+    "last_modified": "Fri, 11 Sep 2026 03:33:00 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/grupos/csv/grupos.csv": {
-    "etag": "\"6a9b7d7c-c49e\"",
-    "last_modified": "Sat, 05 Sep 2026 02:25:00 GMT"
+    "etag": "\"6aa3667c-c49e\"",
+    "last_modified": "Fri, 11 Sep 2026 02:25:00 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/gruposMembros/csv/gruposMembros.csv": {
-    "etag": "\"6a9b7fd4-17e15f\"",
-    "last_modified": "Sat, 05 Sep 2026 02:35:00 GMT"
+    "etag": "\"6aa368d4-17e15f\"",
+    "last_modified": "Fri, 11 Sep 2026 02:35:00 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/gruposHistorico/csv/gruposHistorico.csv": {
-    "etag": "\"6a9b7ea8-22070\"",
-    "last_modified": "Sat, 05 Sep 2026 02:30:00 GMT"
+    "etag": "\"6aa367a8-22070\"",
+    "last_modified": "Fri, 11 Sep 2026 02:30:00 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/funcionarios/csv/funcionarios.csv": {
-    "etag": "\"6a9b9873-35ee31\"",
-    "last_modified": "Sat, 05 Sep 2026 04:20:03 GMT"
+    "etag": "\"6aa38178-3609d5\"",
+    "last_modified": "Fri, 11 Sep 2026 04:20:08 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/tecadCategorias/csv/tecadCategorias.csv": {
-    "etag": "\"6a9b999c-1691\"",
-    "last_modified": "Sat, 05 Sep 2026 04:25:00 GMT"
+    "etag": "\"6aa3829c-1691\"",
+    "last_modified": "Fri, 11 Sep 2026 04:25:00 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/tecadTermos/csv/tecadTermos.csv": {
-    "etag": "\"6a9b9940-150d945\"",
-    "last_modified": "Sat, 05 Sep 2026 04:23:28 GMT"
+    "etag": "\"6aa38240-150f54c\"",
+    "last_modified": "Fri, 11 Sep 2026 04:23:28 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/eventos/csv/eventos-2008.csv": {
     "etag": "\"69ab9ce8-10b5d1\"",
@@ -1208,76 +1208,76 @@
     "last_modified": "Sat, 07 Mar 2026 07:35:47 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/eventos/csv/eventos-2026.csv": {
-    "etag": "\"6a9b8def-103cee\"",
-    "last_modified": "Sat, 05 Sep 2026 03:35:11 GMT"
+    "etag": "\"6aa376ef-103d26\"",
+    "last_modified": "Fri, 11 Sep 2026 03:35:11 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/eventosOrgaos/csv/eventosOrgaos-2026.csv": {
-    "etag": "\"6a9b8f14-34c7d\"",
-    "last_modified": "Sat, 05 Sep 2026 03:40:04 GMT"
+    "etag": "\"6aa37814-34c7d\"",
+    "last_modified": "Fri, 11 Sep 2026 03:40:04 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/eventosRequerimentos/csv/eventosRequerimentos-2026.csv": {
-    "etag": "\"6a9b916a-1ff37\"",
-    "last_modified": "Sat, 05 Sep 2026 03:50:02 GMT"
+    "etag": "\"6aa37a6a-1ff37\"",
+    "last_modified": "Fri, 11 Sep 2026 03:50:02 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/eventosPresencaDeputados/csv/eventosPresencaDeputados-2026.csv": {
-    "etag": "\"6a9b9062-8d53e2\"",
-    "last_modified": "Sat, 05 Sep 2026 03:45:38 GMT"
+    "etag": "\"6aa37962-8d67a2\"",
+    "last_modified": "Fri, 11 Sep 2026 03:45:38 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/proposicoes/csv/proposicoes-2026.csv": {
-    "etag": "\"6a9b9b90-24e4bc7\"",
-    "last_modified": "Sat, 05 Sep 2026 04:33:20 GMT"
+    "etag": "\"6aa384a2-2517488\"",
+    "last_modified": "Fri, 11 Sep 2026 04:33:38 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/proposicoesAutores/csv/proposicoesAutores-2026.csv": {
-    "etag": "\"6a9ba6ef-d43af2\"",
-    "last_modified": "Sat, 05 Sep 2026 05:21:51 GMT"
+    "etag": "\"6aa23eb4-d52c4a\"",
+    "last_modified": "Thu, 10 Sep 2026 05:23:00 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/proposicoesTemas/csv/proposicoesTemas-2026.csv": {
-    "etag": "\"6a9ba232-2be415\"",
-    "last_modified": "Sat, 05 Sep 2026 05:01:38 GMT"
+    "etag": "\"6aa239b9-2c287a\"",
+    "last_modified": "Thu, 10 Sep 2026 05:01:45 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/votacoes/csv/votacoes-2026.csv": {
-    "etag": "\"6a9bbbc7-448d20\"",
-    "last_modified": "Sat, 05 Sep 2026 06:50:47 GMT"
+    "etag": "\"6aa2534a-448d20\"",
+    "last_modified": "Thu, 10 Sep 2026 06:50:50 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/votacoesVotos/csv/votacoesVotos-2026.csv": {
-    "etag": "\"6a9bbd68-106bd78\"",
-    "last_modified": "Sat, 05 Sep 2026 06:57:44 GMT"
+    "etag": "\"6aa2548e-106bd78\"",
+    "last_modified": "Thu, 10 Sep 2026 06:56:14 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/votacoesOrientacoes/csv/votacoesOrientacoes-2026.csv": {
-    "etag": "\"6a9bbe11-69ff8\"",
-    "last_modified": "Sat, 05 Sep 2026 07:00:33 GMT"
+    "etag": "\"6aa2558c-69ff8\"",
+    "last_modified": "Thu, 10 Sep 2026 07:00:28 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/votacoesProposicoes/csv/votacoesProposicoes-2026.csv": {
-    "etag": "\"6a9bc72d-2b82b5\"",
-    "last_modified": "Sat, 05 Sep 2026 07:39:25 GMT"
+    "etag": "\"6aa25a36-2b83df\"",
+    "last_modified": "Thu, 10 Sep 2026 07:20:22 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/licitacoes/csv/licitacoes-2026.csv": {
-    "etag": "\"6a9bc3cd-ab3d\"",
-    "last_modified": "Sat, 05 Sep 2026 07:25:01 GMT"
+    "etag": "\"6aa25b4e-ab26\"",
+    "last_modified": "Thu, 10 Sep 2026 07:25:02 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/licitacoesPedidos/csv/licitacoesPedidos-2026.csv": {
-    "etag": "\"6a9bc5dd-1b671\"",
-    "last_modified": "Sat, 05 Sep 2026 07:33:49 GMT"
+    "etag": "\"6aa3aef2-1b671\"",
+    "last_modified": "Fri, 11 Sep 2026 07:34:10 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/licitacoesPropostas/csv/licitacoesPropostas-2026.csv": {
-    "etag": "\"6a9bc62b-f136\"",
-    "last_modified": "Sat, 05 Sep 2026 07:35:07 GMT"
+    "etag": "\"6aa3af33-f264\"",
+    "last_modified": "Fri, 11 Sep 2026 07:35:15 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/licitacoesItens/csv/licitacoesItens-2026.csv": {
-    "etag": "\"6a9bc50c-f6b59\"",
-    "last_modified": "Sat, 05 Sep 2026 07:30:20 GMT"
+    "etag": "\"6aa25c8e-f6b6a\"",
+    "last_modified": "Thu, 10 Sep 2026 07:30:22 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/licitacoesContratos/csv/licitacoesContratos-2026.csv": {
-    "etag": "\"6a9bc496-61c1\"",
-    "last_modified": "Sat, 05 Sep 2026 07:28:22 GMT"
+    "etag": "\"6aa25c1a-620a\"",
+    "last_modified": "Thu, 10 Sep 2026 07:28:26 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L56.csv": {
     "etag": "\"6a9b92ad-549e0c\"",
     "last_modified": "Sat, 05 Sep 2026 03:55:25 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L57.csv": {
-    "etag": "\"6a9b92b1-452110\"",
-    "last_modified": "Sat, 05 Sep 2026 03:55:29 GMT"
+    "etag": "\"6aa37bb4-45211a\"",
+    "last_modified": "Fri, 11 Sep 2026 03:55:32 GMT"
   },
   "http://www.camara.leg.br/cotas/Ano-2008.csv.zip": {
     "etag": "\"69abc594-4780\"",
@@ -1352,8 +1352,8 @@
     "last_modified": "Sat, 07 Mar 2026 06:28:16 GMT"
   },
   "http://www.camara.leg.br/cotas/Ano-2026.csv.zip": {
-    "etag": "\"6a9bb6b2-3ad845\"",
-    "last_modified": "Sat, 05 Sep 2026 06:29:06 GMT"
+    "etag": "\"6aa249b5-3c8198\"",
+    "last_modified": "Thu, 10 Sep 2026 06:09:57 GMT"
   },
   "http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L51.csv": {
     "etag": "\"6a9b9298-493ba8\"",
@@ -1378,5 +1378,21 @@
   "http://dadosabertos.camara.leg.br/arquivos/orgaosDeputados/csv/orgaosDeputados-L58.csv": {
     "etag": "\"6a9b92b4-11e246\"",
     "last_modified": "Sat, 05 Sep 2026 03:55:32 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/partidos/csv/partidos.csv": {
+    "etag": "\"6aa36fdc-2979\"",
+    "last_modified": "Fri, 11 Sep 2026 03:05:00 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/deputadosMandatosExternos/csv/deputadosMandatosExternos.csv": {
+    "etag": "\"65c4579d-17015e\"",
+    "last_modified": "Thu, 08 Feb 2024 04:25:01 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/deputadosHistorico/csv/deputadosHistorico.csv": {
+    "etag": "\"65c449ea-c912f6\"",
+    "last_modified": "Thu, 08 Feb 2024 03:26:34 GMT"
+  },
+  "http://dadosabertos.camara.leg.br/arquivos/proposicoesTramitacoes/csv/proposicoesTramitacoes-2026.csv": {
+    "etag": "\"6aa24089-1fce125\"",
+    "last_modified": "Thu, 10 Sep 2026 05:30:49 GMT"
   }
 }

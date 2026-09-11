@@ -28,13 +28,12 @@ import logging
 import os
 import sys
 import time
-from typing import Optional
 
 import numpy as np
+import torch
 from sentence_transformers import SentenceTransformer
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert
-import torch
 
 from shared.database import SessionLocal
 from shared.models import Deputado, Proposicao, ProposicaoAutor
@@ -87,7 +86,7 @@ def _hash_texto(texto: str) -> str:
     return hashlib.sha256(texto.encode("utf-8")).hexdigest()
 
 
-def _tipo_participacao(proponente: bool, ordem: Optional[int]) -> TipoParticipacao:
+def _tipo_participacao(proponente: bool, ordem: int | None) -> TipoParticipacao:
     """Determina o tipo de participação a partir de flags do ProposicaoAutor."""
     if proponente and (ordem == 1 or ordem is None):
         return TipoParticipacao.autoria
@@ -118,8 +117,8 @@ def _carregar_vetores_temas(db) -> tuple[list[dict], np.ndarray]:
 
 def _buscar_deputados(
     db,
-    limit: Optional[int],
-    deputado_id: Optional[int],
+    limit: int | None,
+    deputado_id: int | None,
     force: bool,
     id_legislatura: int,
 ) -> list[int]:
@@ -142,14 +141,14 @@ def _buscar_deputados(
 
     if not force:
         # Filtrar deputados que já têm entrada em deputadoTemasAtuacao para esta legislatura
-        ja_processados = set(
+        ja_processados = {
             r[0]
             for r in db.execute(
                 select(DeputadoTemaAtuacao.idDeputado)
                 .where(DeputadoTemaAtuacao.idLegislatura == id_legislatura)
                 .distinct()
             ).all()
-        )
+        }
         pendentes = [d for d in todos_ids if d not in ja_processados]
         logger.info(
             "Total deputados: %d | Já processados: %d | Pendentes: %d",
@@ -164,7 +163,7 @@ def _buscar_deputados(
 
 
 def _buscar_proposicoes_deputado(
-    db, deputado_id: int, limit_prop: Optional[int]
+    db, deputado_id: int, limit_prop: int | None
 ) -> list[dict]:
     """
     Retorna as proposições em que o deputado é autor, com flags de participação.
@@ -202,7 +201,7 @@ def _obter_ou_criar_embedding(
     prop: dict,
     model: SentenceTransformer,
     dry_run: bool,
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     """
     Retorna o vetor da proposição. Se já existe em documentEmbeddings,
     reutiliza. Caso contrário, computa e persiste.
@@ -371,11 +370,11 @@ def _agregar_e_persistir_deputado(
 
 
 def classificar_temas(
-    limit_deputados: Optional[int] = None,
-    limit_proposicoes: Optional[int] = None,
+    limit_deputados: int | None = None,
+    limit_proposicoes: int | None = None,
     dry_run: bool = False,
     id_legislatura: int = LEGISLATURA_DEFAULT,
-    deputado_id: Optional[int] = None,
+    deputado_id: int | None = None,
     force: bool = False,
 ) -> dict:
     """

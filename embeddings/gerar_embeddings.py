@@ -10,23 +10,25 @@ import argparse
 import hashlib
 import logging
 import os
-from pathlib import Path
 import sys
-from typing import List, Optional
+from pathlib import Path
 
+import torch
 from sentence_transformers import SentenceTransformer
 from sqlalchemy import exists, select
 from sqlalchemy.dialects.postgresql import insert
-import torch
 from tqdm import tqdm
 
 _repo_root = Path(__file__).resolve().parent.parent
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
-from shared.database import SessionLocal  # noqa: E402
-from shared.models import Legislatura, Proposicao, Votacao  # noqa: E402
-from shared.models_vetorial import DocumentEmbedding, TipoEntidadeDocumento  # noqa: E402
+from shared.database import SessionLocal
+from shared.models import Legislatura, Proposicao, Votacao
+from shared.models_vetorial import (
+    DocumentEmbedding,
+    TipoEntidadeDocumento,
+)
 
 # Limitar concorrência de threads matemáticas (PyTorch/BLAS/OpenMP) para não estrangular vCPUs
 os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -50,7 +52,7 @@ logger = logging.getLogger(__name__)
 
 def montar_texto_proposicao(p: Proposicao) -> str:
     """Monta o texto representativo da proposição para geração do embedding semântico."""
-    partes: List[str] = []
+    partes: list[str] = []
 
     cabecalho = f"{p.siglaTipo or 'PROPOSICAO'} {p.numero or ''}/{p.ano or ''}".strip()
     if cabecalho:
@@ -77,7 +79,7 @@ def montar_texto_proposicao(p: Proposicao) -> str:
 def processar_lote_proposicoes(
     session,
     model: SentenceTransformer,
-    proposicoes: List[Proposicao],
+    proposicoes: list[Proposicao],
     model_name: str = "BAAI/bge-m3",
     embedding_dim: int = 1024,
     batch_encode_size: int = 64,
@@ -86,8 +88,8 @@ def processar_lote_proposicoes(
     if not proposicoes:
         return 0
 
-    textos: List[str] = [montar_texto_proposicao(p) for p in proposicoes]
-    hashes: List[str] = [hashlib.sha256(t.encode("utf-8")).hexdigest() for t in textos]
+    textos: list[str] = [montar_texto_proposicao(p) for p in proposicoes]
+    hashes: list[str] = [hashlib.sha256(t.encode("utf-8")).hexdigest() for t in textos]
 
     # Inferência vetorial em lote acelerada
     embeddings = model.encode(
@@ -130,12 +132,12 @@ def processar_lote_proposicoes(
 
 
 def executar_geracao_embeddings(
-    ano_inicio: Optional[int] = None,
-    ano_fim: Optional[int] = None,
+    ano_inicio: int | None = None,
+    ano_fim: int | None = None,
     apenas_votadas: bool = False,
     chunk_size: int = 500,
     batch_encode_size: int = 64,
-    limite_total: Optional[int] = None,
+    limite_total: int | None = None,
     model_name: str = "BAAI/bge-m3",
     embedding_dim: int = 1024,
 ) -> int:

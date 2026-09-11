@@ -9,14 +9,14 @@ Preenche dados que não constam na listagem básica de deputados:
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date
 import logging
 import re
-from threading import Lock, Semaphore
 import time
 import unicodedata
-from typing import Any, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import date
+from threading import Lock, Semaphore
+from typing import Any
 
 from sqlalchemy import text
 
@@ -29,7 +29,7 @@ BACKFILL_SLEEP = 0.25  # segundos entre requisições por thread
 BACKFILL_COMMIT_BATCH = 50
 
 
-def parse_iso_date(valor: Optional[str]) -> Optional[date]:
+def parse_iso_date(valor: str | None) -> date | None:
     """Converte string ISO para date (YYYY-MM-DD)."""
     if not valor:
         return None
@@ -39,7 +39,7 @@ def parse_iso_date(valor: Optional[str]) -> Optional[date]:
         return None
 
 
-def generate_slug(text_val: Optional[str]) -> Optional[str]:
+def generate_slug(text_val: str | None) -> str | None:
     """Gera slug limpo a partir de texto (ASCII em minúsculas e hífens)."""
     if not text_val:
         return None
@@ -105,9 +105,9 @@ def run_backfill_deputados(
     *,
     force: bool = False,
     slug_only: bool = False,
-    legislatura: Optional[int] = None,
+    legislatura: int | None = None,
     workers: int = DEFAULT_BACKFILL_WORKERS,
-    client: Optional[CamaraClient] = None,
+    client: CamaraClient | None = None,
 ) -> None:
     """
     Percorre todos os deputados na tabela e preenche os campos de detalhe
@@ -179,7 +179,7 @@ def run_backfill_deputados(
 
     def _process_one(
         dep: dict[str, Any],
-    ) -> tuple[dict[str, Any], Optional[dict[str, Any]]]:
+    ) -> tuple[dict[str, Any], dict[str, Any] | None]:
         with semaphore:
             time.sleep(BACKFILL_SLEEP)
             dados = client.get_deputado_detalhes(dep["idCamara"])

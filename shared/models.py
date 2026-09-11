@@ -571,6 +571,7 @@ class PartidoLider(Base):
 
     codTitulo = Column(Integer)
     titulo = Column(String(100))
+    titulo = Column(Text)
     dataInicio = Column(Date)
     dataFim = Column(Date)
 
@@ -1290,6 +1291,7 @@ class FrenteDeputado(Base):
     urlFoto = Column(Text)
     codTitulo = Column(Integer)
     titulo = Column(String(100))
+    titulo = Column(Text)
 
     dataInicio = Column(Date)
     dataFim = Column(Date)

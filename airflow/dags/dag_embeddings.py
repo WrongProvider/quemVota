@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from airflow.operators.bash import BashOperator
 
@@ -17,8 +17,8 @@ with DAG(
     "dag_embeddings",
     default_args=default_args,
     description="Pipeline para geração de embeddings do banco de dados",
-    schedule_interval=None,
-    start_date=datetime(2026, 1, 1),
+    schedule=None,
+    start_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
     catchup=False,
     tags=["quemvota", "embeddings"],
 ) as dag:

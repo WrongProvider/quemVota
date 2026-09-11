@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from airflow.operators.bash import BashOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
@@ -18,8 +18,8 @@ with DAG(
     "dag_etl_camara_diario",
     default_args=default_args,
     description="Pipeline diário de carga incremental e atualização de dados da Câmara",
-    schedule_interval="0 3 * * *",
-    start_date=datetime(2026, 1, 1),
+    schedule="0 3 * * *",
+    start_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
     catchup=False,
     tags=["quemvota", "etl", "camara"],
 ) as dag:

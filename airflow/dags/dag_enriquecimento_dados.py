@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from airflow.operators.bash import BashOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
@@ -16,8 +16,8 @@ with DAG(
     "dag_enriquecimento_dados",
     default_args=default_args,
     description="Pipeline de Backfills, Vínculos de Votações e Upscaling de Fotos",
-    schedule_interval=None,  # Disparado pela DAG diária após ETL e sync do grafo
-    start_date=datetime(2026, 1, 1),
+    schedule=None,  # Disparado pela DAG diária após ETL e sync do grafo
+    start_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
     catchup=False,
     tags=["quemvota", "backfill", "ia"],
 ) as dag:

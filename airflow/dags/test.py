@@ -1,13 +1,15 @@
-from datetime import datetime
-from airflow import DAG
+from datetime import datetime, timezone
+
 from airflow.operators.bash import BashOperator
+
+from airflow import DAG
 
 # Define the DAG and its schedule
 with DAG(
     dag_id="example_dag",
     description="A simple example DAG",
-    start_date=datetime(2025, 1, 1),
-    schedule_interval="@daily",  # runs daily
+    start_date=datetime(2025, 1, 1, tzinfo=timezone.utc),
+    schedule="@daily",  # runs daily
     catchup=False,
 ) as dag:
     # Task 1: Print current date

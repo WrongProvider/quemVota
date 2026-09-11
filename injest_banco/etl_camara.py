@@ -21,12 +21,12 @@ Uso:
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
 import logging
 import os
-from pathlib import Path
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
+from pathlib import Path
 
 from sqlalchemy import create_engine, text
 from tqdm import tqdm
@@ -39,20 +39,24 @@ for _p in [str(_repo_root), str(_current_dir)]:
         sys.path.insert(0, _p)
 
 try:
-    from injest_banco.backfill import run_backfill_deputados  # noqa: E402
-    from injest_banco.catalog import Dataset, build_catalog  # noqa: E402
-    from injest_banco.client import CamaraClient, ETagCache, _CACHE_HIT, _NOT_FOUND  # noqa: E402
-    from injest_banco.loaders import bulk_resolve_and_insert, bulk_upsert  # noqa: E402
-    from injest_banco.reconciler import reconcile_orphan_votacoes  # noqa: E402
+    from injest_banco.backfill import run_backfill_deputados
+    from injest_banco.catalog import Dataset, build_catalog
+    from injest_banco.client import (
+        _CACHE_HIT,
+        _NOT_FOUND,
+        CamaraClient,
+        ETagCache,
+    )
+    from injest_banco.loaders import bulk_resolve_and_insert, bulk_upsert
+    from injest_banco.reconciler import reconcile_orphan_votacoes
 except ImportError:
-    from backfill import run_backfill_deputados  # noqa: E402
-    from catalog import Dataset, build_catalog  # noqa: E402
-    from client import CamaraClient, ETagCache, _CACHE_HIT, _NOT_FOUND  # noqa: E402
-    from loaders import bulk_resolve_and_insert, bulk_upsert  # noqa: E402
-    from reconciler import reconcile_orphan_votacoes  # noqa: E402
+    from backfill import run_backfill_deputados
+    from catalog import Dataset, build_catalog
+    from client import _CACHE_HIT, _NOT_FOUND, CamaraClient, ETagCache
+    from loaders import bulk_resolve_and_insert, bulk_upsert
+    from reconciler import reconcile_orphan_votacoes
 
-from shared.database import SYNC_URL  # noqa: E402
-
+from shared.database import SYNC_URL
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -70,7 +74,7 @@ log = logging.getLogger("etl_camara")
 # ---------------------------------------------------------------------------
 # Constantes padrão
 # ---------------------------------------------------------------------------
-ANO_ATUAL = datetime.now().year
+ANO_ATUAL = datetime.now(timezone.utc).year
 ANOS_HISTORICO = list(range(2008, ANO_ATUAL + 1))
 DEFAULT_DOWNLOAD_WORKERS = int(os.getenv("ETL_DOWNLOAD_WORKERS", "8"))
 DEFAULT_BACKFILL_WORKERS = int(os.getenv("ETL_BACKFILL_WORKERS", "4"))
@@ -84,7 +88,7 @@ def get_legislaturas_disponiveis(engine) -> list[int]:
                 text('SELECT "idLegislatura" FROM legislaturas ORDER BY 1')
             ).fetchall()
             return [r[0] for r in rows] or [56, 57]
-    except Exception:
+    except Exception:  # noqa: BLE001
         return [56, 57]
 
 
@@ -108,7 +112,7 @@ def get_legislatura_atual(engine) -> int:
             ).fetchone()
             if row and row[0]:
                 return int(row[0])
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         pass
     return 57
 
@@ -151,7 +155,7 @@ def process_dataset(
 
     try:
         records = ds.transform_fn(df)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         log.error("Erro na transformação de [%s]: %s", ds.nome, exc)
         return ds.nome, "error", 0
 
@@ -172,7 +176,7 @@ def process_dataset(
                 engine, ds.table_name, ds.preserve_cols, records, ds.conflict_cols
             )
             log.info("  upsert %s -> %d registros gravados", ds.nome, n)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         log.error("Erro na carga de [%s]: %s", ds.nome, exc)
         return ds.nome, "error", 0
 
@@ -245,7 +249,7 @@ def run_etl(
                     ds = futures_map[future]
                     try:
                         nome, status, n_rows = future.result()
-                    except Exception as exc:
+                    except Exception as exc:  # noqa: BLE001
                         log.error("Exceção não tratada em [%s]: %s", ds.nome, exc)
                         erros.append(ds.nome)
                         pbar.update(1)

@@ -16,16 +16,20 @@ E arestas de relacionamento:
 
 import argparse
 import logging
+import sys
 from pathlib import Path
 from pprint import pprint
-import sys
 
 _repo_root = Path(__file__).resolve().parent.parent
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
-from shared.database import SessionLocal  # noqa: E402
-from shared.graph import get_graph_stats, init_age_extension, sync_relational_to_graph  # noqa: E402
+from shared.database import SessionLocal
+from shared.graph import (
+    get_graph_stats,
+    init_age_extension,
+    sync_relational_to_graph,
+)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"

@@ -5,10 +5,11 @@ Executado no 5º dia de cada mês (04:00 AM) para consolidar e atualizar os gast
 e disponibilidades de verba de gabinete dos deputados federais ativos.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
+
+from airflow.operators.bash import BashOperator
 
 from airflow import DAG
-from airflow.operators.bash import BashOperator
 
 default_args = {
     "owner": "quemvota",
@@ -23,15 +24,13 @@ with DAG(
     "dag_verba_gabinete_mensal",
     default_args=default_args,
     description="Pipeline mensal de coleta e consolidação da Verba de Gabinete dos Deputados",
-    schedule_interval="0 4 5 * *",
-    start_date=datetime(2026, 1, 1),
+    schedule="0 4 5 * *",
+    start_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
     catchup=False,
     tags=["quemvota", "etl", "camara", "verba_gabinete"],
 ) as dag:
     task_injest_verba = BashOperator(
-        task_id="injest_verba_gabinete_mensal",
+        task_id="injest_verba_gabinete",
         bash_command="uv run python -m injest_banco.injest_verba_gabinete --workers 8",
         cwd="/opt/airflow",
     )
-
-    task_injest_verba

@@ -9,6 +9,7 @@ Testes unitários para as correções do DAG etl_camara:
 """
 
 from unittest.mock import MagicMock, patch
+
 import pandas as pd
 
 from injest_banco.catalog import Dataset, build_catalog
@@ -51,7 +52,7 @@ class TestProcessDatasetAndSkipHistorical:
             ano_ref=2020,
         )
         client = MagicMock()
-        nome, status, count = process_dataset(
+        _nome, status, count = process_dataset(
             ds, client, engine=None, skip_historical=True, dry_run=True
         )
         assert status == "skip_hist"
@@ -68,7 +69,7 @@ class TestProcessDatasetAndSkipHistorical:
             leg_ref=56,
         )
         client = MagicMock()
-        nome, status, count = process_dataset(
+        _nome, status, count = process_dataset(
             ds, client, engine=None, skip_historical=True, dry_run=True, leg_atual=57
         )
         assert status == "skip_hist"

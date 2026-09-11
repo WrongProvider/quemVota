@@ -9,7 +9,7 @@ Garante idempotência absoluta (ON CONFLICT) e resolução otimizada de chaves e
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 from sqlalchemy import MetaData, text
@@ -40,7 +40,7 @@ def sanitize_row(row: dict[str, Any]) -> dict[str, Any]:
 def bulk_upsert(
     engine: Any,
     table_name: str,
-    preserve_cols: Optional[list[str]],
+    preserve_cols: list[str] | None,
     records: list[dict[str, Any]],
     conflict_cols: list[str],
     chunk_size: int = DEFAULT_CHUNK_SIZE,

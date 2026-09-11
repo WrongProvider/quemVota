@@ -21,7 +21,7 @@ import time
 import zipfile
 from pathlib import Path
 from threading import Lock
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 import requests
@@ -56,7 +56,7 @@ class ETagCache:
         if self.cache_file.exists():
             try:
                 return json.loads(self.cache_file.read_text(encoding="utf-8"))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 log.warning(
                     "Falha ao ler arquivo de cache %s: %s", self.cache_file, exc
                 )
@@ -71,7 +71,7 @@ class ETagCache:
                     encoding="utf-8",
                 )
                 tmp.replace(self.cache_file)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 log.warning(
                     "Falha ao salvar arquivo de cache %s: %s", self.cache_file, exc
                 )
@@ -102,7 +102,7 @@ class ETagCache:
             if self.cache_file.exists():
                 try:
                     self.cache_file.unlink()
-                except Exception:
+                except Exception:  # noqa: BLE001, S110
                     pass
 
 
@@ -116,7 +116,7 @@ class CamaraClient:
         timeout: tuple[float, float] = DEFAULT_REQUEST_TIMEOUT,
         max_retries: int = DEFAULT_MAX_RETRIES,
         retry_delay: float = DEFAULT_RETRY_DELAY,
-        cache: Optional[ETagCache] = None,
+        cache: ETagCache | None = None,
     ):
         self.timeout = timeout
         self.max_retries = max_retries
@@ -149,7 +149,7 @@ class CamaraClient:
         return session
 
     def _wait_backoff(
-        self, attempt: int, resp: Optional[requests.Response] = None
+        self, attempt: int, resp: requests.Response | None = None
     ) -> None:
         """Calcula o tempo de espera respeitando Retry-After ou backoff exponencial."""
         wait = self.retry_delay * (2 ** (attempt - 1)) + random.uniform(0.1, 0.5)
@@ -172,7 +172,7 @@ class CamaraClient:
         self,
         url: str,
         use_cache: bool = True,
-    ) -> Optional[pd.DataFrame] | object:
+    ) -> pd.DataFrame | None | object:
         """
         Baixa e carrega CSV com separador ';' e codificação utf-8-sig.
         Retorna:
@@ -213,7 +213,7 @@ class CamaraClient:
                 log.info("✔ %s (%d linhas)", url.split("/")[-1], len(df))
                 return df
 
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 log.warning(
                     "Tentativa %d/%d falhou (%s): %s",
                     attempt,
@@ -231,7 +231,7 @@ class CamaraClient:
         self,
         url: str,
         use_cache: bool = True,
-    ) -> Optional[pd.DataFrame] | object:
+    ) -> pd.DataFrame | None | object:
         """
         Baixa arquivo ZIP e extrai o primeiro CSV interno (ex: Cotas parlamentares).
         """
@@ -275,7 +275,7 @@ class CamaraClient:
                 log.info("✔ %s (%d linhas)", url.split("/")[-1], len(df))
                 return df
 
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 log.warning(
                     "Tentativa %d/%d falhou (%s): %s",
                     attempt,
@@ -290,8 +290,8 @@ class CamaraClient:
         return None
 
     def get_api(
-        self, path: str, params: Optional[dict[str, Any]] = None
-    ) -> Optional[dict[str, Any]]:
+        self, path: str, params: dict[str, Any] | None = None
+    ) -> dict[str, Any] | None:
         """
         Realiza requisição GET na API REST v2 com backoff automático e headers JSON.
         """
@@ -310,7 +310,7 @@ class CamaraClient:
                     continue
                 resp.raise_for_status()
                 return resp.json()
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 log.warning(
                     "API REST tentativa %d/%d falhou (%s): %s",
                     attempt,
@@ -324,17 +324,17 @@ class CamaraClient:
         log.error("Falha definitiva na API REST: %s", url)
         return None
 
-    def get_deputado_detalhes(self, id_camara: int) -> Optional[dict[str, Any]]:
+    def get_deputado_detalhes(self, id_camara: int) -> dict[str, Any] | None:
         """GET /deputados/{id}"""
         res = self.get_api(f"/deputados/{id_camara}")
         return res.get("dados") if res else None
 
-    def get_votacao_detalhes(self, id_votacao: str) -> Optional[dict[str, Any]]:
+    def get_votacao_detalhes(self, id_votacao: str) -> dict[str, Any] | None:
         """GET /votacoes/{id}"""
         res = self.get_api(f"/votacoes/{id_votacao}")
         return res.get("dados") if res else None
 
-    def get_proposicao_detalhes(self, id_proposicao: int) -> Optional[dict[str, Any]]:
+    def get_proposicao_detalhes(self, id_proposicao: int) -> dict[str, Any] | None:
         """GET /proposicoes/{id}"""
         res = self.get_api(f"/proposicoes/{id_proposicao}")
         return res.get("dados") if res else None

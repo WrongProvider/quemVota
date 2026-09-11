@@ -3,6 +3,7 @@ test_injest_verba_gabinete.py — Testes unitários para o pipeline de Verba de 
 """
 
 from decimal import Decimal
+
 import pytest
 from pydantic import ValidationError
 

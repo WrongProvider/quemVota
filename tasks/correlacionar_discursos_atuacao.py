@@ -26,7 +26,6 @@ import logging
 import os
 import sys
 import time
-from typing import Optional
 
 import numpy as np
 from sqlalchemy import select
@@ -34,7 +33,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 try:
     from sentence_transformers import SentenceTransformer
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
 
     class SentenceTransformer:  # type: ignore
         """Fallback dummy quando sentence_transformers estiver indisponível no ambiente."""
@@ -88,8 +87,8 @@ def _hash_texto(texto: str) -> str:
 
 def _buscar_deputados(
     db,
-    limit: Optional[int],
-    deputado_id: Optional[int],
+    limit: int | None,
+    deputado_id: int | None,
     force: bool,
     id_legislatura: int,
 ) -> list[int]:
@@ -111,7 +110,7 @@ def _buscar_deputados(
     todos_ids = [r[0] for r in db.execute(stmt).all()]
 
     if not force:
-        ja_processados = set(
+        ja_processados = {
             r[0]
             for r in db.execute(
                 select(Discurso.idDeputado)
@@ -124,7 +123,7 @@ def _buscar_deputados(
                 .where(Discurso.idDeputado.in_(todos_ids))
                 .distinct()
             ).all()
-        )
+        }
         pendentes = [d for d in todos_ids if d not in ja_processados]
         logger.info(
             "Total deputados: %d | Com embeddings: %d | Pendentes: %d",
@@ -167,7 +166,7 @@ def _gerar_embedding_discurso(
     discurso: dict,
     model: SentenceTransformer,
     dry_run: bool,
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     """Gera e persiste embedding para um discurso. Reutiliza se já existir."""
     existing = db.execute(
         select(DocumentEmbedding.embedding).where(
@@ -212,10 +211,10 @@ def _gerar_embedding_discurso(
 
 
 def correlacionar_discursos(
-    limit_deputados: Optional[int] = None,
+    limit_deputados: int | None = None,
     dry_run: bool = False,
     id_legislatura: int = LEGISLATURA_DEFAULT,
-    deputado_id: Optional[int] = None,
+    deputado_id: int | None = None,
     force: bool = False,
 ) -> dict:
     """Executa a vetorização e geração de embeddings para discursos."""
@@ -290,7 +289,7 @@ def correlacionar_discursos(
                     elapsed,
                 )
 
-    except Exception:
+    except ImportError:
         db.rollback()
         logger.exception("Erro fatal durante vetorização de discursos.")
         raise
