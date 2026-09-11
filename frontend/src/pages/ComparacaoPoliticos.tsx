@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import ModalSelecionarPolitico from "../components/ModalSelecionarPolitico"
 import { BlocoComparacaoDiscursos } from "../components/BlocoComparacaoDiscursos"
+import { FocoTematicoComparador } from "../components/FocoTematicoComparador"
 import {
   usePoliticoDetalheBySlug,
   usePoliticoEstatisticas,
@@ -279,10 +280,12 @@ function ErrorScreen() {
 function ColunaPerfil({
   data,
   performance,
+  lado = "A",
   onTrocar,
 }: {
   data: PoliticoDetalhe
   performance: PoliticoPerformance | undefined
+  lado?: "A" | "B"
   onTrocar?: () => void
 }) {
   return (
@@ -340,17 +343,14 @@ function ColunaPerfil({
         )}
       </div>
 
-      {/* Indicador de presença */}
-      {performance && (
-        <div className="text-center">
-          <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-3.5 py-1.5 text-center inline-block">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Presença</p>
-            <p className="mono-font text-base md:text-lg font-bold text-slate-800">
-              {performance.detalhes?.nota_assiduidade != null ? `${performance.detalhes.nota_assiduidade.toFixed(0)}%` : "—"}
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Indicador de Foco Temático e Presença */}
+      <FocoTematicoComparador
+        politicoId={data.slug || data.id}
+        politicoSlug={data.slug}
+        notaAssiduidade={performance?.detalhes?.nota_assiduidade}
+        corTema={lado === "A" ? "blue" : "violet"}
+        lado={lado}
+      />
 
       {/* Links e Troca */}
       <div className="flex flex-col items-center gap-1.5 mt-0.5">
@@ -1339,6 +1339,7 @@ export default function ComparacaoPoliticos() {
                 <ColunaPerfil
                   data={dataA}
                   performance={perfA}
+                  lado="A"
                   onTrocar={() => setTrocandoLado("A")}
                 />
                 {/* Divisor vertical — só desktop */}
@@ -1346,6 +1347,7 @@ export default function ComparacaoPoliticos() {
                 <ColunaPerfil
                   data={dataB}
                   performance={perfB}
+                  lado="B"
                   onTrocar={() => setTrocandoLado("B")}
                 />
               </div>

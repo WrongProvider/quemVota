@@ -197,5 +197,44 @@ test.describe("Comparador Direto de Parlamentares", () => {
     )
     expect(criticalErrors).toHaveLength(0)
   })
+
+  test("deve exibir Foco Temático e Presença em ambas as colunas com simetria e layout mobile sem overflow", async ({
+    page,
+  }) => {
+    // 1. Acessa a comparação entre dois deputados
+    await page.goto("/comparar/tabata-amaral/nikolas-ferreira")
+
+    // Aguarda os cards de Foco Temático de ambos os parlamentares
+    const focoA = page.getByTestId("foco-tematico-comparador-A")
+    const focoB = page.getByTestId("foco-tematico-comparador-B")
+    await expect(focoA).toBeVisible({ timeout: 15000 })
+    await expect(focoB).toBeVisible({ timeout: 15000 })
+
+    // Valida presença da métrica de assiduidade e percentual em ambos
+    await expect(focoA.locator("text=Presença").first()).toBeVisible()
+    await expect(focoB.locator("text=Presença").first()).toBeVisible()
+
+    // Valida títulos de 'Foco Temático' e temas em ambos
+    await expect(focoA.locator("text=Foco Temático").first()).toBeVisible()
+    await expect(focoB.locator("text=Foco Temático").first()).toBeVisible()
+
+    // Valida tema #1 em comum 'Educação' em ambas as colunas
+    await expect(focoA.locator("text=Educação").first()).toBeVisible()
+    await expect(focoB.locator("text=Educação").first()).toBeVisible()
+
+    // 2. Validação em Viewport Mobile (390x844)
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.waitForTimeout(400)
+
+    // Valida que ambos os cards no mobile continuam visíveis
+    await expect(focoA).toBeVisible()
+    await expect(focoB).toBeVisible()
+
+    // Valida ausência de overflow horizontal
+    const isOverflowing = await page.evaluate(() => {
+      return document.body.scrollWidth > window.innerWidth
+    })
+    expect(isOverflowing).toBeFalsy()
+  })
 })
 
