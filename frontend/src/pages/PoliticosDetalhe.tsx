@@ -11,6 +11,7 @@ import {
 import PoliticoGraficos from "../components/PoliticoGraficos"
 import LinhaDoTempo from "../components/LinhaDoTempo"
 import PainelTemasAtuacao from "../components/PainelTemasAtuacao"
+import FocoTematicoHero from "../components/FocoTematicoHero"
 import PainelDiscursosAtuacao from "../components/PainelDiscursosAtuacao"
 import PainelFidelidadePartidaria from "../components/PainelFidelidadePartidaria"
 import PainelRadarAfinidades from "../components/PainelRadarAfinidades"
@@ -658,20 +659,13 @@ export default function PoliticoDetalhe() {
                   </div>
                 </div>
 
-                {/* INDICADOR RÁPIDO DE MANDATO (DESKTOP) */}
-                {performance && (
-                  <div className="hidden md:flex flex-shrink-0 text-center" data-testid="performance-container">
-                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center min-w-[120px]">
-                      <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Presença</p>
-                      <p data-testid="performance-score" className="mono-font text-2xl font-bold text-slate-800 mt-1">
-                        {performance.detalhes?.nota_assiduidade != null ? `${performance.detalhes.nota_assiduidade.toFixed(0)}%` : "—"}
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        {anoSelecionado ? `em ${anoSelecionado}` : "assiduidade"}
-                      </p>
-                    </div>
-                  </div>
-                )}
+                {/* INDICADOR RÁPIDO DE MANDATO & FOCO TEMÁTICO (DESKTOP) */}
+                <FocoTematicoHero
+                  politicoId={data.slug || data.id}
+                  notaAssiduidade={performance?.detalhes?.nota_assiduidade}
+                  anoSelecionado={anoSelecionado}
+                  onVerTodosTemas={() => scrollParaSecao("section-atuacao", "atuacao")}
+                />
               </div>
             </div>
           </div>
