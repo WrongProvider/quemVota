@@ -975,6 +975,7 @@ class ParDiscursoComparado(BaseModel):
     """Par de discursos com similaridade semântica entre dois parlamentares."""
 
     tema_ou_materia: str
+    categoria: str = "Atividade em Plenário"
     tipo_relacao: str  # "convergente" | "divergente"
     similaridade_semantica: float
     motivo_classificacao: str
@@ -992,6 +993,7 @@ class ComparacaoDiscursosResponse(BaseModel):
     total_pares: int
     total_convergentes: int
     total_divergentes: int
+    categorias_disponiveis: List[str] = []
     discursos_convergentes: List[ParDiscursoComparado]
     discursos_divergentes: List[ParDiscursoComparado]
 

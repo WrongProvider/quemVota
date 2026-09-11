@@ -882,10 +882,14 @@ class PoliticoService:
 
         convergentes: list[ParDiscursoComparado] = []
         divergentes: list[ParDiscursoComparado] = []
+        categorias_set: set[str] = set()
 
         for par in pares_raw:
+            cat = par.get("categoria", "Atividade em Plenário")
+            categorias_set.add(cat)
             item = ParDiscursoComparado(
                 tema_ou_materia=par["tema_ou_materia"],
+                categoria=cat,
                 tipo_relacao=par["tipo_relacao"],
                 similaridade_semantica=round(par["similaridade"], 4),
                 motivo_classificacao=par["motivo_classificacao"],
@@ -917,6 +921,7 @@ class PoliticoService:
             total_pares=len(convergentes) + len(divergentes),
             total_convergentes=len(convergentes),
             total_divergentes=len(divergentes),
+            categorias_disponiveis=sorted(categorias_set),
             discursos_convergentes=convergentes,
             discursos_divergentes=divergentes,
         )

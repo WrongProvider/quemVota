@@ -2090,6 +2090,145 @@ class PoliticoRepository:
                 ", ".join(sorted(keywords_combined)[:3]) or "Tema legislativo"
             )
 
+            # Extração de proposições citadas no texto dos discursos
+            texto_completo = f"{row[6] or ''} {row[12] or ''}"
+            num_pattern = r"(\d{1,3}(?:\.\d{3})+|\d+)"
+            pat_ext = re.compile(
+                rf"\b(?:Projeto de Lei Complementar|PLP)\s*(?:n[º°oª]?\.?\s*)?{num_pattern}[,\s]+de\s+(\d{{4}})\b",
+                re.IGNORECASE,
+            )
+            pat_pl = re.compile(
+                rf"\b(?:Projeto de Lei Ordin[aá]ria|Projeto de Lei|PL)\s*(?:n[º°oª]?\.?\s*)?{num_pattern}[,\s]+de\s+(\d{{4}})\b",
+                re.IGNORECASE,
+            )
+            pat_pec = re.compile(
+                rf"\b(?:Proposta de Emenda [aà] Constitui[cç][aã]o|PEC)\s*(?:n[º°oª]?\.?\s*)?{num_pattern}[,\s]+de\s+(\d{{4}})\b",
+                re.IGNORECASE,
+            )
+            pat_mpv = re.compile(
+                rf"\b(?:Medida Provis[oó]ria|MPV)\s*(?:n[º°oª]?\.?\s*)?{num_pattern}[,\s]+de\s+(\d{{4}})\b",
+                re.IGNORECASE,
+            )
+            pat_sigla = re.compile(
+                rf"\b(PEC|PLP|PL|MPV|REQ|PDL|PDC|PRC|RIC)\s*(?:n[º°oª]?\.?\s*)?{num_pattern}[/\-](\d{{2,4}})\b",
+                re.IGNORECASE,
+            )
+
+            props_citadas: list[str] = []
+            for m in pat_ext.finditer(texto_completo):
+                props_citadas.append(f"PLP {m.group(1)}/{m.group(2)}")
+            for m in pat_pl.finditer(texto_completo):
+                props_citadas.append(f"PL {m.group(1)}/{m.group(2)}")
+            for m in pat_pec.finditer(texto_completo):
+                props_citadas.append(f"PEC {m.group(1)}/{m.group(2)}")
+            for m in pat_mpv.finditer(texto_completo):
+                props_citadas.append(f"MPV {m.group(1)}/{m.group(2)}")
+            for m in pat_sigla.finditer(texto_completo):
+                ano = int(m.group(3))
+                if ano < 100:
+                    ano += 2000 if ano <= 30 else 1900
+                props_citadas.append(f"{m.group(1).upper()} {m.group(2)}/{ano}")
+
+            prop_destaque = sorted(set(props_citadas))[0] if props_citadas else None
+            if prop_destaque:
+                tema_materia = f"{prop_destaque} • {tema_materia}"
+
+            # Extração de macrocategoria temática
+            texto_cat = f"{row[6] or ''} {row[12] or ''} {kw1} {kw2}".lower()
+            if any(
+                k in texto_cat
+                for k in [
+                    "tribut",
+                    "imposto",
+                    "fiscal",
+                    "orçament",
+                    "orcamen",
+                    "dívida",
+                    "divida",
+                    "fazenda",
+                    "icms",
+                    "ibs",
+                    "cbs",
+                ]
+            ):
+                categoria = "Tributação & Economia"
+            elif any(
+                k in texto_cat
+                for k in [
+                    "paternidade",
+                    "maternidade",
+                    "trabalh",
+                    "clt",
+                    "salário",
+                    "salario",
+                    "família",
+                    "familia",
+                    "previdência",
+                    "previdencia",
+                ]
+            ):
+                categoria = "Trabalho & Família"
+            elif any(
+                k in texto_cat
+                for k in [
+                    "educa",
+                    "vagas",
+                    "cota",
+                    "universidade",
+                    "escola",
+                    "ensino",
+                ]
+            ):
+                categoria = "Educação & Igualdade"
+            elif any(
+                k in texto_cat
+                for k in [
+                    "fake news",
+                    "notícia falsa",
+                    "noticia falsa",
+                    "internet",
+                    "comunicação",
+                    "comunicacao",
+                    "censura",
+                    "redes sociais",
+                ]
+            ):
+                categoria = "Comunicação & Redes"
+            elif any(
+                k in texto_cat
+                for k in [
+                    "crime",
+                    "pena",
+                    "segurança",
+                    "seguranca",
+                    "polícia",
+                    "policia",
+                    "penal",
+                ]
+            ):
+                categoria = "Segurança & Justiça"
+            elif any(
+                k in texto_cat
+                for k in [
+                    "saúde",
+                    "saude",
+                    "sus",
+                    "hospital",
+                    "médic",
+                    "medic",
+                    "vacina",
+                    "medicamento",
+                ]
+            ):
+                categoria = "Saúde & Bem-Estar"
+            elif any(
+                k in texto_cat
+                for k in ["mulher", "gênero", "genero", "direitos humanos"]
+            ):
+                categoria = "Direitos Humanos"
+            else:
+                categoria = "Atividade em Plenário"
+
             # Classificação factual de convergência ou divergência
             data_d1 = row[3]
             data_d2 = row[9]
@@ -2174,6 +2313,7 @@ class PoliticoRepository:
                     "id_discurso2": id_d2,
                     "similaridade": sim,
                     "tema_ou_materia": tema_materia,
+                    "categoria": categoria,
                     "tipo_relacao": tipo_relacao,
                     "motivo_classificacao": motivo,
                     "discurso1": {

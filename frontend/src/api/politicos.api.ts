@@ -941,6 +941,7 @@ export interface DiscursoResumoComparacao {
 
 export interface ParDiscursoComparado {
   readonly tema_ou_materia: string
+  readonly categoria?: string
   readonly tipo_relacao: "convergente" | "divergente"
   readonly similaridade_semantica: number
   readonly motivo_classificacao: string
@@ -954,6 +955,7 @@ export interface ComparacaoDiscursosResponse {
   readonly total_pares: number
   readonly total_convergentes: number
   readonly total_divergentes: number
+  readonly categorias_disponiveis?: string[]
   readonly discursos_convergentes: ParDiscursoComparado[]
   readonly discursos_divergentes: ParDiscursoComparado[]
 }

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test"
 
-test.describe("Comparação de Discursos entre Deputados", () => {
-  test("deve exibir o bloco de confronto de discursos com abas divergentes e parecidos no desktop", async ({
+test.describe("Comparação de Discursos entre Deputados (Anti-Scroll Fatigue)", () => {
+  test("deve exibir o bloco com categorias, cards compactos e expansão sob demanda no desktop", async ({
     page,
   }) => {
     const consoleErrors: string[] = []
@@ -32,20 +32,45 @@ test.describe("Comparação de Discursos entre Deputados", () => {
     await expect(tabDivergentes).toBeVisible()
     await expect(tabConvergentes).toBeVisible()
 
-    // Inicialmente a aba divergentes está ativa e possui cards
-    const cardsDivergentes = blocoDiscursos.getByTestId("card-par-discurso")
-    await expect(cardsDivergentes.first()).toBeVisible({ timeout: 5000 })
-    const totalDiv = await cardsDivergentes.count()
-    expect(totalDiv).toBeGreaterThan(0)
+    // 1. Valida carrossel de categorias temáticas
+    const carrosselCategorias = page.getByTestId("carrossel-categorias-discursos")
+    await expect(carrosselCategorias).toBeVisible()
+    const pílulaTodas = page.getByTestId("pill-categoria-todas")
+    await expect(pílulaTodas).toBeVisible()
 
-    // Clica na aba de discursos parecidos / convergentes
+    // 2. Inicialmente os cards são compactos (accordion fechado por padrão - anti-fatigue)
+    const primeiroCard = blocoDiscursos.getByTestId("card-par-discurso").first()
+    await expect(primeiroCard).toBeVisible({ timeout: 5000 })
+
+    // O link para a íntegra não deve estar visível antes da expansão
+    const linkIntegraAntes = primeiroCard.getByText("Íntegra do discurso na Câmara")
+    await expect(linkIntegraAntes).not.toBeVisible()
+
+    // 3. Usuário clica para expandir e ler mais
+    const btnExpandir = primeiroCard.getByTestId("btn-toggle-par-discurso")
+    await btnExpandir.click()
+
+    // Agora o conteúdo detalhado e o link para a Câmara devem estar visíveis
+    const linkIntegraDepois = primeiroCard.getByText("Íntegra do discurso na Câmara").first()
+    await expect(linkIntegraDepois).toBeVisible()
+    await expect(primeiroCard).toContainText("Fundamentação factual:")
+
+    // 4. Alterna para a aba de discursos parecidos / convergentes
     await tabConvergentes.click()
 
-    // Verifica cards na aba de convergentes
     const cardsConvergentes = blocoDiscursos.getByTestId("card-par-discurso")
     await expect(cardsConvergentes.first()).toBeVisible({ timeout: 5000 })
     const totalConv = await cardsConvergentes.count()
     expect(totalConv).toBeGreaterThan(0)
+
+    // Se houver mais de 4 itens, o botão "Ver mais debates" deve existir
+    const btnMostrarMais = page.getByTestId("btn-mostrar-mais-discursos")
+    if (await btnMostrarMais.isVisible()) {
+      await btnMostrarMais.click()
+      // Mais cards devem ter sido carregados
+      const novoTotal = await cardsConvergentes.count()
+      expect(novoTotal).toBeGreaterThan(totalConv)
+    }
 
     // Valida que não há erros graves no console
     const errosRelevantes = consoleErrors.filter(
@@ -72,6 +97,10 @@ test.describe("Comparação de Discursos entre Deputados", () => {
     if (boxTab) {
       expect(boxTab.height).toBeGreaterThanOrEqual(44)
     }
+
+    // Verifica que o carrossel de categorias é visível no mobile
+    const carrosselCategorias = page.getByTestId("carrossel-categorias-discursos")
+    await expect(carrosselCategorias).toBeVisible()
 
     // Garante que não há overflow horizontal indesejado
     const hasHorizontalOverflow = await page.evaluate(() => {
