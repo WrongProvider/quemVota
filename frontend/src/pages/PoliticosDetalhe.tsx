@@ -328,7 +328,14 @@ export default function PoliticoDetalhe() {
 
   const [anoSelecionado, setAnoSelecionado] = useState<number | null>(null)
   const [abaAtiva, setAbaAtiva] = useState<"visao-geral" | "votacoes" | "projetos" | "conexoes" | "gastos" | "atuacao" | "discursos">("visao-geral")
-  const [subAbaLegislativa, setSubAbaLegislativa] = useState<"votacoes" | "projetos">("votacoes")
+  const [subAbaLegislativa, setSubAbaLegislativa] = useState<"votacoes" | "projetos" | "discursos">(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.toLowerCase()
+      if (hash.includes("projeto")) return "projetos"
+      if (hash.includes("discurso")) return "discursos"
+    }
+    return "votacoes"
+  })
   const [subAbaConexoes, setSubAbaConexoes] = useState<"afinidades" | "coautoria" | "fidelidade">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.toLowerCase()
@@ -347,10 +354,12 @@ export default function PoliticoDetalhe() {
       setSubAbaLegislativa("votacoes")
     } else if (aba === "projetos") {
       setSubAbaLegislativa("projetos")
+    } else if (aba === "discursos") {
+      setSubAbaLegislativa("discursos")
     }
 
     let targetId = id
-    if (aba === "votacoes" || aba === "projetos") targetId = "section-atividade-legislativa"
+    if (aba === "votacoes" || aba === "projetos" || aba === "discursos") targetId = "section-atividade-legislativa"
     if (aba === "conexoes") targetId = "section-conexoes"
 
     const el =
@@ -371,11 +380,10 @@ export default function PoliticoDetalhe() {
   useEffect(() => {
     const secoes = [
       { id: "section-stats", aba: "visao-geral" as const },
-      { id: "section-atividade-legislativa", aba: (subAbaLegislativa === "projetos" ? "projetos" : "votacoes") as const },
+      { id: "section-atividade-legislativa", aba: (subAbaLegislativa === "discursos" ? "discursos" : subAbaLegislativa === "projetos" ? "projetos" : "votacoes") as const },
       { id: "section-conexoes", aba: "conexoes" as const },
       { id: "section-historico-de-gastos", aba: "gastos" as const },
       { id: "section-atuacao", aba: "atuacao" as const },
-      { id: "section-discursos", aba: "discursos" as const },
     ]
 
     const handleScroll = () => {
@@ -953,15 +961,15 @@ export default function PoliticoDetalhe() {
                   </h2>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Posicionamentos nominais em plenário e projetos apresentados pelo parlamentar à Câmara.
+                  Posicionamentos nominais em plenário, proposições apresentadas e discursos proferidos na tribuna da Câmara.
                 </p>
               </div>
 
               {/* Seletor de Abas (Segmented Control touch-friendly) */}
               <div
-                className="inline-flex p-1 bg-slate-100 rounded-2xl border border-slate-200 self-start sm:self-auto w-full sm:w-auto"
+                className="inline-flex p-1 bg-slate-100 rounded-2xl border border-slate-200 self-start sm:self-auto w-full sm:w-auto overflow-x-auto scrollbar-none"
                 role="tablist"
-                aria-label="Alternar entre votações e proposições"
+                aria-label="Alternar entre votações, proposições e discursos"
               >
                 <button
                   type="button"
@@ -972,14 +980,14 @@ export default function PoliticoDetalhe() {
                     setSubAbaLegislativa("votacoes")
                     setAbaAtiva("votacoes")
                   }}
-                  className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all min-h-[44px] cursor-pointer ${
+                  className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all min-h-[44px] cursor-pointer whitespace-nowrap ${
                     subAbaLegislativa === "votacoes"
                       ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
                       : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                   }`}
                 >
                   <Vote size={15} className={subAbaLegislativa === "votacoes" ? "text-blue-600" : "text-slate-400"} />
-                  <span>Votações em Plenário</span>
+                  <span>Votações</span>
                 </button>
 
                 <button
@@ -991,14 +999,33 @@ export default function PoliticoDetalhe() {
                     setSubAbaLegislativa("projetos")
                     setAbaAtiva("projetos")
                   }}
-                  className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all min-h-[44px] cursor-pointer ${
+                  className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all min-h-[44px] cursor-pointer whitespace-nowrap ${
                     subAbaLegislativa === "projetos"
                       ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
                       : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                   }`}
                 >
                   <FileText size={15} className={subAbaLegislativa === "projetos" ? "text-blue-600" : "text-slate-400"} />
-                  <span>Projetos e Proposições</span>
+                  <span>Projetos <span className="hidden sm:inline">& Proposições</span></span>
+                </button>
+
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={subAbaLegislativa === "discursos"}
+                  data-testid="tab-sub-discursos"
+                  onClick={() => {
+                    setSubAbaLegislativa("discursos")
+                    setAbaAtiva("discursos")
+                  }}
+                  className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all min-h-[44px] cursor-pointer whitespace-nowrap ${
+                    subAbaLegislativa === "discursos"
+                      ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                  }`}
+                >
+                  <MessageSquareText size={15} className={subAbaLegislativa === "discursos" ? "text-blue-600" : "text-slate-400"} />
+                  <span>Discursos <span className="hidden sm:inline">& Atuação</span></span>
                 </button>
               </div>
             </div>
@@ -1019,6 +1046,15 @@ export default function PoliticoDetalhe() {
               className={subAbaLegislativa === "projetos" ? "block" : "hidden"}
             >
               <HistoricoProjetos politicoId={data.id} anoSelecionado={anoSelecionado} />
+            </div>
+
+            {/* Painel da Aba 3: Discursos & Atuação */}
+            <div
+              id="section-discursos"
+              data-testid="panel-sub-discursos"
+              className={subAbaLegislativa === "discursos" ? "block" : "hidden"}
+            >
+              <PainelDiscursosAtuacao politicoId={data.slug || data.id} />
             </div>
           </section>
 
@@ -1141,11 +1177,6 @@ export default function PoliticoDetalhe() {
 
             {/* ── FOCO TEMÁTICO DA ATUAÇÃO (SPEC-001) ── */}
             <PainelTemasAtuacao politicoId={data.slug || data.id} />
-          </div>
-
-          {/* ── 5. DISCURSOS & ATUAÇÃO (SPEC-007) ── */}
-          <div id="section-discursos" className="mt-10">
-            <PainelDiscursosAtuacao politicoId={data.slug || data.id} />
           </div>
         </div>
       </div>

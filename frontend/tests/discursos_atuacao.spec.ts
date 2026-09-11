@@ -28,10 +28,26 @@ test.describe("Discursos & Atuação Legislativa (SPEC-007)", () => {
     // Clica na aba para rolar até a seção
     await tabDiscursos.click()
 
+    // Valida que a sub-aba de discursos dentro de Atividade Legislativa está selecionada
+    const tabSubDiscursos = page.locator('[data-testid="tab-sub-discursos"]')
+    await expect(tabSubDiscursos).toBeVisible({ timeout: 10000 })
+    await expect(tabSubDiscursos).toHaveAttribute("aria-selected", "true")
+
     // Valida a seção de discursos
     const sectionDiscursos = page.locator('[data-testid="section-discursos"]')
     await expect(sectionDiscursos).toBeVisible({ timeout: 10000 })
     await expect(sectionDiscursos).toContainText("Discursos & Atuação")
+
+    // Testa alternância de sub-abas dentro de Atividade Legislativa
+    const tabSubVotacoes = page.locator('[data-testid="tab-sub-votacoes"]')
+    await tabSubVotacoes.click()
+    await expect(page.locator('[data-testid="section-votacoes"]')).toBeVisible()
+    await expect(sectionDiscursos).toBeHidden()
+
+    // Retorna para a sub-aba de discursos
+    await tabSubDiscursos.click()
+    await expect(sectionDiscursos).toBeVisible()
+    await expect(page.locator('[data-testid="section-votacoes"]')).toBeHidden()
 
     // Valida presença do campo de busca
     const searchInput = page.locator('[data-testid="discursos-search"]')
