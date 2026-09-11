@@ -102,4 +102,59 @@ test.describe("Discursos & Atuação Legislativa (SPEC-007)", () => {
     })
     expect(hasHorizontalOverflow).toBe(false)
   })
+
+  test("deve permitir digitação fluida no campo de busca sem perda de foco e exibir empty state sem sumir a tela", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+
+    await page.goto("/politicos/tabata-amaral")
+    await expect(page.locator("h1")).toContainText("Tabata Amaral", { timeout: 15000 })
+
+    const tabDiscursos = page.locator('[data-testid="tab-discursos"]')
+    await expect(tabDiscursos).toBeVisible({ timeout: 10000 })
+    await tabDiscursos.click()
+
+    const sectionDiscursos = page.locator('[data-testid="section-discursos"]')
+    await expect(sectionDiscursos).toBeVisible({ timeout: 10000 })
+
+    const searchInput = page.locator('[data-testid="discursos-search"]')
+    await expect(searchInput).toBeVisible()
+
+    // Clica no input e digita caractere por caractere (simulando digitação real com delay)
+    await searchInput.click()
+    await searchInput.pressSequentially("educação", { delay: 60 })
+
+    // Valida que o input manteve o foco e o valor completo foi digitado sem interrupção
+    await expect(searchInput).toBeFocused()
+    await expect(searchInput).toHaveValue("educação")
+
+    // Aguarda debounce e carregamento
+    await page.waitForTimeout(600)
+    await expect(sectionDiscursos).toBeVisible()
+
+    // Testa digitação de termo inexistente com mais de 3 caracteres
+    await searchInput.fill("")
+    await searchInput.pressSequentially("termoinexistente999", { delay: 50 })
+    await expect(searchInput).toHaveValue("termoinexistente999")
+
+    // Aguarda debounce e resposta vazia
+    await page.waitForTimeout(600)
+
+    // A tela/seção NUNCA pode sumir do DOM
+    await expect(sectionDiscursos).toBeVisible()
+    await expect(sectionDiscursos).toContainText('Nenhum pronunciamento encontrado para "termoinexistente999"')
+
+    // Clica no botão 'Limpar busca'
+    const btnLimpar = page.locator('[data-testid="limpar-busca-discursos"]')
+    await expect(btnLimpar).toBeVisible()
+    await btnLimpar.click()
+
+    // Valida que a busca foi resetada e os discursos retornaram
+    await expect(searchInput).toHaveValue("")
+    await expect(sectionDiscursos).toBeVisible()
+    const togglePrimeiro = page.locator('[data-testid^="discurso-toggle-"]').first()
+    await expect(togglePrimeiro).toBeVisible({ timeout: 5000 })
+  })
 })
+

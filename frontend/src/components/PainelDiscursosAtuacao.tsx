@@ -11,7 +11,7 @@
  *  - Rastreabilidade com links para o Diário da Câmara e ficha de tramitação.
  */
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Mic,
   ChevronDown,
@@ -25,8 +25,10 @@ import {
   Loader2,
   AlertCircle,
   MessageSquareText,
+  X,
 } from "lucide-react"
 import { usePoliticoDiscursosAtuacao } from "../hooks/usePoliticos"
+import { useDebounce } from "../hooks/useDebounce"
 import type {
   DiscursoAtuacaoItem,
   ProposicaoCorrelataDiscurso,
@@ -295,29 +297,40 @@ export default function PainelDiscursosAtuacao({
 }: PainelDiscursosAtuacaoProps) {
   const [busca, setBusca] = useState("")
   const [pagina, setPagina] = useState(0)
-  const ITENS_POR_PAGINA = 10
+  const ITENS_POR_PAGINA = 5
+
+  const buscaDebounced = useDebounce(busca, 350)
+
+  // Reseta página quando a busca debounced mudar
+  useEffect(() => {
+    setPagina(0)
+  }, [buscaDebounced])
 
   const params = useMemo<PoliticoDiscursosAtuacaoParams>(
     () => ({
       limit: ITENS_POR_PAGINA,
       offset: pagina * ITENS_POR_PAGINA,
-      ...(busca.trim() ? { q: busca.trim() } : {}),
+      ...(buscaDebounced.trim() ? { q: buscaDebounced.trim() } : {}),
     }),
-    [busca, pagina],
+    [buscaDebounced, pagina],
   )
 
-  const { data, isLoading, isError } = usePoliticoDiscursosAtuacao(
+  const { data, isLoading, isFetching, isError } = usePoliticoDiscursosAtuacao(
     politicoId,
     params,
   )
 
-  // Se sem dados (404) ou erro, não polui a página
-  if (isError || (!isLoading && (!data || data.total_discursos === 0))) {
-    return null
+  const hasActiveSearch = Boolean(busca.trim() || buscaDebounced.trim())
+
+  // Se sem discursos no banco (e nenhuma busca em andamento), não polui a página
+  if (!hasActiveSearch) {
+    if (isError || (!isLoading && (!data || data.total_discursos === 0))) {
+      return null
+    }
   }
 
-  // Skeleton shimmer durante carregamento
-  if (isLoading) {
+  // Skeleton apenas no carregamento inicial absoluto (sem dados prévios e sem busca)
+  if (isLoading && !data && !hasActiveSearch) {
     return (
       <section
         data-testid="section-discursos"
@@ -336,7 +349,9 @@ export default function PainelDiscursosAtuacao({
     )
   }
 
-  const totalPaginas = Math.ceil(data!.total_discursos / ITENS_POR_PAGINA)
+  const totalDiscursos = data?.total_discursos ?? 0
+  const itens = data?.itens ?? []
+  const totalPaginas = Math.ceil(totalDiscursos / ITENS_POR_PAGINA)
 
   return (
     <section data-testid="section-discursos" className="space-y-5">
@@ -348,42 +363,73 @@ export default function PainelDiscursosAtuacao({
             Discursos & Atuação
           </h2>
           <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-            {data!.total_discursos} pronunc.
+            {totalDiscursos} pronunc.
           </span>
         </div>
 
         {/* Campo de busca */}
         <div className="relative w-full sm:w-64">
-          <Search
-            size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-          />
+          {isFetching ? (
+            <Loader2
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 animate-spin"
+            />
+          ) : (
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+          )}
           <input
             type="text"
             value={busca}
-            onChange={(e) => {
-              setBusca(e.target.value)
-              setPagina(0)
-            }}
+            onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar nos discursos..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
+            className="w-full pl-9 pr-8 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
             data-testid="discursos-search"
           />
+          {busca.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setBusca("")}
+              aria-label="Limpar busca"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-md transition-colors cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
       </div>
 
       {/* ── Lista de discursos ── */}
-      <div className="space-y-3">
-        {data!.itens.map((item) => (
-          <DiscursoItem key={item.id} item={item} />
-        ))}
-      </div>
+      {itens.length > 0 && (
+        <div className="space-y-3">
+          {itens.map((item) => (
+            <DiscursoItem key={item.id} item={item} />
+          ))}
+        </div>
+      )}
 
       {/* ── Sem resultados na busca ── */}
-      {data!.itens.length === 0 && busca.trim() && (
-        <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-          <AlertCircle size={32} className="mb-2" />
-          <p className="text-sm">Nenhum pronunciamento encontrado para "{busca}".</p>
+      {itens.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+          <AlertCircle size={32} className="mb-2 text-slate-400" />
+          <p className="text-sm font-medium text-slate-600">
+            Nenhum pronunciamento encontrado{busca.trim() ? ` para "${busca.trim()}"` : ""}.
+          </p>
+          <p className="text-xs text-slate-400 mt-1">
+            Tente buscar por outras palavras-chave ou termos legislativos.
+          </p>
+          {busca.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setBusca("")}
+              data-testid="limpar-busca-discursos"
+              className="mt-3 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors cursor-pointer"
+            >
+              Limpar busca
+            </button>
+          )}
         </div>
       )}
 
@@ -412,10 +458,13 @@ export default function PainelDiscursosAtuacao({
         </div>
       )}
 
-      {/* ── Loading inline ao paginar ── */}
-      {isLoading && data && (
-        <div className="flex items-center justify-center py-4">
-          <Loader2 size={20} className="animate-spin text-indigo-400" />
+      {/* ── Loading inline sutil ao paginar / buscar quando já há itens ── */}
+      {isFetching && itens.length > 0 && (
+        <div className="flex items-center justify-center py-2">
+          <span className="inline-flex items-center gap-1.5 text-xs text-indigo-600 bg-indigo-50/80 px-2.5 py-1 rounded-full">
+            <Loader2 size={12} className="animate-spin" />
+            Atualizando resultados...
+          </span>
         </div>
       )}
     </section>

@@ -456,6 +456,7 @@ export function usePoliticoDiscursosAtuacao(
     staleTime: 10 * 60 * 1_000,
     gcTime: 15 * 60 * 1_000,
     retry: false, // 404 gracioso
+    placeholderData: keepPreviousData,
   })
 }
 
