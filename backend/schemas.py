@@ -949,3 +949,50 @@ class PoliticoDiscursosAtuacaoResponse(BaseModel):
     itens: List[DiscursoAtuacaoItemResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ===========================================================================
+# Comparação de Discursos entre Deputados (Similaridade Semântica pgvector)
+# ===========================================================================
+
+
+class DiscursoResumoComparacao(BaseModel):
+    """Resumo factual de um discurso individual utilizado em comparações."""
+
+    id: int
+    data_hora_inicio: datetime
+    tipo_discurso: Optional[str] = None
+    fase_evento: Optional[str] = None
+    sumario: Optional[str] = None
+    keywords: Optional[str] = None
+    url_texto: Optional[str] = None
+    voto_registrado: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ParDiscursoComparado(BaseModel):
+    """Par de discursos com similaridade semântica entre dois parlamentares."""
+
+    tema_ou_materia: str
+    tipo_relacao: str  # "convergente" | "divergente"
+    similaridade_semantica: float
+    motivo_classificacao: str
+    discurso_politico1: DiscursoResumoComparacao
+    discurso_politico2: DiscursoResumoComparacao
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ComparacaoDiscursosResponse(BaseModel):
+    """Resposta completa da comparação de discursos entre dois parlamentares."""
+
+    politico1: PoliticoResumoComparacao
+    politico2: PoliticoResumoComparacao
+    total_pares: int
+    total_convergentes: int
+    total_divergentes: int
+    discursos_convergentes: List[ParDiscursoComparado]
+    discursos_divergentes: List[ParDiscursoComparado]
+
+    model_config = ConfigDict(from_attributes=True)

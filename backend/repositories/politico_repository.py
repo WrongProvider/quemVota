@@ -28,7 +28,8 @@ from shared.models import (
     Voto,
     proposicoesTemas,
 )
-from sqlalchemy import String, case, cast, desc, func, or_, select
+from shared.models_vetorial import DocumentEmbedding
+from sqlalchemy import String, case, cast, desc, func, literal_column, or_, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
@@ -1963,3 +1964,237 @@ class PoliticoRepository:
             )
 
         return total, itens
+
+    # ------------------------------------------------------------------
+    # Comparação de Discursos entre Deputados (pgvector cosine similarity)
+    # ------------------------------------------------------------------
+
+    async def get_comparacao_discursos_repo(
+        self,
+        deputado_id1: int,
+        deputado_id2: int,
+        limite_pares: int = 30,
+        similaridade_minima: float = 0.70,
+    ) -> List[Dict[str, Any]]:
+        """
+        Cruza embeddings de discursos de dois parlamentares via
+        similaridade de cosseno (pgvector) e classifica cada par
+        como convergente ou divergente com base nos votos nominais
+        registrados nas mesmas matérias.
+        """
+        e1 = aliased(DocumentEmbedding, name="e1")
+        e2 = aliased(DocumentEmbedding, name="e2")
+        d1 = aliased(Discurso, name="d1")
+        d2 = aliased(Discurso, name="d2")
+
+        # Cosine similarity: 1 - (e1.embedding <=> e2.embedding)
+        similarity_expr = literal_column("1 - (e1.embedding <=> e2.embedding)").label(
+            "similaridade"
+        )
+
+        # Cross-join discurso embeddings dos dois deputados
+        stmt = (
+            select(
+                e1.idEntidade.label("id_discurso1"),
+                e2.idEntidade.label("id_discurso2"),
+                similarity_expr,
+                d1.dataHoraInicio.label("data1"),
+                d1.tipoDiscurso.label("tipo1"),
+                d1.faseEventoTitulo.label("fase1"),
+                d1.sumario.label("sumario1"),
+                d1.keywords.label("keywords1"),
+                d1.urlTexto.label("url1"),
+                d2.dataHoraInicio.label("data2"),
+                d2.tipoDiscurso.label("tipo2"),
+                d2.faseEventoTitulo.label("fase2"),
+                d2.sumario.label("sumario2"),
+                d2.keywords.label("keywords2"),
+                d2.urlTexto.label("url2"),
+            )
+            .select_from(e1)
+            .join(e2, text("1=1"))  # cross join
+            .join(d1, d1.id == e1.idEntidade)
+            .join(d2, d2.id == e2.idEntidade)
+            .where(
+                e1.tipoEntidade == "discurso",
+                e2.tipoEntidade == "discurso",
+                e1.idDeputado == deputado_id1,
+                e2.idDeputado == deputado_id2,
+                literal_column("1 - (e1.embedding <=> e2.embedding)")
+                >= similaridade_minima,
+            )
+            .order_by(desc(similarity_expr))
+            .limit(limite_pares)
+        )
+
+        result = await self.db.execute(stmt)
+        pares_raw = result.all()
+
+        if not pares_raw:
+            return []
+
+        # Buscar votos dos dois deputados nas mesmas votações nominais
+        v1 = aliased(Voto, name="v1")
+        v2 = aliased(Voto, name="v2")
+
+        votos_stmt = (
+            select(
+                v1.idVotacao,
+                v1.voto.label("voto_dep1"),
+                v2.voto.label("voto_dep2"),
+            )
+            .select_from(v1)
+            .join(v2, v1.idVotacao == v2.idVotacao)
+            .where(
+                v1.idDeputado == deputado_id1,
+                v2.idDeputado == deputado_id2,
+            )
+        )
+
+        votos_result = await self.db.execute(votos_stmt)
+        votos_map: Dict[int, Tuple[str, str]] = {}
+        votos_alinhados_set: set[int] = set()
+        votos_divergentes_set: set[int] = set()
+
+        for row in votos_result.all():
+            v_id, vt1, vt2 = row[0], row[1], row[2]
+            votos_map[v_id] = (vt1, vt2)
+            if vt1 == vt2:
+                votos_alinhados_set.add(v_id)
+            else:
+                votos_divergentes_set.add(v_id)
+
+        # Montar resultado com classificação
+        pares_formatados: List[Dict[str, Any]] = []
+        seen_pairs: set[Tuple[int, int]] = set()
+
+        for row in pares_raw:
+            id_d1 = row[0]
+            id_d2 = row[1]
+            sim = float(row[2])
+
+            pair_key = (min(id_d1, id_d2), max(id_d1, id_d2))
+            if pair_key in seen_pairs:
+                continue
+            seen_pairs.add(pair_key)
+
+            # Extrair tema/matéria a partir das keywords dos discursos
+            kw1 = row[7] or ""  # keywords1
+            kw2 = row[13] or ""  # keywords2
+            keywords_combined = set()
+            if kw1:
+                keywords_combined.update(k.strip() for k in kw1.split(",") if k.strip())
+            if kw2:
+                keywords_combined.update(k.strip() for k in kw2.split(",") if k.strip())
+            tema_materia = (
+                ", ".join(sorted(keywords_combined)[:3]) or "Tema legislativo"
+            )
+
+            # Classificação factual de convergência ou divergência
+            data_d1 = row[3]
+            data_d2 = row[9]
+            s1 = (row[6] or "").lower()
+            s2 = (row[12] or "").lower()
+
+            defesa_markers = [
+                "defesa de aprova",
+                "defendeu a aprova",
+                "defendeu a",
+                "defendeu o",
+                "apoio ao",
+                "apoio à",
+                "favorável",
+                "favoravel",
+                "elogiou",
+                "elogio",
+                "comemora",
+                "parabenizou",
+                "avanço",
+                "fortalecimento",
+            ]
+            critica_markers = [
+                "contrariedade",
+                "contrário à",
+                "contrário ao",
+                "contrario",
+                "rejeição",
+                "rejeicao",
+                "repúdio",
+                "repudio",
+                "criticou",
+                "crítica",
+                "critica a",
+                "critica ao",
+                "censura",
+                "oposição",
+                "denúncia",
+            ]
+
+            d1_defende = any(m in s1 for m in defesa_markers)
+            d1_critica = any(m in s1 for m in critica_markers)
+            d2_defende = any(m in s2 for m in defesa_markers)
+            d2_critica = any(m in s2 for m in critica_markers)
+
+            total_votos = len(votos_alinhados_set) + len(votos_divergentes_set)
+            taxa_divergencia = (
+                len(votos_divergentes_set) / total_votos if total_votos > 0 else 0.0
+            )
+
+            tipo_relacao = "convergente"
+            motivo = "Pronunciamentos com posicionamentos temáticos alinhados sobre a matéria"
+
+            # Caso 1: Ambos expressam crítica ao mesmo assunto
+            if d1_critica and d2_critica and not (d1_defende and not d2_defende):
+                tipo_relacao = "convergente"
+                motivo = "Ambos os parlamentares manifestaram posicionamento crítico em relação à matéria"
+            # Caso 2: Ambos expressam apoio/defesa à mesma matéria
+            elif d1_defende and d2_defende and not (d1_critica and not d2_critica):
+                tipo_relacao = "convergente"
+                motivo = (
+                    "Ambos os parlamentares manifestaram apoio e defesa da mesma pauta"
+                )
+            # Caso 3: Posicionamentos opostos explícitos (um defende/apoia e o outro critica/rejeita)
+            elif (d1_defende and d2_critica) or (d1_critica and d2_defende):
+                tipo_relacao = "divergente"
+                motivo = "Posicionamentos opostos na tribuna (defesa/apoio vs contrariedade/crítica sobre a matéria)"
+            # Caso 4: Orientações de bancada / discussões procedimentais
+            elif taxa_divergencia > 0.5 and sim >= 0.80:
+                tipo_relacao = "divergente"
+                motivo = (
+                    f"Orientações e posicionamentos de bancada divergentes no debate da matéria; "
+                    f"taxa de divergência geral em votações: {taxa_divergencia * 100:.0f}%"
+                )
+            else:
+                tipo_relacao = "convergente"
+                motivo = "Pronunciamentos com similaridade temática e procedimental sobre a matéria"
+
+            pares_formatados.append(
+                {
+                    "id_discurso1": id_d1,
+                    "id_discurso2": id_d2,
+                    "similaridade": sim,
+                    "tema_ou_materia": tema_materia,
+                    "tipo_relacao": tipo_relacao,
+                    "motivo_classificacao": motivo,
+                    "discurso1": {
+                        "id": id_d1,
+                        "data_hora_inicio": data_d1,
+                        "tipo_discurso": row[4],
+                        "fase_evento": row[5],
+                        "sumario": row[6],
+                        "keywords": kw1,
+                        "url_texto": row[8],
+                    },
+                    "discurso2": {
+                        "id": id_d2,
+                        "data_hora_inicio": data_d2,
+                        "tipo_discurso": row[10],
+                        "fase_evento": row[11],
+                        "sumario": row[12],
+                        "keywords": kw2,
+                        "url_texto": row[14],
+                    },
+                }
+            )
+
+        return pares_formatados

@@ -51,6 +51,9 @@ import {
   fetchPoliticoDiscursosAtuacao,
   type PoliticoDiscursosAtuacaoResponse,
   type PoliticoDiscursosAtuacaoParams,
+  fetchComparacaoDiscursos,
+  type ComparacaoDiscursosResponse,
+  type ComparacaoDiscursosParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -368,5 +371,18 @@ export async function obterPoliticoDiscursosAtuacaoService(
     return await fetchPoliticoDiscursosAtuacao(idOrSlug, params, signal)
   } catch (error) {
     throw normalizeError(error, "obterPoliticoDiscursosAtuacaoService")
+  }
+}
+
+export async function obterComparacaoDiscursosService(
+  idOrSlug1: string | number,
+  idOrSlug2: string | number,
+  params?: ComparacaoDiscursosParams,
+  signal?: AbortSignal,
+): Promise<ComparacaoDiscursosResponse | null> {
+  try {
+    return await fetchComparacaoDiscursos(idOrSlug1, idOrSlug2, params, signal)
+  } catch (error) {
+    throw normalizeError(error, "obterComparacaoDiscursosService")
   }
 }

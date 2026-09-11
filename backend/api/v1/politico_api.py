@@ -28,6 +28,7 @@ from backend.api.v1.keybuilder import politico_key_builder
 from backend.schemas import (
     AfinidadesPoliticoResponse,
     AtividadeLegislativaResponse,
+    ComparacaoDiscursosResponse,
     ComparacaoPoliticosGrafoResponse,
     FidelidadePartidariaResponse,
     PoliticoDespesaDetalhe,
@@ -245,6 +246,87 @@ async def comparar_politicos_alias(
         q=q,
         limit_divergencias=limit_divergencias,
         limit_alinhamentos=limit_alinhamentos,
+    )
+
+
+@router.get(
+    "/comparar/{id_or_slug1}/{id_or_slug2}/discursos",
+    response_model=ComparacaoDiscursosResponse,
+    summary="Compara discursos entre 2 políticos (pgvector cosine similarity)",
+    description=(
+        "Cruza pronunciamentos dos parlamentares na Câmara dos Deputados "
+        "utilizando similaridade semântica (BAAI/bge-m3 via pgvector) e classifica "
+        "pares em discursos convergentes (alinhados) e divergentes com base "
+        "em posicionamentos e histórico factual de votações nominais."
+    ),
+    responses={
+        400: {"description": "Parâmetros inválidos ou mesmo deputado informado"},
+        404: {"description": "Deputado não encontrado"},
+    },
+)
+@cache(expire=3600, key_builder=politico_key_builder)
+async def comparar_discursos_politicos(
+    id_or_slug1: Annotated[
+        str,
+        Path(min_length=1, max_length=120, description="Slug ou ID do 1º parlamentar"),
+    ],
+    id_or_slug2: Annotated[
+        str,
+        Path(min_length=1, max_length=120, description="Slug ou ID do 2º parlamentar"),
+    ],
+    limit: Annotated[
+        int, Query(ge=1, le=50, description="Limite máximo de pares a retornar")
+    ] = 30,
+    service: PoliticoService = Depends(_politico_service),
+):
+    logger.info(
+        "Comparando discursos | %s vs %s | limit=%s",
+        id_or_slug1,
+        id_or_slug2,
+        limit,
+    )
+    return await service.comparar_discursos_service(
+        id_or_slug1=id_or_slug1,
+        id_or_slug2=id_or_slug2,
+        limite_pares=limit,
+    )
+
+
+@router.get(
+    "/{politico_id}/comparar/{outro_politico_id}/discursos",
+    response_model=ComparacaoDiscursosResponse,
+    summary="Alias para comparação de discursos entre 2 deputados",
+    description="Alias da rota /comparar/{id_or_slug1}/{id_or_slug2}/discursos.",
+    responses={
+        400: {"description": "Parâmetros inválidos ou mesmo deputado informado"},
+        404: {"description": "Deputado não encontrado"},
+    },
+)
+@cache(expire=3600, key_builder=politico_key_builder)
+async def comparar_discursos_politicos_alias(
+    politico_id: Annotated[
+        str,
+        Path(min_length=1, max_length=120, description="Slug ou ID do deputado base"),
+    ],
+    outro_politico_id: Annotated[
+        str,
+        Path(min_length=1, max_length=120, description="Slug ou ID do outro deputado"),
+    ],
+    limit: Annotated[
+        int, Query(ge=1, le=50, description="Limite máximo de pares a retornar")
+    ] = 30,
+    service: PoliticoService = Depends(_politico_service),
+):
+    logger.info(
+        "Comparando discursos (alias) | %s vs %s | limit=%s",
+        politico_id,
+        outro_politico_id,
+        limit,
+    )
+    return await service.comparar_discursos_service(
+        id_or_slug1=politico_id,
+        id_or_slug2=outro_politico_id,
+        limite_pares=limit,
     )
 
 

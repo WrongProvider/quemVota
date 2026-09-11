@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import ModalSelecionarPolitico from "../components/ModalSelecionarPolitico"
+import { BlocoComparacaoDiscursos } from "../components/BlocoComparacaoDiscursos"
 import {
   usePoliticoDetalheBySlug,
   usePoliticoEstatisticas,
   usePoliticoPerformance,
   useComparacaoPoliticos,
+  useComparacaoDiscursos,
 } from "../hooks/usePoliticos"
 import { useDebounce } from "../hooks/useDebounce"
 import Header from "../components/Header"
@@ -1184,6 +1186,11 @@ export default function ComparacaoPoliticos() {
     }
   )
 
+  const { data: compDiscursos, isLoading: loadCompDiscursos } = useComparacaoDiscursos(
+    dataA && dataB ? idOrSlug1 : undefined,
+    dataA && dataB ? idOrSlug2 : undefined,
+  )
+
   if (loadA || loadB) return <LoadingScreen />
   if (isSlugAInvalido || isSlugBInvalido || errA || errB || !dataA || !dataB) return <ErrorScreen />
 
@@ -1371,6 +1378,14 @@ export default function ComparacaoPoliticos() {
             onSelectTema={setTemaFiltro}
             busca={buscaVotacao}
             onBuscaChange={setBuscaVotacao}
+          />
+
+          {/* ── CONFRONTO DE DISCURSOS NA TRIBUNA (PGVECTOR BAAI/BGE-M3) ── */}
+          <BlocoComparacaoDiscursos
+            comparacao={compDiscursos}
+            loading={loadCompDiscursos}
+            nomeA={primeiroNomeA}
+            nomeB={primeiroNomeB}
           />
 
           {/* ── ESTATÍSTICAS ── */}

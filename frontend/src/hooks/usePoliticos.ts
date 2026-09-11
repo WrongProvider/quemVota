@@ -26,6 +26,7 @@ import {
   obterPoliticoAfinidadesService,
   obterRedeCoautoriaService,
   obterPoliticoDiscursosAtuacaoService,
+  obterComparacaoDiscursosService,
   PoliticoServiceError,
 } from "../services/politicos.service"
 import type {
@@ -49,6 +50,8 @@ import type {
   RedeCoautoriaParams,
   PoliticoDiscursosAtuacaoResponse,
   PoliticoDiscursosAtuacaoParams,
+  ComparacaoDiscursosResponse,
+  ComparacaoDiscursosParams,
 } from "../api/politicos.api"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,6 +117,8 @@ export const politicoKeys = {
     [...politicoKeys.all, "coautoria", String(idOrSlug), limit ?? 20] as const,
   discursos:    (idOrSlug: string | number, params?: PoliticoDiscursosAtuacaoParams) =>
     [...politicoKeys.all, "discursos", String(idOrSlug), params ?? {}] as const,
+  comparacaoDiscursos: (idOrSlug1: string | number, idOrSlug2: string | number, params?: ComparacaoDiscursosParams) =>
+    [...politicoKeys.all, "comparacaoDiscursos", String(idOrSlug1), String(idOrSlug2), params ?? {}] as const,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -451,5 +456,38 @@ export function usePoliticoDiscursosAtuacao(
     staleTime: 10 * 60 * 1_000,
     gcTime: 15 * 60 * 1_000,
     retry: false, // 404 gracioso
+  })
+}
+
+/**
+ * Compara discursos entre dois parlamentares via similaridade semântica (pgvector).
+ * Classifica os pares em discursos convergentes (parecidos) e divergentes.
+ */
+export function useComparacaoDiscursos(
+  idOrSlug1?: string | number,
+  idOrSlug2?: string | number,
+  params?: ComparacaoDiscursosParams,
+): UseQueryResult<ComparacaoDiscursosResponse | null, PoliticoServiceError> {
+  const s1 = String(idOrSlug1 ?? "").trim()
+  const s2 = String(idOrSlug2 ?? "").trim()
+  const enabled = Boolean(
+    s1 &&
+    s2 &&
+    s1 !== "null" &&
+    s2 !== "null" &&
+    s1 !== "undefined" &&
+    s2 !== "undefined" &&
+    s1 !== s2
+  )
+
+  return useQuery({
+    queryKey: politicoKeys.comparacaoDiscursos(idOrSlug1 ?? "", idOrSlug2 ?? "", params),
+    queryFn: ({ signal }) =>
+      obterComparacaoDiscursosService(idOrSlug1!, idOrSlug2!, params, signal),
+    enabled,
+    staleTime: STALE_TIME_MS,
+    gcTime: GC_TIME_MS,
+    retry: shouldRetry,
+    retryDelay,
   })
 }

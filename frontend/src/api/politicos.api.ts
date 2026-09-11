@@ -923,3 +923,78 @@ export async function fetchPoliticoDiscursosAtuacao(
     throw err
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Comparação de Discursos entre Deputados (Similaridade Semântica pgvector)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface DiscursoResumoComparacao {
+  readonly id: number
+  readonly data_hora_inicio: string
+  readonly tipo_discurso: string | null
+  readonly fase_evento: string | null
+  readonly sumario: string | null
+  readonly keywords: string | null
+  readonly url_texto: string | null
+  readonly voto_registrado?: string | null
+}
+
+export interface ParDiscursoComparado {
+  readonly tema_ou_materia: string
+  readonly tipo_relacao: "convergente" | "divergente"
+  readonly similaridade_semantica: number
+  readonly motivo_classificacao: string
+  readonly discurso_politico1: DiscursoResumoComparacao
+  readonly discurso_politico2: DiscursoResumoComparacao
+}
+
+export interface ComparacaoDiscursosResponse {
+  readonly politico1: PoliticoResumoComparacao
+  readonly politico2: PoliticoResumoComparacao
+  readonly total_pares: number
+  readonly total_convergentes: number
+  readonly total_divergentes: number
+  readonly discursos_convergentes: ParDiscursoComparado[]
+  readonly discursos_divergentes: ParDiscursoComparado[]
+}
+
+export interface ComparacaoDiscursosParams {
+  readonly limit?: number
+}
+
+/**
+ * GET /politicos/comparar/{idOrSlug1}/{idOrSlug2}/discursos
+ *
+ * Busca discursos correlacionados por similaridade semântica entre dois deputados,
+ * classificados em convergentes (parecidos) e divergentes.
+ */
+export async function fetchComparacaoDiscursos(
+  idOrSlug1: string | number,
+  idOrSlug2: string | number,
+  params?: ComparacaoDiscursosParams,
+  signal?: AbortSignal,
+): Promise<ComparacaoDiscursosResponse | null> {
+  try {
+    const { data } = await api.get<ComparacaoDiscursosResponse>(
+      `/politicos/comparar/${idOrSlug1}/${idOrSlug2}/discursos`,
+      {
+        params: {
+          limit: 30,
+          ...params,
+        },
+        signal,
+      },
+    )
+    return data
+  } catch (err: unknown) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "response" in err &&
+      (err as { response?: { status?: number } }).response?.status === 404
+    ) {
+      return null
+    }
+    throw err
+  }
+}

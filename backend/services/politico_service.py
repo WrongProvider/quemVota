@@ -24,8 +24,11 @@ from typing import Optional
 from backend.schemas import (
     AfinidadesPoliticoResponse,
     AtividadeLegislativaResponse,
+    ComparacaoDiscursosResponse,
     ComparacaoPoliticosGrafoResponse,
+    DiscursoResumoComparacao,
     FidelidadePartidariaResponse,
+    ParDiscursoComparado,
     PoliticoDiscursosAtuacaoResponse,
     PoliticoResumoComparacao,
     PoliticoResponse,
@@ -843,4 +846,77 @@ class PoliticoService:
             nome_deputado=pol.nome,
             total_discursos=total,
             itens=itens,
+        )
+
+    # ------------------------------------------------------------------
+    # Comparação de Discursos entre Deputados (pgvector cosine similarity)
+    # ------------------------------------------------------------------
+
+    async def comparar_discursos_service(
+        self,
+        id_or_slug1: str,
+        id_or_slug2: str,
+        limite_pares: int = 30,
+    ) -> ComparacaoDiscursosResponse:
+        """
+        Compara os discursos de dois parlamentares identificando pares
+        convergentes e divergentes com base em similaridade semântica
+        (BAAI/bge-m3, pgvector) e dados factuais de votações nominais.
+        """
+        if str(id_or_slug1).strip().lower() == str(id_or_slug2).strip().lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Não é possível comparar discursos de um parlamentar consigo mesmo.",
+            )
+
+        pol1 = await self.get_politico_by_id_or_slug_service(str(id_or_slug1))
+        pol2 = await self.get_politico_by_id_or_slug_service(str(id_or_slug2))
+
+        safe_limit = max(1, min(limite_pares, 50))
+
+        pares_raw = await self._repo.get_comparacao_discursos_repo(
+            deputado_id1=pol1.id,
+            deputado_id2=pol2.id,
+            limite_pares=safe_limit,
+        )
+
+        convergentes: list[ParDiscursoComparado] = []
+        divergentes: list[ParDiscursoComparado] = []
+
+        for par in pares_raw:
+            item = ParDiscursoComparado(
+                tema_ou_materia=par["tema_ou_materia"],
+                tipo_relacao=par["tipo_relacao"],
+                similaridade_semantica=round(par["similaridade"], 4),
+                motivo_classificacao=par["motivo_classificacao"],
+                discurso_politico1=DiscursoResumoComparacao(**par["discurso1"]),
+                discurso_politico2=DiscursoResumoComparacao(**par["discurso2"]),
+            )
+            if par["tipo_relacao"] == "convergente":
+                convergentes.append(item)
+            else:
+                divergentes.append(item)
+
+        return ComparacaoDiscursosResponse(
+            politico1=PoliticoResumoComparacao(
+                id=pol1.id,
+                nome=pol1.nome,
+                slug=pol1.slug,
+                sigla_partido=pol1.sigla_partido,
+                sigla_uf=pol1.sigla_uf,
+                url_foto=pol1.url_foto,
+            ),
+            politico2=PoliticoResumoComparacao(
+                id=pol2.id,
+                nome=pol2.nome,
+                slug=pol2.slug,
+                sigla_partido=pol2.sigla_partido,
+                sigla_uf=pol2.sigla_uf,
+                url_foto=pol2.url_foto,
+            ),
+            total_pares=len(convergentes) + len(divergentes),
+            total_convergentes=len(convergentes),
+            total_divergentes=len(divergentes),
+            discursos_convergentes=convergentes,
+            discursos_divergentes=divergentes,
         )
