@@ -430,7 +430,7 @@ export default function PoliticoDetalhe() {
   }, [data?.id])
 
   if (isLoading) return <LoadingScreen />
-  if (error) return <ErrorScreen />
+  if (error) return <ErrorScreen error={error} />
   if (!data) return null
 
   // ── Detecção de Perfil Histórico ──────────────────────────────────────────
@@ -1210,17 +1210,17 @@ export default function PoliticoDetalhe() {
 // ── HISTÓRICO DE VOTAÇÕES ──────────────────────────────────────────────────
 
 const VOTO_CONFIG: Record<string, { label: string; cls: string; clsLight: string; icon: React.ReactNode }> = {
-  "Sim":       { label: "Sim",       cls: "text-emerald-700 bg-emerald-50 border-emerald-200",  clsLight: "bg-emerald-50",  icon: <CheckCircle2 size={11} /> },
-  "Não":       { label: "Não",       cls: "text-red-600 bg-red-50 border-red-200",              clsLight: "bg-red-50",      icon: <XCircle size={11} /> },
-  "Obstrução": { label: "Obstrução", cls: "text-amber-700 bg-amber-50 border-amber-200",        clsLight: "bg-amber-50",    icon: <MinusCircle size={11} /> },
-  "Abstenção": { label: "Abstenção", cls: "text-slate-500 bg-slate-100 border-slate-200",       clsLight: "bg-slate-50",    icon: <MinusCircle size={11} /> },
+  "Sim":       { label: "VOTOU SIM",       cls: "text-white bg-emerald-600 border-emerald-700 shadow-sm",  clsLight: "bg-emerald-50",  icon: <CheckCircle2 size={13} className="text-white" /> },
+  "Não":       { label: "VOTOU NÃO",       cls: "text-white bg-red-600 border-red-700 shadow-sm",              clsLight: "bg-red-50",      icon: <XCircle size={13} className="text-white" /> },
+  "Obstrução": { label: "OBSTRUÇÃO", cls: "text-amber-900 bg-amber-400 border-amber-500 shadow-sm",        clsLight: "bg-amber-50",    icon: <MinusCircle size={13} className="text-amber-900" /> },
+  "Abstenção": { label: "ABSTENÇÃO", cls: "text-slate-700 bg-slate-200 border-slate-300 shadow-sm",       clsLight: "bg-slate-50",    icon: <MinusCircle size={13} className="text-slate-700" /> },
 }
 
 function VotoBadge({ voto }: { voto?: string | null }) {
   const v = voto || "Não registrado"
-  const cfg = VOTO_CONFIG[v] ?? { label: v, cls: "text-slate-600 bg-slate-50 border-slate-200", icon: <MinusCircle size={11} /> }
+  const cfg = VOTO_CONFIG[v] ?? { label: v.toUpperCase(), cls: "text-slate-700 bg-slate-200 border-slate-300 shadow-sm", icon: <MinusCircle size={13} /> }
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-semibold flex-shrink-0 ${cfg.cls}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold tracking-wide flex-shrink-0 ${cfg.cls}`}>
       {cfg.icon} {cfg.label}
     </span>
   )
@@ -1236,18 +1236,18 @@ function ResultadoVotacaoBadge({ aprovacao, resultadoTexto }: { aprovacao: numbe
   }
   const aprovacaoFinal = resolvedAprovacao
   if (aprovacaoFinal === 1) return (
-    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-      <CheckCircle2 size={9} /> Aprovada
+    <span className="inline-flex items-center gap-1.5 text-xs text-emerald-800 font-bold bg-emerald-100 border border-emerald-300 px-2 py-1 rounded-md shadow-sm">
+      <CheckCircle2 size={12} className="text-emerald-700" /> PROPOSIÇÃO APROVADA
     </span>
   )
   if (aprovacaoFinal === 0) return (
-    <span className="inline-flex items-center gap-1 text-[10px] text-red-500 font-semibold bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
-      <XCircle size={9} /> Rejeitada
+    <span className="inline-flex items-center gap-1.5 text-xs text-red-800 font-bold bg-red-100 border border-red-300 px-2 py-1 rounded-md shadow-sm">
+      <XCircle size={12} className="text-red-700" /> PROPOSIÇÃO REJEITADA
     </span>
   )
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 font-semibold bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">
-      <MinusCircle size={9} /> Indefinido
+    <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 font-bold bg-slate-100 border border-slate-300 px-2 py-1 rounded-md shadow-sm">
+      <MinusCircle size={12} className="text-slate-500" /> RESULTADO INDEFINIDO
     </span>
   )
 }
@@ -2022,9 +2022,9 @@ function HistoricoVotacoes({ politicoId, anoSelecionado }: { politicoId: number;
                             {v.temas.slice(0, 3).map((temaItem, idx) => (
                               <span
                                 key={idx}
-                                className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full"
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full shadow-sm"
                               >
-                                <Tag size={9} className="text-slate-400" />
+                                <Tag size={11} className="text-indigo-500" />
                                 {temaItem}
                               </span>
                             ))}
@@ -2142,17 +2142,28 @@ function LoadingScreen() {
 }
 
 // ── ERROR ──────────────────────────────────────────────────────────────────
-function ErrorScreen() {
+function ErrorScreen({ error }: { error?: any }) {
+  const isNotFound = error?.kind === "not_found" || error?.statusCode === 404;
   return (
     <>
       <Header />
       <div className="min-h-screen bg-canvas flex items-center justify-center pt-16">
-        <div className="text-center">
-          <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <AlertCircle size={28} className="text-red-500" />
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className={`w-14 h-14 rounded-2xl ${isNotFound ? 'bg-slate-100' : 'bg-red-50'} flex items-center justify-center mx-auto mb-4`}>
+            {isNotFound ? (
+              <Search size={28} className="text-slate-400" />
+            ) : (
+              <AlertCircle size={28} className="text-red-500" />
+            )}
           </div>
-          <h2 className="text-lg font-semibold text-slate-800 mb-1">Erro ao carregar</h2>
-          <p className="text-sm text-slate-500">Não foi possível carregar o perfil deste parlamentar.</p>
+          <h2 className="text-lg font-semibold text-slate-800 mb-1">
+            {isNotFound ? "Político não encontrado" : "Erro ao carregar"}
+          </h2>
+          <p className="text-sm text-slate-500">
+            {isNotFound 
+              ? "O perfil deste político não existe ou não foi encontrado em nossa base de dados." 
+              : "Não foi possível carregar o perfil deste parlamentar."}
+          </p>
           <Link
             to="/politicos"
             className="inline-flex items-center gap-1.5 mt-5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-xs"

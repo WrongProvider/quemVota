@@ -35,8 +35,8 @@ API_V2_BASE = "https://dadosabertos.camara.leg.br/api/v2"
 BASE_ARQUIVOS_URL = "http://dadosabertos.camara.leg.br/arquivos"
 COTAS_BASE_URL = "http://www.camara.leg.br/cotas"
 
-DEFAULT_REQUEST_TIMEOUT = (10.0, 60.0)  # (connect, read)
-DEFAULT_MAX_RETRIES = 3
+DEFAULT_REQUEST_TIMEOUT = (20.0, 120.0)  # (connect, read)
+DEFAULT_MAX_RETRIES = 10
 DEFAULT_RETRY_DELAY = 3.0
 
 CACHE_FILE_DEFAULT = Path(os.getenv("ETL_CACHE_FILE", "etl_cache.json"))

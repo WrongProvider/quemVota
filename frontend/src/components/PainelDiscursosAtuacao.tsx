@@ -72,19 +72,19 @@ function formatarDataHora(iso: string): string {
 // ── Badge do voto ───────────────────────────────────────────────────────────
 function VotoBadge({ voto }: { voto: string }) {
   const lower = voto.toLowerCase()
-  let className = "px-2 py-0.5 rounded-md text-[11px] font-semibold "
+  let className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold tracking-wide flex-shrink-0 shadow-sm "
   if (lower === "sim") {
-    className += "bg-emerald-100 text-emerald-700"
+    className += "text-white bg-emerald-600 border-emerald-700"
   } else if (lower.includes("não") || lower === "nao") {
-    className += "bg-red-100 text-red-700"
+    className += "text-white bg-red-600 border-red-700"
   } else if (lower.includes("obstrução") || lower === "obstrucao") {
-    className += "bg-amber-100 text-amber-700"
+    className += "text-amber-900 bg-amber-400 border-amber-500"
   } else if (lower.includes("abstenção") || lower === "abstencao") {
-    className += "bg-slate-100 text-slate-600"
+    className += "text-slate-700 bg-slate-200 border-slate-300"
   } else {
-    className += "bg-slate-100 text-slate-500"
+    className += "text-slate-700 bg-slate-200 border-slate-300"
   }
-  return <span className={className}>{voto}</span>
+  return <span className={className}>{voto.toUpperCase()}</span>
 }
 
 // ── Card de proposição correlata ────────────────────────────────────────────

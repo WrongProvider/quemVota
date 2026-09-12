@@ -5,13 +5,13 @@ import numpy as np
 import requests
 from cv2 import dnn_superres
 
-from injest_banco.db.database import SessionLocal
-from injest_banco.db.models import Deputado
+from shared.database import SessionLocal
+from shared.models import Deputado
 
 # Configurações
 PASTA_DESTINO = "frontend/public/fotos_politicos"  # Mude para a pasta real da sua VPS
 TIMEOUT_REQUISICAO = 10
-MODELO_IA_CAMINHO = "ESPCN_x4.pb"  # O arquivo que você baixou no Passo 2
+MODELO_IA_CAMINHO = "injest_banco/ESPCN_x4.pb"  # O arquivo que você baixou no Passo 2
 
 
 def configurar_pasta():

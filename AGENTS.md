@@ -47,6 +47,7 @@ quemVota/
 - **Versão:** Python 3.10+
 - **Tipagem Estrita:** Todas as funções devem ter type hints completos (`from typing import Optional, List, Dict...` ou sintaxe moderna `list[str]`, `str | None`).
 - **Validação de Dados:** Use Pydantic V2 para todos os schemas de entrada/saída de APIs e jobs.
+- **Prevenção de Vulnerabilidades (OWASP):** Toda a arquitetura e base de código deve ser projetada e desenvolvida com base nas melhores práticas da OWASP (Open Worldwide Application Security Project). Os agentes devem prevenir ativamente vulnerabilidades comuns (ex: Injections, XSS, Broken Access Control) durante a escrita e refatoração do código.
 - **Qualidade de Código:** Antes de concluir qualquer tarefa, execute:
   ```bash
   ruff check .

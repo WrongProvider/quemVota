@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, case
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 
@@ -152,7 +152,7 @@ async def get_resumo_metricas_factuais(db: AsyncSession):
         Voto.idDeputado,
         func.count(Voto.id).label("total_votos"),
         func.sum(
-            func.case(
+            case(
                 (Voto.voto == VotacaoOrientacao.orientacao, 1),
                 else_=0
             )
