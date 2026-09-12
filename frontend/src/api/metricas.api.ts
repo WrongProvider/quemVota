@@ -29,6 +29,10 @@ export interface ResumoMetricasDeputado {
   totalGastoCota: number
   totalProposicoesAutor: number
   totalPresencas: number
+  totalDiscursos: number
+  totalVotosNominais: number
+  fidelidadePartidaria: number | null
+  totalRelatorias: number
 }
 
 export async function fetchResumoMetricas(): Promise<ResumoMetricasDeputado[]> {

@@ -147,9 +147,25 @@ export default function ComparadorDeputados() {
                   <span className="block text-slate-500 text-xs uppercase tracking-wider">Projetos</span>
                   <span className="font-medium">{m.totalProposicoesAutor}</span>
                 </div>
-                <div className="bg-slate-50 p-2 rounded col-span-2">
-                  <span className="block text-slate-500 text-xs uppercase tracking-wider">Presenças Registradas</span>
+                <div className="bg-slate-50 p-2 rounded">
+                  <span className="block text-slate-500 text-xs uppercase tracking-wider">Presenças</span>
                   <span className="font-medium">{m.totalPresencas}</span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded">
+                  <span className="block text-slate-500 text-xs uppercase tracking-wider">Votos Nominais</span>
+                  <span className="font-medium">{m.totalVotosNominais}</span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded">
+                  <span className="block text-slate-500 text-xs uppercase tracking-wider">Fidelidade</span>
+                  <span className="font-medium">{m.fidelidadePartidaria != null ? `${m.fidelidadePartidaria.toFixed(1)}%` : "N/A"}</span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded">
+                  <span className="block text-slate-500 text-xs uppercase tracking-wider">Relatorias</span>
+                  <span className="font-medium">{m.totalRelatorias}</span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded">
+                  <span className="block text-slate-500 text-xs uppercase tracking-wider">Discursos</span>
+                  <span className="font-medium">{m.totalDiscursos}</span>
                 </div>
               </div>
             </div>
@@ -186,6 +202,30 @@ export default function ComparadorDeputados() {
                   >
                     Presenças {ordenacao === "totalPresencas" && (direcao === "asc" ? "↑" : "↓")}
                   </th>
+                  <th 
+                    className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100"
+                    onClick={() => sortData("totalVotosNominais")}
+                  >
+                    Votos Nominais {ordenacao === "totalVotosNominais" && (direcao === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100"
+                    onClick={() => sortData("fidelidadePartidaria")}
+                  >
+                    Fidelidade {ordenacao === "fidelidadePartidaria" && (direcao === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100"
+                    onClick={() => sortData("totalRelatorias")}
+                  >
+                    Relatorias {ordenacao === "totalRelatorias" && (direcao === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100"
+                    onClick={() => sortData("totalDiscursos")}
+                  >
+                    Discursos {ordenacao === "totalDiscursos" && (direcao === "asc" ? "↑" : "↓")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
@@ -216,6 +256,18 @@ export default function ComparadorDeputados() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-slate-700">
                       {m.totalPresencas}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-slate-700">
+                      {m.totalVotosNominais}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-slate-700">
+                      {m.fidelidadePartidaria != null ? `${m.fidelidadePartidaria.toFixed(1)}%` : "N/A"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-slate-700">
+                      {m.totalRelatorias}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-slate-700">
+                      {m.totalDiscursos}
                     </td>
                   </tr>
                 ))}
