@@ -32,10 +32,13 @@ async def obter_metricas_deputado(
         )
 
 
+from fastapi_cache.decorator import cache
+
 @router.get(
     "/resumo",
     summary="Obtém o resumo comparativo de métricas de todos os deputados",
 )
+@cache(expire=3600)
 async def obter_resumo_metricas(db: AsyncSession = Depends(get_db)):
     from backend.services.metricas_factuais import get_resumo_metricas_factuais
 

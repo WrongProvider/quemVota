@@ -1029,3 +1029,7 @@ class ResumoMetricasDeputado(BaseModel):
     totalGastoCota: float
     totalProposicoesAutor: int
     totalPresencas: int
+    totalDiscursos: int = 0
+    totalVotosNominais: int = 0
+    fidelidadePartidaria: float | None = None
+    totalRelatorias: int = 0

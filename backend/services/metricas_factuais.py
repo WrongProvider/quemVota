@@ -102,21 +102,16 @@ async def get_metricas_factuais(db: AsyncSession, deputado_id: int) -> MetricasD
 
 
 async def get_resumo_metricas_factuais(db: AsyncSession):
-    # Retorna uma lista de métricas factuais sumarizadas (Apenas o total)
-    # Por limitações de performance, podemos agregar tudo em queries separadas e fazer join na memoria,
-    # ou retornar apenas um esqueleto. Como há muitos deputados, uma query otimizada é necessária.
-    # Mas para o escopo inicial e como o banco não deve estar colossal em qtd de políticos (513 deputados ativos):
+    from shared.models import Deputado, Voto, VotacaoOrientacao
 
     # 1. Total Gasto por Deputado
     stmt_gastos = select(
         Despesa.idDeputado, func.sum(Despesa.valorLiquido).label("total_gasto")
     ).group_by(Despesa.idDeputado)
     res_gastos = await db.execute(stmt_gastos)
-    gastos_dict = {
-        row.idDeputado: float(row.total_gasto or 0.0) for row in res_gastos.all()
-    }
+    gastos_dict = {row.idDeputado: float(row.total_gasto or 0.0) for row in res_gastos.all()}
 
-    # 2. Total Proposicoes
+    # 2. Total Proposicoes (Autor)
     stmt_prop = (
         select(
             ProposicaoAutor.idDeputadoAutor,
@@ -136,8 +131,49 @@ async def get_resumo_metricas_factuais(db: AsyncSession):
     res_pres = await db.execute(stmt_pres)
     pres_dict = {row.idDeputado: row.total_pres for row in res_pres.all()}
 
+    # 4. Total Discursos
+    stmt_disc = select(
+        Discurso.idDeputado, func.count(Discurso.id).label("total_disc")
+    ).group_by(Discurso.idDeputado)
+    res_disc = await db.execute(stmt_disc)
+    disc_dict = {row.idDeputado: row.total_disc for row in res_disc.all()}
+
+    # 5. Total Relatorias
+    stmt_rel = (
+        select(Deputado.id, func.count(Proposicao.id).label("total_rel"))
+        .join(Proposicao, Proposicao.ultimoStatus_uriRelator == Deputado.uri)
+        .group_by(Deputado.id)
+    )
+    res_rel = await db.execute(stmt_rel)
+    rel_dict = {row.id: row.total_rel for row in res_rel.all()}
+
+    # 6. Fidelidade Partidaria e Votos Nominais
+    stmt_fidelidade = select(
+        Voto.idDeputado,
+        func.count(Voto.id).label("total_votos"),
+        func.sum(
+            func.case(
+                (Voto.voto == VotacaoOrientacao.orientacao, 1),
+                else_=0
+            )
+        ).label("votos_fieis")
+    ).select_from(Voto).join(
+        VotacaoOrientacao, Voto.idVotacao == VotacaoOrientacao.idVotacao
+    ).where(
+        VotacaoOrientacao.siglaBancada.like(func.concat('%', Voto.siglaPartido, '%'))
+    ).group_by(Voto.idDeputado)
+    
+    res_fid = await db.execute(stmt_fidelidade)
+    fid_dict = {}
+    votos_dict = {}
+    for row in res_fid.all():
+        votos_dict[row.idDeputado] = row.total_votos
+        if row.total_votos > 0:
+            fid_dict[row.idDeputado] = (row.votos_fieis / row.total_votos) * 100.0
+        else:
+            fid_dict[row.idDeputado] = None
+
     # Busca deputados
-    from shared.models import Deputado
     from sqlalchemy.orm import selectinload
 
     stmt_dep = select(Deputado).options(selectinload(Deputado.partido)).limit(600)
@@ -156,6 +192,10 @@ async def get_resumo_metricas_factuais(db: AsyncSession):
                 "totalGastoCota": gastos_dict.get(d.id, 0.0),
                 "totalProposicoesAutor": prop_dict.get(d.id, 0),
                 "totalPresencas": pres_dict.get(d.id, 0),
+                "totalDiscursos": disc_dict.get(d.id, 0),
+                "totalVotosNominais": votos_dict.get(d.id, 0),
+                "fidelidadePartidaria": fid_dict.get(d.id, None),
+                "totalRelatorias": rel_dict.get(d.id, 0),
             }
         )
     return resultados
