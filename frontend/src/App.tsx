@@ -46,7 +46,8 @@ export default function App() {
         {/* ── Rota legada — redireciona para o novo padrão ── */}
         <Route path="/politicos_detalhe/:id" element={<LegacyPoliticoRedirect />} />
 
-        <Route path="/rankings" element={<Rankings />} />
+        {/* ── Redireciona a antiga rota de rankings para métricas ── */}
+        <Route path="/rankings" element={<Navigate to="/metricas" replace />} />
         <Route path="/metricas" element={<ComparadorDeputados />} />
         <Route path="/comparar" element={<ComparadorLanding />} />
         <Route path="/comparar/:slug1/:slug2" element={<ComparacaoPoliticos/>} />

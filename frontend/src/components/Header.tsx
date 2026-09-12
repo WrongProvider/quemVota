@@ -153,9 +153,9 @@ const NAV_ITEMS: NavItem[] = [
         icon: <Icons.Users />,
       },
       {
-        name: "Rankings",
-        href: "/rankings",
-        description: "Rankings factuais por gastos, economia e discursos",
+        name: "Métricas",
+        href: "/metricas",
+        description: "Tabela comparativa de gastos, projetos e presenças",
         icon: <Icons.BarChart />,
       },
       {
