@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from sqlalchemy import func, desc
 from typing import List, Optional
-from backend.database import get_db
+from shared.database import get_db
 from shared.models import Despesa, Deputado
 from pydantic import BaseModel
 
@@ -15,20 +16,25 @@ class EmpresaRankingResponse(BaseModel):
     quantidadeNotas: int
 
 @router.get("/ranking", response_model=List[EmpresaRankingResponse])
-def get_ranking_empresas(limit: int = 20, offset: int = 0, db: Session = Depends(get_db)):
-    resultados = db.query(
-        Despesa.cnpjCpfFornecedor,
-        func.max(Despesa.nomeFornecedor).label("nome"),
-        func.sum(Despesa.valorLiquido).label("total"),
-        func.count(Despesa.codDocumento).label("qtd")
-    ).filter(
-        Despesa.cnpjCpfFornecedor != None,
-        Despesa.cnpjCpfFornecedor != ""
-    ).group_by(
-        Despesa.cnpjCpfFornecedor
-    ).order_by(
-        desc("total")
-    ).limit(limit).offset(offset).all()
+async def get_ranking_empresas(limit: int = 20, offset: int = 0, db: AsyncSession = Depends(get_db)):
+    stmt = (
+        select(
+            Despesa.cnpjCpfFornecedor,
+            func.max(Despesa.nomeFornecedor).label("nome"),
+            func.sum(Despesa.valorLiquido).label("total"),
+            func.count(Despesa.codDocumento).label("qtd")
+        )
+        .filter(
+            Despesa.cnpjCpfFornecedor != None,
+            Despesa.cnpjCpfFornecedor != ""
+        )
+        .group_by(Despesa.cnpjCpfFornecedor)
+        .order_by(desc("total"))
+        .limit(limit)
+        .offset(offset)
+    )
+    result = await db.execute(stmt)
+    resultados = result.all()
 
     return [
         {
@@ -61,34 +67,50 @@ class EmpresaResumoResponse(BaseModel):
     topDeputados: List[DistDeputado]
 
 @router.get("/{cnpj_cpf}/resumo", response_model=EmpresaResumoResponse)
-def get_empresa_resumo(cnpj_cpf: str, db: Session = Depends(get_db)):
+async def get_empresa_resumo(cnpj_cpf: str, db: AsyncSession = Depends(get_db)):
     # 1. Total e qtd
-    agregado = db.query(
-        func.max(Despesa.nomeFornecedor).label("nome"),
-        func.sum(Despesa.valorLiquido).label("total"),
-        func.count(Despesa.codDocumento).label("qtd")
-    ).filter(Despesa.cnpjCpfFornecedor == cnpj_cpf).first()
+    stmt_agregado = (
+        select(
+            func.max(Despesa.nomeFornecedor).label("nome"),
+            func.sum(Despesa.valorLiquido).label("total"),
+            func.count(Despesa.codDocumento).label("qtd")
+        )
+        .filter(Despesa.cnpjCpfFornecedor == cnpj_cpf)
+    )
+    res_agregado = await db.execute(stmt_agregado)
+    agregado = res_agregado.first()
 
     if not agregado or not agregado.total:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
 
     # 2. Partidos
-    partidos = db.query(
-        Deputado.siglaPartido,
-        func.sum(Despesa.valorLiquido).label("total")
-    ).join(Deputado, Despesa.idDeputado == Deputado.idCamara)\
-     .filter(Despesa.cnpjCpfFornecedor == cnpj_cpf)\
-     .group_by(Deputado.siglaPartido)\
-     .order_by(desc("total")).all()
+    stmt_partidos = (
+        select(
+            Deputado.siglaPartido,
+            func.sum(Despesa.valorLiquido).label("total")
+        )
+        .join(Deputado, Despesa.idDeputado == Deputado.idCamara)
+        .filter(Despesa.cnpjCpfFornecedor == cnpj_cpf)
+        .group_by(Deputado.siglaPartido)
+        .order_by(desc("total"))
+    )
+    res_partidos = await db.execute(stmt_partidos)
+    partidos = res_partidos.all()
 
     # 3. Deputados
-    deputados = db.query(
-        Deputado,
-        func.sum(Despesa.valorLiquido).label("total")
-    ).join(Deputado, Despesa.idDeputado == Deputado.idCamara)\
-     .filter(Despesa.cnpjCpfFornecedor == cnpj_cpf)\
-     .group_by(Deputado.id)\
-     .order_by(desc("total")).limit(10).all()
+    stmt_deputados = (
+        select(
+            Deputado,
+            func.sum(Despesa.valorLiquido).label("total")
+        )
+        .join(Deputado, Despesa.idDeputado == Deputado.idCamara)
+        .filter(Despesa.cnpjCpfFornecedor == cnpj_cpf)
+        .group_by(Deputado.id)
+        .order_by(desc("total"))
+        .limit(10)
+    )
+    res_deputados = await db.execute(stmt_deputados)
+    deputados = res_deputados.all()
 
     return {
         "cnpjCpf": cnpj_cpf,
@@ -119,11 +141,17 @@ class NotaResponse(BaseModel):
     idDeputado: int
 
 @router.get("/{cnpj_cpf}/notas", response_model=List[NotaResponse])
-def get_empresa_notas(cnpj_cpf: str, limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
-    notas = db.query(Despesa, Deputado).join(Deputado, Despesa.idDeputado == Deputado.idCamara)\
-              .filter(Despesa.cnpjCpfFornecedor == cnpj_cpf)\
-              .order_by(desc(Despesa.dataDocumento))\
-              .limit(limit).offset(offset).all()
+async def get_empresa_notas(cnpj_cpf: str, limit: int = 50, offset: int = 0, db: AsyncSession = Depends(get_db)):
+    stmt_notas = (
+        select(Despesa, Deputado)
+        .join(Deputado, Despesa.idDeputado == Deputado.idCamara)
+        .filter(Despesa.cnpjCpfFornecedor == cnpj_cpf)
+        .order_by(desc(Despesa.dataDocumento))
+        .limit(limit)
+        .offset(offset)
+    )
+    res_notas = await db.execute(stmt_notas)
+    notas = res_notas.all()
     
     return [
         {
