@@ -18,7 +18,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema: Optmize pgvector HNSW indexes & setup Apache AGE graph."""
-    
+
     # 1. Drop existing sub-optimal HNSW indexes
     op.execute("DROP INDEX IF EXISTS ix_document_embeddings_embedding_hnsw")
     op.execute("DROP INDEX IF EXISTS ix_deputado_perfil_vetor_composto_hnsw")

@@ -4,6 +4,7 @@ from sqlalchemy import select, desc, extract
 from sqlalchemy.orm import aliased
 from shared.models import Deputado, BuscaPopular, Legislatura, Voto, OrgaoDeputado
 
+
 async def registrar_busca(db: AsyncSession, deputado_id: int) -> None:
     result = await db.execute(
         select(BuscaPopular).filter(BuscaPopular.idDeputado == deputado_id)
@@ -14,6 +15,7 @@ async def registrar_busca(db: AsyncSession, deputado_id: int) -> None:
     else:
         db.add(BuscaPopular(idDeputado=deputado_id, count=1))
     await db.commit()
+
 
 async def obter_mais_pesquisados(db: AsyncSession, limit: int = 10) -> List[dict]:
     LegIni = aliased(Legislatura, name="leg_ini")
@@ -59,7 +61,10 @@ async def obter_mais_pesquisados(db: AsyncSession, limit: int = 10) -> List[dict
         if not uf or not partido:
             orgao_stmt = (
                 select(OrgaoDeputado.siglaPartido, OrgaoDeputado.siglaUF)
-                .where(OrgaoDeputado.idDeputado == deputado.id, OrgaoDeputado.siglaPartido.isnot(None))
+                .where(
+                    OrgaoDeputado.idDeputado == deputado.id,
+                    OrgaoDeputado.siglaPartido.isnot(None),
+                )
                 .order_by(OrgaoDeputado.id.desc())
                 .limit(1)
             )

@@ -998,3 +998,34 @@ class ComparacaoDiscursosResponse(BaseModel):
     discursos_divergentes: List[ParDiscursoComparado]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CategoriaGasto(BaseModel):
+    tipoDespesa: str
+    valorTotal: float
+
+
+class TipoProposicao(BaseModel):
+    sigla: str
+    quantidade: int
+
+
+class MetricasDeputado(BaseModel):
+    idDeputado: int
+    totalGastoCota: float
+    topGastos: List[CategoriaGasto]
+    totalProposicoesAutor: int
+    distribuicaoProposicoes: List[TipoProposicao]
+    totalPresencas: int
+    totalDiscursos: int
+
+
+class ResumoMetricasDeputado(BaseModel):
+    idDeputado: int
+    nome: str
+    partido: str | None
+    uf: str | None
+    urlFoto: str | None
+    totalGastoCota: float
+    totalProposicoesAutor: int
+    totalPresencas: int

@@ -13,6 +13,7 @@ import Roadmap from "./pages/Roadmap"
 import GlobalExternalLinkModal from "./components/GlobalExternalLinkModal"
 import ComparacaoPoliticos from "./pages/ComparacaoPoliticos"
 import ComparadorLanding from "./pages/ComparadorLanding"
+import ComparadorDeputados from "./pages/ComparadorDeputados"
 import NotFound from "./pages/NotFound"
 
 /**
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/politicos_detalhe/:id" element={<LegacyPoliticoRedirect />} />
 
         <Route path="/rankings" element={<Rankings />} />
+        <Route path="/metricas" element={<ComparadorDeputados />} />
         <Route path="/comparar" element={<ComparadorLanding />} />
         <Route path="/comparar/:slug1/:slug2" element={<ComparacaoPoliticos/>} />
         <Route path="/sobre" element={<Sobre />} />

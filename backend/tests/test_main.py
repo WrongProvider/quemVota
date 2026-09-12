@@ -114,6 +114,3 @@ async def test_politico_atividade_legislativa_filtros(client):
         assert p["proponente"] is True
         assert "ultimo_status_situacao" in p
         assert "ultimo_status_orgao" in p
-
-
-
