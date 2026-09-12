@@ -13,6 +13,8 @@ import Roadmap from "./pages/Roadmap"
 import GlobalExternalLinkModal from "./components/GlobalExternalLinkModal"
 import ComparacaoPoliticos from "./pages/ComparacaoPoliticos"
 import ComparadorLanding from "./pages/ComparadorLanding"
+import EmpresasRanking from "./pages/EmpresasRanking"
+import EmpresaDetalhe from "./pages/EmpresaDetalhe"
 import ComparadorDeputados from "./pages/ComparadorDeputados"
 import NotFound from "./pages/NotFound"
 
@@ -48,6 +50,8 @@ export default function App() {
 
         {/* ── Redireciona a antiga rota de rankings para métricas ── */}
         <Route path="/rankings" element={<Navigate to="/metricas" replace />} />
+        <Route path="/empresas" element={<EmpresasRanking />} />
+        <Route path="/empresas/:cnpj" element={<EmpresaDetalhe />} />
         <Route path="/metricas" element={<ComparadorDeputados />} />
         <Route path="/comparar" element={<ComparadorLanding />} />
         <Route path="/comparar/:slug1/:slug2" element={<ComparacaoPoliticos/>} />

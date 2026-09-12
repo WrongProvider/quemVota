@@ -28,6 +28,7 @@ from backend.api.v1 import (
     ranking_api,
     sitemap,
     metricas_api,
+    empresas_api,
 )
 from backend.rate_limit import limiter
 
@@ -134,6 +135,7 @@ app.include_router(proposicao_api.router_votacoes)
 app.include_router(busca_popular.router)
 app.include_router(sitemap.router)
 app.include_router(metricas_api.router)
+app.include_router(empresas_api.router)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Health check

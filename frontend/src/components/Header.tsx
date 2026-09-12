@@ -24,6 +24,21 @@ interface NavItem {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const Icons = {
+  Building: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+      <path d="M9 22v-4h6v4" />
+      <path d="M8 6h.01" />
+      <path d="M16 6h.01" />
+      <path d="M12 6h.01" />
+      <path d="M12 10h.01" />
+      <path d="M12 14h.01" />
+      <path d="M16 10h.01" />
+      <path d="M16 14h.01" />
+      <path d="M8 10h.01" />
+      <path d="M8 14h.01" />
+    </svg>
+  ),
   Users: () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
@@ -151,6 +166,12 @@ const NAV_ITEMS: NavItem[] = [
         href: "/politicos",
         description: "Perfil, gastos, votações e presença de cada deputado",
         icon: <Icons.Users />,
+      },
+      {
+        name: "Fornecedores",
+        description: "Ranking de empresas e notas fiscais",
+        href: "/empresas",
+        icon: <Icons.Building />,
       },
       {
         name: "Métricas",
