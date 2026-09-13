@@ -124,10 +124,10 @@ async def get_empresa_resumo(cnpj_cpf: str, db: AsyncSession = Depends(get_db)):
         "topDeputados": [
             {
                 "idDeputado": d.Deputado.idCamara,
-                "nomeDeputado": d.Deputado.nomeEleitoral or d.Deputado.nomeCivil,
+                "nomeDeputado": d.Deputado.nome or d.Deputado.nomeCivil,
                 "urlFoto": d.Deputado.urlFoto,
                 "partido": d.Deputado.siglaPartido,
-                "uf": d.Deputado.siglaUf,
+                "uf": d.Deputado.siglaUF,
                 "total": float(d.total)
             }
             for d in deputados
@@ -164,7 +164,7 @@ async def get_empresa_notas(cnpj_cpf: str, limit: int = 50, offset: int = 0, db:
             "tipoDespesa": n.Despesa.tipoDespesa,
             "valorLiquido": float(n.Despesa.valorLiquido),
             "urlDocumento": n.Despesa.urlDocumento,
-            "nomeDeputado": n.Deputado.nomeEleitoral or n.Deputado.nomeCivil,
+            "nomeDeputado": n.Deputado.nome or n.Deputado.nomeCivil,
             "idDeputado": n.Deputado.idCamara
         }
         for n in notas
