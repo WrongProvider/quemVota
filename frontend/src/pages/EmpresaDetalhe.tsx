@@ -13,6 +13,9 @@ export default function EmpresaDetalhe() {
   const [notas, setNotas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Reconstrói o CNPJ original substituindo "_" de volta por "/"
+  const cnpjOriginal = cnpj ? decodeURIComponent(cnpj).replace(/_/g, '/') : '';
+
   useSeo({
     title: empresa ? `Fornecedor: ${empresa.nome} | QuemVota` : "Fornecedor | QuemVota",
     description: empresa ? `Análise descritiva dos pagamentos recebidos por ${empresa.nome} da Cota Parlamentar.` : "Análise de fornecedor.",
@@ -20,9 +23,11 @@ export default function EmpresaDetalhe() {
   });
 
   useEffect(() => {
+    if (!cnpjOriginal) return;
+    
     Promise.all([
-      api.get(`/empresas/${cnpj}/resumo`),
-      api.get(`/empresas/${cnpj}/notas`)
+      api.get(`/empresas/${encodeURIComponent(cnpjOriginal)}/resumo`),
+      api.get(`/empresas/${encodeURIComponent(cnpjOriginal)}/notas`)
     ]).then(([resResumo, resNotas]) => {
       setEmpresa(resResumo.data);
       setNotas(resNotas.data);
@@ -31,7 +36,7 @@ export default function EmpresaDetalhe() {
       console.error(err);
       setLoading(false);
     });
-  }, [cnpj]);
+  }, [cnpjOriginal]);
 
   if (loading) return <div className="p-8">Carregando...</div>;
   if (!empresa) return <div className="p-8">Empresa não encontrada.</div>;

@@ -45,7 +45,7 @@ export default function EmpresasRanking() {
                   {empresas.map(emp => (
                     <tr key={emp.cnpjCpf} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-900">
-                        <Link to={`/empresas/${emp.cnpjCpf}`} className="text-blue-600 hover:underline">{emp.nome}</Link>
+                        <Link to={`/empresas/${encodeURIComponent(emp.cnpjCpf.replace(/\//g, '_'))}`} className="text-blue-600 hover:underline">{emp.nome}</Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-slate-500">{emp.cnpjCpf}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right font-medium text-slate-700">{formatarMoedaBRL(emp.totalRecebido)}</td>
