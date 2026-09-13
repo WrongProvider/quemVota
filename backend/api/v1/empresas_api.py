@@ -92,7 +92,7 @@ async def get_empresa_resumo(cnpj_cpf: str, db: AsyncSession = Depends(get_db)):
             Deputado.siglaPartido,
             func.sum(Despesa.valorLiquido).label("total")
         )
-        .join(Deputado, Despesa.idDeputado == Deputado.idCamara)
+        .join(Deputado, Despesa.idDeputado == Deputado.id)
         .filter(Despesa.cnpjCpfFornecedor == cnpj_cpf)
         .group_by(Deputado.siglaPartido)
         .order_by(desc("total"))
@@ -106,7 +106,7 @@ async def get_empresa_resumo(cnpj_cpf: str, db: AsyncSession = Depends(get_db)):
             Deputado,
             func.sum(Despesa.valorLiquido).label("total")
         )
-        .join(Deputado, Despesa.idDeputado == Deputado.idCamara)
+        .join(Deputado, Despesa.idDeputado == Deputado.id)
         .filter(Despesa.cnpjCpfFornecedor == cnpj_cpf)
         .group_by(Deputado.id)
         .order_by(desc("total"))
@@ -148,7 +148,7 @@ class NotaResponse(BaseModel):
 async def get_empresa_notas(cnpj_cpf: str, limit: int = 50, offset: int = 0, db: AsyncSession = Depends(get_db)):
     stmt_notas = (
         select(Despesa, Deputado)
-        .join(Deputado, Despesa.idDeputado == Deputado.idCamara)
+        .join(Deputado, Despesa.idDeputado == Deputado.id)
         .filter(Despesa.cnpjCpfFornecedor == cnpj_cpf)
         .order_by(desc(Despesa.dataDocumento))
         .limit(limit)
