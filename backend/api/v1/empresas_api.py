@@ -68,7 +68,7 @@ class EmpresaResumoResponse(BaseModel):
     distribuicaoPartidos: List[DistPartido]
     topDeputados: List[DistDeputado]
 
-@router.get("/{cnpj_cpf}/resumo", response_model=EmpresaResumoResponse)
+@router.get("/{cnpj_cpf:path}/resumo", response_model=EmpresaResumoResponse)
 @cache(expire=3600)
 async def get_empresa_resumo(cnpj_cpf: str, db: AsyncSession = Depends(get_db)):
     # 1. Total e qtd
@@ -143,7 +143,7 @@ class NotaResponse(BaseModel):
     nomeDeputado: str
     idDeputado: int
 
-@router.get("/{cnpj_cpf}/notas", response_model=List[NotaResponse])
+@router.get("/{cnpj_cpf:path}/notas", response_model=List[NotaResponse])
 @cache(expire=3600)
 async def get_empresa_notas(cnpj_cpf: str, limit: int = 50, offset: int = 0, db: AsyncSession = Depends(get_db)):
     stmt_notas = (
