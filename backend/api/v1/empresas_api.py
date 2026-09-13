@@ -6,6 +6,7 @@ from typing import List, Optional
 from shared.database import get_db
 from shared.models import Despesa, Deputado
 from pydantic import BaseModel
+from fastapi_cache.decorator import cache
 
 router = APIRouter(prefix="/empresas", tags=["Empresas"])
 
@@ -16,6 +17,7 @@ class EmpresaRankingResponse(BaseModel):
     quantidadeNotas: int
 
 @router.get("/ranking", response_model=List[EmpresaRankingResponse])
+@cache(expire=3600)
 async def get_ranking_empresas(limit: int = 20, offset: int = 0, db: AsyncSession = Depends(get_db)):
     stmt = (
         select(
@@ -67,6 +69,7 @@ class EmpresaResumoResponse(BaseModel):
     topDeputados: List[DistDeputado]
 
 @router.get("/{cnpj_cpf}/resumo", response_model=EmpresaResumoResponse)
+@cache(expire=3600)
 async def get_empresa_resumo(cnpj_cpf: str, db: AsyncSession = Depends(get_db)):
     # 1. Total e qtd
     stmt_agregado = (
@@ -141,6 +144,7 @@ class NotaResponse(BaseModel):
     idDeputado: int
 
 @router.get("/{cnpj_cpf}/notas", response_model=List[NotaResponse])
+@cache(expire=3600)
 async def get_empresa_notas(cnpj_cpf: str, limit: int = 50, offset: int = 0, db: AsyncSession = Depends(get_db)):
     stmt_notas = (
         select(Despesa, Deputado)
