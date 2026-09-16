@@ -95,11 +95,14 @@ async def lifespan(app: FastAPI):
 # Instância FastAPI
 # ─────────────────────────────────────────────────────────────────────────────
 
+root_path = settings.ROOT_PATH or ("/api" if settings.ENV == "production" else "")
+
 app = FastAPI(
     title="Quem Vota API",
     description="API pública de transparência legislativa",
     version="0.1.0",
     lifespan=lifespan,
+    root_path=root_path,
 )
 
 app.state.limiter = limiter
