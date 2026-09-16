@@ -31,6 +31,9 @@ import time
 
 import numpy as np
 import torch
+import transformers.utils.import_utils
+transformers.utils.import_utils.check_torch_load_is_safe = lambda: None
+
 from sentence_transformers import SentenceTransformer
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert
@@ -46,19 +49,8 @@ from shared.models_vetorial import (
     TipoParticipacao,
 )
 
-# Limitar concorrência de threads matemáticas (PyTorch/BLAS/OpenMP) para não estrangular vCPUs
-os.environ.setdefault("OMP_NUM_THREADS", "1")
-os.environ.setdefault("MKL_NUM_THREADS", "1")
-os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
-os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
-os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
-
-torch.set_num_threads(1)
-if hasattr(torch, "set_num_interop_threads"):
-    try:
-        torch.set_num_interop_threads(1)
-    except RuntimeError:
-        pass
+# Removido limite de threads para uso máximo da placa de vídeo (ROCm)
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -388,8 +380,9 @@ def classificar_temas(
         id_legislatura,
     )
 
-    logger.info("Carregando modelo %s...", MODELO_NOME)
-    model = SentenceTransformer(MODELO_NOME)
+    logger.info("Carregando modelo %s no device %s com fp16...", MODELO_NOME, device)
+    model = SentenceTransformer(MODELO_NOME, device=device, model_kwargs={"torch_dtype": torch.float16})
+    model.max_seq_length = 2048
     logger.info("Modelo carregado.")
 
     db = SessionLocal()

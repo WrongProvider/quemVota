@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import { formatarMoedaBRL } from "../utils/formatters";
 import { useSeo } from "../hooks/useSeo";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Search } from 'lucide-react';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#a28dda', '#8884d8', '#82ca9d', '#ffc658'];
 
@@ -12,6 +13,7 @@ export default function EmpresaDetalhe() {
   const [empresa, setEmpresa] = useState<any>(null);
   const [notas, setNotas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [buscaNotas, setBuscaNotas] = useState("");
 
   // Reconstrói o CNPJ original substituindo "_" de volta por "/"
   const cnpjOriginal = cnpj ? decodeURIComponent(cnpj).replace(/_/g, '/') : '';
@@ -37,6 +39,12 @@ export default function EmpresaDetalhe() {
       setLoading(false);
     });
   }, [cnpjOriginal]);
+
+  const notasFiltradas = notas.filter(n => 
+    (n.nomeDeputado && n.nomeDeputado.toLowerCase().includes(buscaNotas.toLowerCase())) ||
+    (n.tipoDespesa && n.tipoDespesa.toLowerCase().includes(buscaNotas.toLowerCase())) ||
+    (n.dataDocumento && n.dataDocumento.includes(buscaNotas))
+  );
 
   if (loading) return <div className="p-8">Carregando...</div>;
   if (!empresa) return <div className="p-8">Empresa não encontrada.</div>;
@@ -97,8 +105,18 @@ export default function EmpresaDetalhe() {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-4 border-b border-slate-200">
+          <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h2 className="text-lg font-semibold text-slate-700">Últimas Notas Fiscais</h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar por deputado, despesa..."
+                value={buscaNotas}
+                onChange={(e) => setBuscaNotas(e.target.value)}
+                className="pl-9 pr-4 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
+              />
+            </div>
           </div>
           <div className="overflow-x-auto table-scrollbar">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -112,29 +130,37 @@ export default function EmpresaDetalhe() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
-                {notas.map((n, i) => (
-                  <tr key={i} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-slate-500">
-                      {n.dataDocumento ? new Date(n.dataDocumento).toLocaleDateString('pt-BR') : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link to={`/politicos/${n.idDeputado}`} className="text-blue-600 hover:underline">
-                        {n.nomeDeputado}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 text-slate-700">{n.tipoDespesa}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right font-medium text-slate-900">
-                      {formatarMoedaBRL(n.valorLiquido)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {n.urlDocumento ? (
-                        <a href={n.urlDocumento} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">Ver Nota</a>
-                      ) : (
-                        <span className="text-slate-400">N/A</span>
-                      )}
+                {notasFiltradas.length > 0 ? (
+                  notasFiltradas.map((n, i) => (
+                    <tr key={i} className="hover:bg-slate-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-slate-500">
+                        {n.dataDocumento ? new Date(n.dataDocumento).toLocaleDateString('pt-BR') : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Link to={`/politicos/${n.idDeputado}`} className="text-blue-600 hover:underline">
+                          {n.nomeDeputado}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 text-slate-700">{n.tipoDespesa}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right font-medium text-slate-900">
+                        {formatarMoedaBRL(n.valorLiquido)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {n.urlDocumento ? (
+                          <a href={n.urlDocumento} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">Ver Nota</a>
+                        ) : (
+                          <span className="text-slate-400">N/A</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                      Nenhuma nota encontrada para a busca "{buscaNotas}".
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

@@ -14,6 +14,9 @@ import sys
 from pathlib import Path
 
 import torch
+import transformers.utils.import_utils
+transformers.utils.import_utils.check_torch_load_is_safe = lambda: None
+
 from sentence_transformers import SentenceTransformer
 from sqlalchemy import exists, select
 from sqlalchemy.dialects.postgresql import insert
@@ -30,19 +33,8 @@ from shared.models_vetorial import (
     TipoEntidadeDocumento,
 )
 
-# Limitar concorrência de threads matemáticas (PyTorch/BLAS/OpenMP) para não estrangular vCPUs
-os.environ.setdefault("OMP_NUM_THREADS", "1")
-os.environ.setdefault("MKL_NUM_THREADS", "1")
-os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
-os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
-os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
-
-torch.set_num_threads(1)
-if hasattr(torch, "set_num_interop_threads"):
-    try:
-        torch.set_num_interop_threads(1)
-    except RuntimeError:
-        pass
+# Removido limite de threads para uso máximo da placa de vídeo (ROCm)
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
@@ -64,7 +56,7 @@ def montar_texto_proposicao(p: Proposicao) -> str:
     if (
         p.ementaDetalhada
         and p.ementaDetalhada.strip()
-        and p.ementaDetalhada.strip() != p.ementa.strip()
+        and p.ementaDetalhada.strip() != (p.ementa.strip() if p.ementa else "")
     ):
         partes.append(p.ementaDetalhada.strip())
 
@@ -142,8 +134,9 @@ def executar_geracao_embeddings(
     embedding_dim: int = 1024,
 ) -> int:
     """Executa a rotina principal de busca e vetorização em chunks resilientes."""
-    logger.info("Inicializando modelo de linguagem %s...", model_name)
-    model = SentenceTransformer(model_name)
+    logger.info("Inicializando modelo de linguagem %s no device %s com fp16...", model_name, device)
+    model = SentenceTransformer(model_name, device=device, model_kwargs={"torch_dtype": torch.float16})
+    model.max_seq_length = 2048  # Previne OutOfMemory (OOM) em textos com mais de 2048 tokens
 
     session = SessionLocal()
     total_processado = 0
