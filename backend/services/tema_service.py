@@ -77,14 +77,36 @@ class TemaService:
         rows = result.all()
 
         if not rows:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=(
-                    f"Dados de temas de atuação não disponíveis para o parlamentar id={pol.id} "
-                    f"na legislatura {id_legislatura}. "
-                    "Execute o pipeline tasks/classificar_temas.py para processar este parlamentar."
-                ),
+            # Tenta buscar na legislatura mais recente em que o parlamentar possui temas
+            fallback_stmt = (
+                select(
+                    DeputadoTemaAtuacao.score,
+                    DeputadoTemaAtuacao.pesoTotal,
+                    DeputadoTemaAtuacao.rank,
+                    TemaAtuacao.id.label("id_tema"),
+                    TemaAtuacao.slug,
+                    TemaAtuacao.nome,
+                    DeputadoTemaAtuacao.idLegislatura,
+                )
+                .join(TemaAtuacao, TemaAtuacao.id == DeputadoTemaAtuacao.idTemaAtuacao)
+                .where(DeputadoTemaAtuacao.idDeputado == pol.id)
+                .order_by(
+                    DeputadoTemaAtuacao.idLegislatura.desc(), DeputadoTemaAtuacao.rank
+                )
+                .limit(safe_limit)
             )
+            fallback_res = await self._db.execute(fallback_stmt)
+            fallback_rows = fallback_res.all()
+            if fallback_rows:
+                rows = fallback_rows
+                id_legislatura = fallback_rows[0].idLegislatura
+            else:
+                return PoliticoTemasResponse(
+                    id_deputado=pol.id,
+                    id_legislatura=id_legislatura,
+                    total_temas_identificados=0,
+                    temas=[],
+                )
 
         temas = [
             TemaAtuacaoItemResponse(
