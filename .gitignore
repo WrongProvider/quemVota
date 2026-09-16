@@ -9,3 +9,4 @@ quemvota_env/
 *.log
 *etl_cache*
 .playwright-mcp/
+dump_prod_*.sql.gz
