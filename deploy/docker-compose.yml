@@ -79,6 +79,7 @@ services:
       dockerfile: deploy/Dockerfile.postgres
     image: quemvota_postgres:age-pgvector
     container_name: quemvota_postgres
+    shm_size: "1g"
     restart: unless-stopped
     command:
       - "postgres"
@@ -225,6 +226,8 @@ services:
   # ── Cloudflare Tunnel ───────────────────────────────────────────────────────
   tunnel:
     image: cloudflare/cloudflared:latest
+    container_name: quemvota_tunnel
+    restart: unless-stopped
     command: tunnel run --token ${CLOUD_TUNNEL}
     networks:
       - frontend
