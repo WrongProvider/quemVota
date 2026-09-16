@@ -32,16 +32,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 curl \
     && rm -rf /var/lib/apt/lists/*
 
+RUN useradd -m appuser
+
 # Copia o venv compilado no builder
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Copia os diretórios do projeto
-COPY backend/ /app/backend/
-COPY shared/ /app/shared/
+COPY --chown=appuser:appuser backend/ /app/backend/
+COPY --chown=appuser:appuser shared/ /app/shared/
 
-# Usuário não-root por segurança
-RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000
